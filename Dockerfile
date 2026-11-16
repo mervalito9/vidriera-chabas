@@ -17,7 +17,6 @@ COPY --from=armado /app/web/dist ./web/dist
 COPY --from=armado /app/web/public/assets/img ./web/public/assets/img
 RUN mkdir -p /datos && chown node:node /datos
 USER node
-VOLUME ["/datos"]
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:3000/api/salud || exit 1
 CMD ["node", "server/index.ts"]
