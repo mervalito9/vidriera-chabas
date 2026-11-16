@@ -1,0 +1,27 @@
+# Levanta el sitio con HTTPS automático (Caddy pide el certificado solo).
+# Uso en el servidor:  docker compose up -d --build
+services:
+  vidriera:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TRUST_PROXY: "1"
+    volumes:
+      - datos:/datos
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_datos:/data
+    depends_on:
+      - vidriera
+volumes:
+  datos:
+  caddy_datos:
