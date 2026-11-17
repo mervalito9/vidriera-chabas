@@ -13,6 +13,7 @@ import { FOTOS_DIR } from "./db.ts";
 import { ErrorHttp, cabecerasSeguridad, crearLimitador, exigirMismoOrigen, ipDe, json, leerJson } from "./http.ts";
 import { claveCorrecta, cerrarSesion, exigirAdmin, iniciarSesion } from "./auth.ts";
 import { guardarFotos, borrarFotos } from "./imagenes.ts";
+import { iniciarBot } from "./bot/index.ts";
 
 const PUERTO = Number(process.env.PORT ?? 3000);
 const WEB_DIR = resolve(process.env.WEB_DIR ?? join(process.cwd(), "web", "dist"));
@@ -221,4 +222,5 @@ servidor.headersTimeout = 15_000;
 servidor.listen(PUERTO, () => {
   console.log(`Vidriera Chabás escuchando en http://localhost:${PUERTO}  (web: ${WEB_DIR})`);
   if (!process.env.ADMIN_PASSWORD_HASH) console.warn("Ojo: falta ADMIN_PASSWORD_HASH, el panel no va a dejar entrar. Generalo con: npm run clave");
+  iniciarBot();
 });

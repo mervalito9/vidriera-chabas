@@ -32,6 +32,19 @@ tests/    Pruebas del backend de punta a punta (npm test)
 
 Cada cambio de precio queda guardado en la tabla `precios`: es la base del **historial de precios** (la web ya muestra "Bajó de precio").
 
+## Asistente de avisos por Telegram (opcional)
+
+Un bot de Telegram que corre dentro del mismo servidor. Felipe le reenvía los datos crudos y las fotos de un aviso; el bot arma la ficha con Claude, se la muestra para revisar y, con `/publicar`, la guarda en el sitio como **publicada**.
+
+- **Seguridad:** solo responde a los IDs de `TELEGRAM_USER_ID`, en chat privado; a cualquier otro lo ignora sin contestar. Usa *polling* (el servidor llama a Telegram), así que no abre ninguna entrada nueva al sitio. Publica directo en la base: no hay token ni acceso nuevo al panel.
+- **Tope de gasto:** 40 pedidos a Claude por hora. Además, poné un límite mensual de gasto en la cuenta de la API.
+- **Datos:** el texto que le mandás (incluidos nombre y teléfono de los dueños) pasa por Telegram y por la API de Claude. Tiene que estar dicho en la política de privacidad.
+- **Activarlo:** cargá `TELEGRAM_BOT_TOKEN`, `TELEGRAM_USER_ID` y `ANTHROPIC_API_KEY` en las variables del servidor (ver `.env.example`). Si falta alguna, el bot no arranca y el sitio funciona igual.
+- **Dos copias a la vez:** si dos servidores usan el mismo token, Telegram corta a uno. Durante un redeploy puede verse un error 409 unos segundos; se reintenta solo.
+- **Los borradores viven en memoria:** si el servidor se reinicia, se pierden los que no se publicaron.
+
+Comandos: `/listo` (arma o actualiza la ficha), `/publicar`, `/estado`, `/cancelar`, `/ayuda`. Después de la ficha, cualquier texto es una corrección ("el precio es 8.500 USD").
+
 ## Probarlo en tu compu
 
 Necesitás **Node.js 24** o más nuevo.
