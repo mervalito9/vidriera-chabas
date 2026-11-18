@@ -2,7 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { DIAS_VIGENCIA, RUBROS } from "../shared/config.ts";
+import { DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
 import type { AvisoAdmin, AvisoPublico, Busqueda, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, RubroId } from "../shared/tipos.ts";
 import { slug } from "../shared/texto.ts";
 
@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS avisos (
 );
 CREATE INDEX IF NOT EXISTS avisos_estado ON avisos (estado, publicado_en);
 CREATE INDEX IF NOT EXISTS avisos_rubro ON avisos (rubro, tipo);
+CREATE INDEX IF NOT EXISTS avisos_pueblo ON avisos (pueblo);
 
 CREATE TABLE IF NOT EXISTS fotos (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -150,6 +151,8 @@ export function listarPublicos(filtros: Filtros, limite: number, desde: number):
   const where: string[] = [VIGENTE, reales ? "ejemplo = 0" : "ejemplo = 1"];
   const args: (string | number)[] = [];
   if (filtros.rubro) { where.push("rubro = ?"); args.push(filtros.rubro); }
+  if (filtros.pueblo === OTRO_PUEBLO) { where.push(`pueblo NOT IN (${PUEBLOS.map(() => "?").join(",")})`); args.push(...PUEBLOS); }
+  else if (filtros.pueblo) { where.push("pueblo = ?"); args.push(filtros.pueblo); }
   if (filtros.tipo) { where.push("tipo = ?"); args.push(filtros.tipo); }
   if (filtros.op) { where.push("operacion = ?"); args.push(filtros.op); }
   if (filtros.permuta) where.push("permuta = 1");
@@ -166,7 +169,7 @@ export function listarPublicos(filtros: Filtros, limite: number, desde: number):
   const palabras = slug(filtros.q).split("-").filter(Boolean);
   if (palabras.length) {
     filas = filas.filter((f) => {
-      const texto = slug([f.titulo, f.tipo, f.descripcion, f.zona, f.datos].map(str).join(" ")).replace(/-/g, " ");
+      const texto = slug([f.titulo, f.tipo, f.descripcion, f.pueblo, f.zona, f.datos].map(str).join(" ")).replace(/-/g, " ");
       return palabras.every((p) => texto.includes(p));
     });
   }
@@ -199,10 +202,10 @@ export function crearAviso(a: NuevoAviso, archivos: string[], opciones: { estado
   db.exec("BEGIN");
   try {
     const r = db
-      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(
-        opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.zona, a.descripcion, JSON.stringify(a.datos),
+        opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.zona, a.descripcion, JSON.stringify(a.datos),
         a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, opciones.ejemplo ? 1 : 0,
         opciones.estado === "publicado" ? (opciones.publicadoEn ?? new Date().toISOString()) : null,
       );
@@ -260,6 +263,49 @@ export function actualizarAviso(id: number, c: CambiosAdmin): AvisoAdmin | null 
     db.prepare("INSERT INTO precios (aviso_id, precio, moneda) VALUES (?,?,?)").run(id, precioNuevo, monedaNueva);
   }
   return obtenerAdmin(id);
+}
+
+/** Copia consistente de la base (aunque esté en uso) a un archivo. */
+export function copiarBase(destino: string): void {
+  db.prepare("VACUUM INTO ?").run(destino);
+}
+
+export function contarPendientes(): number {
+  return num((db.prepare("SELECT COUNT(*) AS n FROM avisos WHERE estado = 'pendiente'").get() as Fila).n);
+}
+
+/** Nombres de archivo de las fotos de un aviso (en orden). */
+export function archivosDe(id: number): string[] {
+  return (db.prepare("SELECT archivo FROM fotos WHERE aviso_id = ? ORDER BY orden, id").all(id) as Fila[]).map((f) => str(f.archivo));
+}
+
+/**
+ * Edición completa desde el panel: cambia todos los datos y deja las fotos en el orden indicado.
+ * Devuelve los archivos que ya no se usan, para borrarlos del disco.
+ */
+export function editarAviso(id: number, a: NuevoAviso, archivosFinal: string[]): { aviso: AvisoAdmin; quitadas: string[] } | null {
+  const actual = obtenerAdmin(id);
+  if (!actual) return null;
+  const antes = archivosDe(id);
+  db.exec("BEGIN");
+  try {
+    db.prepare(
+      `UPDATE avisos SET rubro = ?, tipo = ?, operacion = ?, titulo = ?, precio = ?, moneda = ?, pueblo = ?, zona = ?, descripcion = ?, datos = ?,
+         permuta = ?, financia = ?, nombre = ?, telefono = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
+    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, id);
+    if (a.precio !== actual.precio || a.moneda !== actual.moneda) {
+      db.prepare("INSERT INTO precios (aviso_id, precio, moneda) VALUES (?,?,?)").run(id, a.precio, a.moneda);
+    }
+    db.prepare("DELETE FROM fotos WHERE aviso_id = ?").run(id);
+    archivosFinal.forEach((archivo, i) => db.prepare("INSERT INTO fotos (aviso_id, archivo, orden) VALUES (?,?,?)").run(id, archivo, i));
+    db.exec("COMMIT");
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+  const aviso = obtenerAdmin(id);
+  if (!aviso) return null;
+  return { aviso, quitadas: antes.filter((f) => !archivosFinal.includes(f)) };
 }
 
 /** Borra el aviso y devuelve los nombres de archivo de sus fotos para eliminarlas del disco. */

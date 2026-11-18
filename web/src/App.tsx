@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { RUBROS } from "../../shared/config.ts";
+import { PUEBLOS, RUBROS } from "../../shared/config.ts";
+import { slug } from "../../shared/texto.ts";
 import type { RubroId } from "../../shared/tipos.ts";
 import { listarAvisos } from "./api.ts";
 import { Marco } from "./components/Marco.tsx";
@@ -9,7 +10,7 @@ import { Busco } from "./pages/Busco.tsx";
 import { Inicio } from "./pages/Inicio.tsx";
 import { Listado } from "./pages/Listado.tsx";
 import { Publicar } from "./pages/Publicar.tsx";
-import { ComoFunciona, NoEncontrado, Privacidad, Proximamente, Terminos } from "./pages/Textos.tsx";
+import { ComoFunciona, NoEncontrado, Privacidad, Terminos } from "./pages/Textos.tsx";
 import { useRuta, type Ruta } from "./router.ts";
 
 function Pagina({ ruta }: { ruta: Ruta }) {
@@ -23,7 +24,11 @@ function Pagina({ ruta }: { ruta: Ruta }) {
   if (nombre === "como-funciona") return <ComoFunciona />;
   if (nombre === "terminos") return <Terminos />;
   if (nombre === "privacidad") return <Privacidad />;
-  if (nombre === "pueblo") return <Proximamente slug={param} />;
+  // #pueblo--sanford: el listado de toda la zona con el filtro de ese pueblo puesto (#pueblo--otro = pueblos fuera de la lista)
+  if (nombre === "pueblo") {
+    const p = param === "otro" ? "otro" : (PUEBLOS.find((x) => slug(x) === param) ?? "");
+    return <Listado key={`pueblo-${p}`} rubro="" atajo="" pueblo={p} />;
+  }
   if (nombre === "admin") return <Admin />;
   return <NoEncontrado />;
 }

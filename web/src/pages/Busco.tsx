@@ -11,7 +11,7 @@ import { ir } from "../router.ts";
 const OPCIONES = ["Casa o departamento para comprar", "Casa o departamento para alquilar", "Terreno", "Galpón o local", "Auto o camioneta", "Moto", "Maquinaria agro o herramientas", "Otra cosa"];
 
 const mensaje = (b: NuevaBusqueda): string =>
-  ["Hola! Estoy buscando esto en Chabás:", "", `Rubro: ${b.rubro || "-"}`, `Busco: ${b.que || "-"}`, `Presupuesto: ${b.presupuesto || "-"}`, `Nombre: ${b.nombre || "-"}`, "", "Si aparece algo así, avisame por acá."].join("\n");
+  ["Hola! Estoy buscando esto en Chabás y la zona:", "", `Rubro: ${b.rubro || "-"}`, `Busco: ${b.que || "-"}`, `Presupuesto: ${b.presupuesto || "-"}`, `Nombre: ${b.nombre || "-"}`, "", "Si aparece algo así, avisame por acá."].join("\n");
 
 export function Busco() {
   useTitulo("Avisame cuando aparezca");

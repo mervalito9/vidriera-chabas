@@ -654,6 +654,12 @@ main:focus { outline: none; }
 .foto-mini { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--crema-2); }
 .foto-mini img { width: 100%; height: 100%; object-fit: cover; }
 .foto-mini button { position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(23,21,15,.75); color: #fff; font: 700 1.2rem/1 var(--sans); cursor: pointer; }
+.foto-tapa { position: absolute; left: 4px; top: 4px; background: var(--terra); color: #fff; font: 700 .75rem/1 var(--sans); padding: 5px 8px; border-radius: 999px; }
+.foto-mover { position: absolute; left: 4px; right: 4px; bottom: 4px; display: flex; justify-content: space-between; pointer-events: none; }
+.foto-mover button { position: static; width: 40px; height: 40px; pointer-events: auto; font-size: 1.5rem; }
+.foto-mover button:disabled { opacity: .35; cursor: default; }
+.admin-edicion { grid-column: 1 / -1; }
+.admin-edicion .form { box-shadow: none; padding: 0; background: transparent; }
 .foto-add { aspect-ratio: 1; border-radius: 12px; border: 2px dashed #B9B1A0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font-weight: 700; font-size: .95rem; text-align: center; padding: 6px; background: #fff; min-height: 96px; }
 .foto-add span { font-size: 1.8rem; line-height: 1; color: var(--terra); }
 input[type=file]:focus-visible + * , .foto-add:focus-within { outline: 3px solid var(--terra); }
@@ -674,3 +680,40 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .btn-peligro { background: #9A1F18; color: #fff; }
 .confirmar { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; }
 @media (min-width: 900px) { .admin-item { grid-template-columns: 120px 1fr; } .admin-acc { grid-column: 2; } }
+
+/* ---------- Chabás y la zona: pueblos como filtro ---------- */
+.rubros { grid-template-columns: repeat(2, 1fr); }
+.rubro-chico { grid-column: 1 / -1; justify-self: start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px 4px;
+  color: var(--tinta-2); font-size: 1rem; text-decoration: underline; text-underline-offset: 3px; }
+.rubro-chico b { color: var(--tinta); }
+.lugar { font-weight: 700; color: var(--tinta); }
+.lugar::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--terra); vertical-align: .08em; }
+.pueblo-filtro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 12px; }
+.pf-l, .por-pueblo > span { font-weight: 700; font-size: .98rem; margin-right: 2px; }
+.pueblo-filtro .chip { min-height: 44px; cursor: pointer; font-family: var(--sans); border-style: solid; border-color: #B9B1A0; background: var(--papel); color: var(--tinta); }
+.pueblo-filtro .chip[aria-pressed=true] { background: var(--tinta); color: var(--crema); border-color: var(--tinta); }
+.pueblo-filtro .chip[aria-pressed=true]::before { content: "✓"; }
+.por-pueblo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 16px; }
+.por-pueblo .chip { border-style: solid; border-color: #B9B1A0; background: var(--papel); color: var(--tinta); min-height: 44px; }
+.donde legend { font-weight: 800; }
+.donde .small { margin: 2px 0 10px; }
+.pueblo-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.pueblo-pick label { position: relative; }
+.pueblo-pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.pueblo-pick span { display: inline-flex; align-items: center; min-height: 50px; padding: 8px 18px; border-radius: 999px; border: 2px solid #CFC6B4; background: #fff; font-weight: 700; font-size: 1.02rem; }
+.pueblo-pick input:checked + span { background: var(--oliva); border-color: var(--oliva); color: var(--crema); }
+.pueblo-pick input:checked + span::before { content: "✓ "; white-space: pre; }
+.pueblo-pick input:focus-visible + span { outline: 3px solid var(--terra); outline-offset: 2px; }
+.pueblo-pick[aria-invalid=true] span { border-color: var(--terra); }
+.pueblo-otro { margin-top: 12px; max-width: 360px; }
+.arr-chico { justify-self: center; color: var(--crema); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; padding: 10px; min-height: 44px; }
+
+/* ---------- Cargar varios ---------- */
+.lote { display: grid; gap: 14px; }
+.lote-sel { position: relative; justify-self: start; cursor: pointer; overflow: hidden; }
+.lote-sel input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.lote-res { font-size: 1.05rem; }
+.lote-fila.cargado { opacity: .7; }
+.lote-fila .err { color: #A1341A; font-weight: 600; }
+.lote-fila .ok { color: var(--oliva); font-weight: 700; }
+.aviso-ojo { color: #7A5A12; }

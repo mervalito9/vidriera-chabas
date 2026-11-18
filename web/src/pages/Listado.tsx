@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ATAJOS, POR_PAGINA, RUBROS } from "../../../shared/config.ts";
+import { ATAJOS, OTRO_PUEBLO, POR_PAGINA, PUEBLOS, RUBROS, lugarDe } from "../../../shared/config.ts";
 import { plural, slug } from "../../../shared/texto.ts";
 import type { Filtros, ListaAvisos, RubroId } from "../../../shared/tipos.ts";
 import { listarAvisos } from "../api.ts";
@@ -7,8 +7,12 @@ import { Cargando, Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
-const VACIOS: Filtros = { rubro: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "" };
+const VACIOS: Filtros = { rubro: "", pueblo: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "" };
 const PESTANAS = [["buscar", "Todo"], ["inmuebles", "Inmuebles"], ["vehiculos", "Vehículos"], ["agro", "Maquinaria agro"]] as const;
+
+/** El pueblo elegido se mantiene al pasar de un rubro a otro (Inmuebles → Vehículos) mientras la página esté abierta. */
+let puebloRecordado = "";
+const OPCIONES_PUEBLO: readonly (readonly [string, string])[] = [["", "Todos"], ...PUEBLOS.map((p) => [p, p] as const), [OTRO_PUEBLO, "Otro"]];
 
 /** Convierte un atajo ("alquiler", "moto", "galpon-o-local") en filtros. */
 function aplicarAtajo(rubro: RubroId | "", atajo: string): Filtros {
@@ -19,10 +23,13 @@ function aplicarAtajo(rubro: RubroId | "", atajo: string): Filtros {
   return tipo ? { ...f, tipo } : f;
 }
 
-export function Listado({ rubro, atajo }: { rubro: RubroId | ""; atajo: string }) {
+export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: string; pueblo?: string }) {
   const R = rubro ? RUBROS[rubro] : null;
-  useTitulo(R ? `${R.nombre} en Chabás` : "Todos los avisos de Chabás");
-  const [f, setF] = useState<Filtros>(() => aplicarAtajo(rubro, atajo));
+  if (pueblo !== undefined) puebloRecordado = pueblo;
+  const [f, setF] = useState<Filtros>(() => ({ ...aplicarAtajo(rubro, atajo), pueblo: puebloRecordado }));
+  const lugar = lugarDe(f.pueblo);
+  const titulo = R ? `${R.nombre} en ${lugar}` : f.pueblo ? `Avisos de ${lugar}` : "Todos los avisos de Chabás y la zona";
+  useTitulo(titulo);
   const [qEscrito, setQEscrito] = useState(f.q);
   const [limite, setLimite] = useState(POR_PAGINA);
   const [masAbierto, setMasAbierto] = useState(() => window.matchMedia?.("(min-width: 900px)").matches ?? false);
@@ -30,7 +37,7 @@ export function Listado({ rubro, atajo }: { rubro: RubroId | ""; atajo: string }
   // Si cambia la ruta (otro rubro u otro atajo), se reinician los filtros.
   useEffect(() => {
     const nuevo = aplicarAtajo(rubro, atajo);
-    setF(nuevo);
+    setF((v) => ({ ...nuevo, pueblo: v.pueblo }));
     setQEscrito("");
     setLimite(POR_PAGINA);
   }, [rubro, atajo]);
@@ -46,22 +53,29 @@ export function Listado({ rubro, atajo }: { rubro: RubroId | ""; atajo: string }
   if (lista.estado === "listo") ultimo.current = lista.datos;
   const d = lista.estado === "listo" ? lista.datos : lista.estado === "cargando" ? ultimo.current : null;
   const cambiar = <K extends keyof Filtros>(k: K, v: Filtros[K]) => {
+    if (k === "pueblo") puebloRecordado = String(v);
     setF((x) => ({ ...x, [k]: v }));
     setLimite(POR_PAGINA);
   };
   const tipos = R ? R.tipos : Object.values(RUBROS).flatMap((r) => r.tipos);
   const atajos = ATAJOS[rubro || "todo"];
   const atajoActivo = f.op && !f.tipo ? f.op : f.tipo ? slug(f.tipo) : "";
-  const hayFiltros = useMemo(() => !!(f.q || f.tipo || f.op || f.max || f.permuta || f.financia), [f]);
-  const limpiar = () => { setF({ ...VACIOS, rubro }); setQEscrito(""); setLimite(POR_PAGINA); };
+  const hayFiltros = useMemo(() => !!(f.q || f.tipo || f.op || f.max || f.permuta || f.financia || f.pueblo), [f]);
+  const limpiar = () => { puebloRecordado = ""; setF({ ...VACIOS, rubro }); setQEscrito(""); setLimite(POR_PAGINA); };
 
   return (
     <div className="wrap">
       <nav className="crumbs" aria-label="Estás en"><a href={ir("inicio")}>Inicio</a> › <span>{R ? R.nombre : "Todos los avisos"}</span></nav>
       <div className="page-h">
-        <h1>{R ? `${R.nombre} en Chabás` : "Todos los avisos de Chabás"}</h1>
+        <h1>{titulo}</h1>
         <p>{R ? R.descripcion : "Inmuebles, vehículos y maquinaria agro. Filtrá y hablá directo con el dueño."}{" "}
           <a className="pub-link" href={ir("publicar", rubro)}>¿Tenés algo para vender? Publicalo gratis</a></p>
+      </div>
+      <div className="pueblo-filtro" role="group" aria-label="Filtrar por pueblo">
+        <span className="pf-l">Pueblo:</span>
+        {OPCIONES_PUEBLO.map(([v, t]) => (
+          <button key={t} type="button" className="chip" aria-pressed={f.pueblo === v} onClick={() => cambiar("pueblo", v)}>{t}</button>
+        ))}
       </div>
       <nav className="subnav tabs" aria-label="Rubros">
         {PESTANAS.map(([k, t]) => <a key={k} href={ir(k)} aria-current={(rubro || "buscar") === k ? "page" : undefined}>{t}</a>)}
@@ -69,7 +83,7 @@ export function Listado({ rubro, atajo }: { rubro: RubroId | ""; atajo: string }
       <div className="atajos" role="group" aria-label="Atajos">
         {atajos.map(([k, t]) => (
           <button key={k} type="button" className="atajo" aria-pressed={atajoActivo === k}
-            onClick={() => { setLimite(POR_PAGINA); setF(atajoActivo === k ? { ...VACIOS, rubro } : aplicarAtajo(rubro, k)); setQEscrito(""); }}>
+            onClick={() => { setLimite(POR_PAGINA); setF((x) => ({ ...(atajoActivo === k ? { ...VACIOS, rubro } : aplicarAtajo(rubro, k)), pueblo: x.pueblo })); setQEscrito(""); }}>
             {t}
           </button>
         ))}
@@ -139,7 +153,7 @@ export function Listado({ rubro, atajo }: { rubro: RubroId | ""; atajo: string }
           {lista.estado === "error" && <p className="form-err" role="alert">{lista.mensaje}</p>}
           {d && (
             d.total === 0 ? (
-              <Vacio texto={hayFiltros ? "No hay avisos con esos filtros." : "Todavía no hay avisos de esto."} />
+              <Vacio texto={f.pueblo && !(f.q || f.tipo || f.op || f.max || f.permuta || f.financia) ? `Todavía no hay avisos de esto en ${lugar}.` : hayFiltros ? "No hay avisos con esos filtros." : "Todavía no hay avisos de esto."} />
             ) : (
               <>
                 <div className="grid" id="grid" aria-busy={lista.estado === "cargando"}>{d.avisos.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>

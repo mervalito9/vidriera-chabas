@@ -1,7 +1,5 @@
-import { useRef, useState, type ReactNode } from "react";
-import { PUEBLOS_PROXIMOS } from "../../../shared/config.ts";
+import { useRef, type ReactNode } from "react";
 import { ir, navegar } from "../router.ts";
-import { DialogoPueblos } from "./Pueblos.tsx";
 
 const NAV = [
   ["inmuebles", "Inmuebles"],
@@ -10,12 +8,10 @@ const NAV = [
   ["como-funciona", "Cómo funciona"],
 ] as const;
 
-/** Encabezado, selector de pueblos, botón Volver y pie: lo que comparten todas las páginas. */
+/** Encabezado, botón Volver y pie: lo que comparten todas las páginas. */
 export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjemplos: boolean; children: ReactNode }) {
-  const [dlg, setDlg] = useState<{ abierto: boolean; pueblo: string }>({ abierto: false, pueblo: "" });
   const main = useRef<HTMLElement>(null);
   const esInicio = ruta === "inicio";
-  const abrir = (pueblo = "") => setDlg({ abierto: true, pueblo });
   const volver = () => (window.history.length > 1 ? window.history.back() : navegar(ir("inicio")));
 
   return (
@@ -33,9 +29,6 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
             ))}
           </nav>
           <span className="spacer" />
-          <button type="button" className="pueblo-btn" aria-haspopup="dialog" aria-label="Pueblo: Chabás. Cambiar de pueblo" onClick={() => abrir()}>
-            Chabás <span aria-hidden="true">▾</span>
-          </button>
           <a className="btn btn-main" href={ir("publicar")}>Publicar gratis</a>
         </div>
         {!esInicio && (
@@ -46,17 +39,6 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
           </nav>
         )}
       </header>
-      <nav className="pueblos" aria-label="Pueblos">
-        <div className="wrap">
-          <b>Pueblo:</b>
-          <a className="chip on" href={ir("inicio")} aria-current="true">Chabás</a>
-          <span className="prox-l">Próximamente:</span>
-          {PUEBLOS_PROXIMOS.map((p) => (
-            <a key={p.slug} className="chip" href={ir("pueblo", p.slug)} onClick={(e) => { e.preventDefault(); abrir(p.nombre); }}>{p.nombre}</a>
-          ))}
-        </div>
-      </nav>
-      <DialogoPueblos abierto={dlg.abierto} inicial={dlg.pueblo} onCerrar={() => setDlg({ abierto: false, pueblo: "" })} />
       <main id="contenido" ref={main} tabIndex={-1}>
         {!esInicio && (
           <div className="wrap volver-row">
@@ -70,7 +52,7 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
           <a href={ir("inicio")}><img src="assets/img/logo-horizontal-oscuro.svg" alt="Vidriera Chabás" width={178} height={38} /></a>
           <div>
             <p className="firma-pie">Hecho en Chabás por Felipe Sancho.</p>
-            <p>Vidriera Chabás es un tablón de avisos clasificados de Chabás. No intermedia en las operaciones ni cobra comisión sobre ventas o alquileres. Cada aviso es responsabilidad de quien lo publica.</p>
+            <p>Vidriera Chabás es un tablón de avisos clasificados de Chabás y la zona. No intermedia en las operaciones ni cobra comisión sobre ventas o alquileres. Cada aviso es responsabilidad de quien lo publica.</p>
             <nav aria-label="Pie de página">
               <a href={ir("publicar")}>Publicar gratis</a>
               <a href={ir("busco")}>Avisame cuando aparezca</a>

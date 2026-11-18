@@ -22,7 +22,7 @@ export function Tarjeta({ aviso: a }: { aviso: AvisoPublico }) {
         </p>
         <h3>{a.titulo}</h3>
         <p className="meta">
-          {a.tipo} · {a.pueblo}
+          <span className="lugar">{a.pueblo}</span> · {a.tipo}
         </p>
         {extras && <p className="perks">{extras}</p>}
       </div>

@@ -1,8 +1,14 @@
 // Validación compartida: la web la usa para avisar errores al instante
 // y el backend la usa SIEMPRE antes de guardar (nunca se confía en el navegador).
-import { RUBROS, LIMITES } from "./config.ts";
+import { RUBROS, LIMITES, PUEBLOS, OTRO_PUEBLO } from "./config.ts";
 import type { ErrorCampo, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
-import { recortar, soloDigitos } from "./texto.ts";
+import { recortar, slug, soloDigitos } from "./texto.ts";
+
+/** Pueblo de un aviso: si coincide con uno de la lista (aunque esté escrito sin tilde), queda con el nombre de la lista. */
+export function normalizarPueblo(texto: unknown): string {
+  const t = recortar(texto, 40);
+  return PUEBLOS.find((p) => slug(p) === slug(t)) ?? t;
+}
 
 const esObjeto = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
 
@@ -23,6 +29,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const precioTxt = soloDigitos(e.precio).slice(0, 12);
   const precio = precioTxt ? Number(precioTxt) : null;
   const moneda = e.moneda === "ARS" ? "ARS" : "USD";
+  const pueblo = normalizarPueblo(e.pueblo);
   const zona = recortar(e.zona, 60);
   const descripcion = recortar(e.descripcion, LIMITES.descripcion);
   const datos = (Array.isArray(e.datos) ? e.datos : [])
@@ -35,6 +42,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
 
   if (!rubro) errores.push({ campo: "rubro", msg: "Elegí qué querés publicar." });
   if (rubro && !RUBROS[rubro].tipos.includes(tipo)) errores.push({ campo: "tipo", msg: "Elegí el tipo." });
+  if (pueblo.length < 2 || slug(pueblo) === OTRO_PUEBLO) errores.push({ campo: "pueblo", msg: "Elegí dónde está lo que publicás." });
   if (titulo.length < 4) errores.push({ campo: "titulo", msg: "Escribí un título corto (qué es)." });
   if (precio !== null && (precio <= 0 || !Number.isSafeInteger(precio))) errores.push({ campo: "precio", msg: "El precio tiene que ser un número." });
   if (!nombre) errores.push({ campo: "nombre", msg: "Escribí tu nombre." });
@@ -44,7 +52,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos },
   };
 }
 

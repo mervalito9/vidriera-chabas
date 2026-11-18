@@ -12,7 +12,7 @@ const JPG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0]);
 const TXT = Buffer.from("esto no es una imagen");
 
 const ficha = (extra: Partial<Ficha> = {}): Ficha => ({
-  rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Volkswagen Gol Trend 2015", precio: 9500, moneda: "USD", zona: "",
+  rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Volkswagen Gol Trend 2015", precio: 9500, moneda: "USD", pueblo: "Chabás", zona: "",
   descripcion: "Gol Trend 1.6, 120.000 km.", datos: ["Año 2015", "120.000 km"], permuta: false, financia: false,
   nombre: "Laura", telefono: "3464555123", duenoSoyYo: false, faltan: [], ...extra,
 });

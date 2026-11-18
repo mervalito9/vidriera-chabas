@@ -58,6 +58,8 @@ export interface NuevoAviso {
   titulo: string;
   precio: number | null;
   moneda: Moneda;
+  /** Dónde está lo que se publica (lo elige quien publica). Uno de PUEBLOS o el que escribió en "Otro". */
+  pueblo: string;
   zona: string;
   descripcion: string;
   datos: string[];
@@ -84,6 +86,8 @@ export interface Busqueda extends NuevaBusqueda {
 
 export interface Filtros {
   rubro: "" | RubroId;
+  /** "" = todos los pueblos; un nombre de PUEBLOS; o "otro" = pueblos que no están en la lista */
+  pueblo: string;
   q: string;
   tipo: string;
   op: "" | Operacion;
@@ -102,11 +106,6 @@ export interface Rubro {
   resumen: string;
   tipos: readonly string[];
   placeholder: string;
-}
-
-export interface Pueblo {
-  slug: string;
-  nombre: string;
 }
 
 export interface ErrorCampo {

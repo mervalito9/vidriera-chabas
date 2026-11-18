@@ -115,7 +115,7 @@ export function crearAsistente(deps: DepsAsistente) {
       `Rubro: ${a.rubro} · ${a.tipo || "FALTA"} · ${a.operacion}`,
       `Título: ${a.titulo || "FALTA"}`,
       `Precio: ${precio}`,
-      `Zona: ${a.zona || "-"}`,
+      `Dónde: ${a.pueblo || "FALTA"}${a.zona ? " · " + a.zona : ""}`,
       `Datos: ${a.datos.join(" · ") || "-"}`,
       `Permuta: ${a.permuta ? "sí" : "no"} · Financia: ${a.financia ? "sí" : "no"}`,
       `Contacto: ${a.nombre || "FALTA"} · ${a.telefono || "FALTA"}`,

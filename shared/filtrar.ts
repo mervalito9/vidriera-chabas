@@ -1,4 +1,5 @@
 // Filtro en memoria. Lo usa la vista previa sin servidor; el backend hace lo mismo con SQL.
+import { OTRO_PUEBLO, PUEBLOS } from "./config.ts";
 import type { AvisoPublico, Filtros } from "./tipos.ts";
 import { slug } from "./texto.ts";
 
@@ -7,6 +8,7 @@ export function filtrarAvisos(avisos: AvisoPublico[], f: Filtros): AvisoPublico[
   const max = Number(f.max);
   const res = avisos.filter((a) => {
     if (f.rubro && a.rubro !== f.rubro) return false;
+    if (f.pueblo === OTRO_PUEBLO ? PUEBLOS.includes(a.pueblo) : f.pueblo && a.pueblo !== f.pueblo) return false;
     if (f.tipo && a.tipo !== f.tipo) return false;
     if (f.op && a.operacion !== f.op) return false;
     if (f.permuta && !a.permuta) return false;

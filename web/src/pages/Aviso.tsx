@@ -32,7 +32,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
   const fotos = a.fotos.map(fotoSegura).filter(Boolean);
   const [foto, setFoto] = useState(0);
   const otros = useCarga(() => listarAvisos({ rubro: a.rubro }, 4), [a.id]);
-  const meta = [a.tipo, a.operacion === "alquiler" ? "Alquiler" : "Venta", a.pueblo, a.zona].filter(Boolean).join(" · ");
+  const meta = [a.tipo, a.operacion === "alquiler" ? "Alquiler" : "Venta", a.zona].filter(Boolean).join(" · ");
   const bajo = a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior;
 
   return (
@@ -57,7 +57,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           )}
         </div>
         <div className="aviso-info">
-          <p className="meta">{meta}</p>
+          <p className="meta"><span className="lugar">{a.pueblo}</span> · {meta}</p>
           <h1>{a.titulo}</h1>
           <p className="price big">
             {precioTexto(a)}

@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { OTRO_PUEBLO, PUEBLOS } from "../../../shared/config.ts";
 import { fmtFecha, soloDigitos } from "../../../shared/texto.ts";
 import type { AvisoAdmin, Busqueda, ErrorCampo, Estado } from "../../../shared/tipos.ts";
 import { linkWA } from "../../../shared/whatsapp.ts";
 import { ErrorApi, admin, conServidor } from "../api.ts";
 import { FormAviso, valoresIniciales, type ValoresForm } from "../components/FormAviso.tsx";
 import { Cargando } from "../components/Tarjeta.tsx";
+import { CargarVarios } from "./Lote.tsx";
 import { fotoSegura, precioTexto } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
-type Pestana = Estado | "busquedas" | "cargar";
+type Pestana = Estado | "busquedas" | "cargar" | "lote";
 const PESTANAS: [Pestana, string][] = [
-  ["pendiente", "Pendientes"], ["publicado", "Publicados"], ["vendido", "Vendidos"], ["rechazado", "Rechazados"], ["busquedas", "Búsquedas"], ["cargar", "Cargar aviso"],
+  ["pendiente", "Pendientes"], ["publicado", "Publicados"], ["vendido", "Vendidos"], ["rechazado", "Rechazados"], ["busquedas", "Búsquedas"], ["cargar", "Cargar aviso"], ["lote", "Cargar varios"],
 ];
 const mensajeError = (e: unknown) => (e instanceof Error ? e.message : "Algo salió mal.");
 
@@ -77,7 +79,7 @@ function Panel({ onSalir }: { onSalir: () => void }) {
       const pend = await admin.avisos("pendiente");
       setPendientes(pend.length);
       if (pestana === "busquedas") setBusquedas(await admin.busquedas());
-      else if (pestana !== "cargar") setAvisos(pestana === "pendiente" ? pend : await admin.avisos(pestana));
+      else if (pestana !== "cargar" && pestana !== "lote") setAvisos(pestana === "pendiente" ? pend : await admin.avisos(pestana));
     } catch (e) {
       if (e instanceof ErrorApi && e.status === 401) onSalir();
       else setError(mensajeError(e));
@@ -104,7 +106,10 @@ function Panel({ onSalir }: { onSalir: () => void }) {
     <div className="wrap panel">
       <div className="panel-h">
         <h1>Panel</h1>
-        <button type="button" className="btn btn-line" onClick={() => void admin.salir().finally(onSalir)}>Salir</button>
+        <span className="admin-acc">
+          <a className="btn btn-line" href="api/admin/copia" download>Copia de seguridad</a>
+          <button type="button" className="btn btn-line" onClick={() => void admin.salir().finally(onSalir)}>Salir</button>
+        </span>
       </div>
       <nav className="subnav tabs" aria-label="Secciones del panel">
         {PESTANAS.map(([k, t]) => (
@@ -114,7 +119,9 @@ function Panel({ onSalir }: { onSalir: () => void }) {
         ))}
       </nav>
       {error && <p className="form-err" role="alert">{error}</p>}
-      {pestana === "cargar" ? (
+      {pestana === "lote" ? (
+        <CargarVarios onListo={() => setPestana("pendiente")} />
+      ) : pestana === "cargar" ? (
         <Cargar onListo={() => setPestana("publicado")} />
       ) : pestana === "busquedas" ? (
         busquedas === null ? <Cargando /> : busquedas.length === 0 ? <p>No hay búsquedas guardadas.</p> : (
@@ -142,21 +149,68 @@ function Panel({ onSalir }: { onSalir: () => void }) {
   );
 }
 
+const valoresDe = (a: AvisoAdmin): ValoresForm => ({
+  rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio === null ? "" : String(a.precio), moneda: a.moneda,
+  permuta: a.permuta, financia: a.financia, descripcion: a.descripcion, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, zona: a.zona, datos: a.datos.join(", "),
+  pueblo: PUEBLOS.includes(a.pueblo) ? a.pueblo : OTRO_PUEBLO, puebloOtro: PUEBLOS.includes(a.pueblo) ? "" : a.pueblo,
+});
+
+/** Editor completo de un aviso: todos los datos y las fotos (sacar, agregar, cambiar el orden). */
+function Editar({ a, onListo, onCancelar }: { a: AvisoAdmin; onListo: () => void; onCancelar: () => void }) {
+  const [v, setV] = useState<ValoresForm>(() => valoresDe(a));
+  const [enviando, setEnviando] = useState(false);
+  const [errores, setErrores] = useState<ErrorCampo[]>([]);
+  const [error, setError] = useState("");
+  return (
+    <div className="admin-edicion">
+      <h2>Editar aviso</h2>
+      <FormAviso
+        valores={v}
+        onCambio={setV}
+        exigirFotos={false}
+        avanzado
+        enviando={enviando}
+        erroresServidor={errores}
+        textoBoton="Guardar cambios"
+        pie={<>{error && <p className="form-err" role="alert">{error}</p>}<button type="button" className="btn btn-line" onClick={onCancelar}>Cancelar</button></>}
+        onEnviar={(n) => {
+          setEnviando(true);
+          setErrores([]);
+          setError("");
+          admin.editar(a.id, n).then(
+            () => onListo(),
+            (e: unknown) => { if (e instanceof ErrorApi) { setErrores(e.campos); setError(e.campos.length ? "" : e.message); } else setError(mensajeError(e)); },
+          ).finally(() => setEnviando(false));
+        }}
+      />
+    </div>
+  );
+}
+
 function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<unknown>) => Promise<void> }) {
   const [precio, setPrecio] = useState(a.precio === null ? "" : String(a.precio));
+  const [editando, setEditando] = useState(false);
   const foto = fotoSegura(a.fotos[0] ?? "");
   const cambiar = (c: Record<string, unknown>) => void accion(() => admin.cambiar(a.id, c));
+  if (editando) {
+    return (
+      <li className="admin-item">
+        <Editar a={a} onCancelar={() => setEditando(false)} onListo={() => { setEditando(false); void accion(() => Promise.resolve()); }} />
+      </li>
+    );
+  }
   return (
     <li className="admin-item">
       {foto ? <img className="admin-foto" src={foto} alt="" width={120} height={80} /> : <div className="admin-foto sin-foto">Sin foto</div>}
       <div className="admin-datos">
         <b>{a.titulo}</b> {a.ejemplo && <span className="badge">Ejemplo</span>}
-        <p className="small">{a.tipo} · {a.operacion} · {precioTexto(a)} · {a.fotos.length} foto(s)</p>
+        <p className="small"><b>{a.pueblo}</b> · {a.tipo} · {a.operacion} · {precioTexto(a)} · {a.fotos.length} foto(s)</p>
         <p className="small">{a.nombre || "Sin nombre"} · {a.telefono || "sin WhatsApp"} · {a.estado === "publicado" ? `publicado ${fmtFecha(new Date(a.publicadoEn))}, vence ${fmtFecha(new Date(a.venceEn))}` : `cargado ${fmtFecha(new Date(a.creadoEn))}`}</p>
         <p className="small">{a.vistas} visitas · {a.contactos} contactos por WhatsApp</p>
         {a.descripcion && <details><summary>Descripción</summary><p className="small">{a.descripcion}</p></details>}
       </div>
       <div className="admin-acc">
+        <button type="button" className="btn btn-main" onClick={() => setEditando(true)}>Editar</button>
         {a.estado === "pendiente" && <>
           <button type="button" className="btn btn-main" onClick={() => cambiar({ estado: "publicado" })}>Aprobar</button>
           <button type="button" className="btn btn-line" onClick={() => cambiar({ estado: "rechazado" })}>Rechazar</button>
@@ -172,6 +226,7 @@ function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<un
           <input id={`p-${a.id}`} type="text" inputMode="numeric" value={precio} onChange={(e) => setPrecio(e.target.value.replace(/\D+/g, ""))} />
           <button type="submit" className="btn btn-line">Cambiar precio</button>
         </form>
+        {a.fotos.length > 0 && <a className="btn btn-line" href={`api/admin/avisos/${a.id}/fotos.zip`} download={`aviso-${a.id}-fotos.zip`}>Bajar fotos ({a.fotos.length})</a>}
         {a.telefono && <a className="btn btn-wa" target="_blank" rel="noopener noreferrer" href={linkWA(a.telefono, `Hola ${a.nombre}! Te escribo de Vidriera Chabás por tu aviso «${a.titulo}».`)}>WhatsApp</a>}
         <Confirmar texto="Borrar" onSi={() => void accion(() => admin.borrar(a.id))} />
       </div>
@@ -202,6 +257,7 @@ function Cargar({ onListo }: { onListo: () => void }) {
       valores={v}
       onCambio={setV}
       exigirFotos={false}
+      avanzado
       enviando={enviando}
       erroresServidor={errores}
       textoBoton="Publicar aviso"

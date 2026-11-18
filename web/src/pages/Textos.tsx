@@ -1,5 +1,3 @@
-import { PUEBLOS_PROXIMOS } from "../../../shared/config.ts";
-import { PanelPueblo } from "../components/Pueblos.tsx";
 import { useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
@@ -8,7 +6,7 @@ export function ComoFunciona() {
   return (
     <div className="wrap prose">
       <h1>Cómo <em>funciona.</em></h1>
-      <p>Vidriera Chabás es un tablón de avisos del pueblo: los dueños publican y los interesados les escriben directo. Nada más.</p>
+      <p>Vidriera Chabás es un tablón de avisos de Chabás y la zona: los dueños publican y los interesados les escriben directo. Nada más.</p>
       <ol className="pasos">
         <li><b>Buscás o publicás.</b><span>Buscás por rubro, tipo, precio o palabra. Para publicar, completás un formulario corto con fotos (o nos mandás todo por WhatsApp).</span></li>
         <li className="verde"><b>Hablás directo por WhatsApp.</b><span>Cada aviso tiene un botón para escribirle al dueño. No hay intermediarios.</span></li>
@@ -51,7 +49,7 @@ export function Privacidad() {
       <h2>Qué datos guardamos</h2>
       <p>Para publicar: tu nombre, tu WhatsApp, los datos del aviso y las fotos. Para "Avisame cuando aparezca": tu nombre, lo que buscás y tu WhatsApp. Se guardan en el servidor de Vidriera Chabás.</p>
       <h2>Para qué</h2>
-      <p>Para publicar tu aviso y que los interesados te puedan escribir, o para avisarte cuando aparezca lo que buscás. Además guardamos los cambios de precio de cada aviso para armar un historial de precios del pueblo (sin datos personales). No vendemos ni compartimos tus datos.</p>
+      <p>Para publicar tu aviso y que los interesados te puedan escribir, o para avisarte cuando aparezca lo que buscás. Además guardamos los cambios de precio de cada aviso para armar un historial de precios de la zona (sin datos personales). No vendemos ni compartimos tus datos.</p>
       <h2>Tu número en el aviso</h2>
       <p>Tu WhatsApp no aparece escrito en la página: el servidor lo entrega recién cuando alguien toca "Hablar por WhatsApp" en tu aviso.</p>
       <h2>Cookies y seguimiento</h2>
@@ -62,17 +60,6 @@ export function Privacidad() {
   );
 }
 
-export function Proximamente({ slug }: { slug: string }) {
-  const p = PUEBLOS_PROXIMOS.find((x) => x.slug === slug) ?? { slug: "otro", nombre: "Otro pueblo" };
-  useTitulo(`${p.nombre}: próximamente`);
-  return (
-    <div className="wrap prose">
-      <img src="assets/img/isotipo-claro.svg" alt="" width={90} height={103} />
-      <PanelPueblo nombre={p.nombre} />
-      <p><a className="btn btn-line" href={ir("inicio")}>Ver los avisos de Chabás</a></p>
-    </div>
-  );
-}
 
 export function NoEncontrado() {
   useTitulo("No encontramos esa página");

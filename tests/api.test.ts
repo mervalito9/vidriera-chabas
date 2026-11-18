@@ -36,7 +36,7 @@ after(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const aviso = (extra: Record<string, unknown> = {}) => ({ rubro: "vehiculos", tipo: "Auto", titulo: "Gol Trend 2015", precio: "9500", moneda: "USD", nombre: "Laura", telefono: "3464 555123", fotos: [PNG], ...extra });
+const aviso = (extra: Record<string, unknown> = {}) => ({ rubro: "vehiculos", tipo: "Auto", titulo: "Gol Trend 2015", precio: "9500", moneda: "USD", pueblo: "Chabás", nombre: "Laura", telefono: "3464 555123", fotos: [PNG], ...extra });
 
 test("lista los ejemplos sin teléfonos", async () => {
   const r = await (await fetch(`${URL_BASE}/api/avisos?rubro=vehiculos&tipo=Moto`)).json();
@@ -48,7 +48,27 @@ test("lista los ejemplos sin teléfonos", async () => {
 test("filtra por palabra, precio y operación", async () => {
   assert.equal((await (await fetch(`${URL_BASE}/api/avisos?q=pala`)).json()).total, 1);
   assert.equal((await (await fetch(`${URL_BASE}/api/avisos?max=20000&moneda=USD`)).json()).total, 4);
-  assert.equal((await (await fetch(`${URL_BASE}/api/avisos?rubro=inmuebles&op=alquiler`)).json()).total, 3);
+  assert.equal((await (await fetch(`${URL_BASE}/api/avisos?rubro=inmuebles&op=alquiler`)).json()).total, 4);
+});
+
+test("filtro de pueblo: filtra y se combina con los demás filtros", async () => {
+  const total = async (q: string) => (await (await fetch(`${URL_BASE}/api/avisos?${q}`)).json()).total as number;
+  const todos = await total("");
+  assert.equal(todos, 13);
+  const porPueblo = await Promise.all(["Chabás", "Casilda", "Firmat", "Sanford", "Villada"].map((p) => total(`pueblo=${encodeURIComponent(p)}`)));
+  assert.deepEqual(porPueblo, [7, 2, 2, 1, 1]);
+  assert.equal(porPueblo.reduce((a, b) => a + b, 0), todos, "cada aviso está en un pueblo");
+  assert.equal(await total(`pueblo=${encodeURIComponent("Chabás")}&rubro=inmuebles&op=alquiler`), 2);
+  assert.equal(await total(`pueblo=${encodeURIComponent("Chabás")}&rubro=vehiculos&tipo=Moto`), 1);
+  assert.equal(await total(`pueblo=Sanford&rubro=inmuebles&op=alquiler`), 1);
+  assert.equal(await total(`pueblo=Sanford&rubro=vehiculos`), 0);
+  assert.equal(await total(`pueblo=Firmat&max=20000&moneda=USD`), 0);
+  assert.equal(await total(`pueblo=Casilda&max=20000&moneda=USD`), 2);
+  assert.equal(await total(`pueblo=${encodeURIComponent("Chabás")}&q=galpon`), 1);
+  assert.equal(await total("pueblo=otro"), 0);
+  assert.equal(await total("pueblo=Inventado"), 13, "un pueblo desconocido no filtra");
+  const sanford = (await (await fetch(`${URL_BASE}/api/avisos?pueblo=Sanford`)).json()).avisos[0];
+  assert.equal(sanford.pueblo, "Sanford");
 });
 
 test("los ejemplos no se pueden contactar", async () => {
@@ -62,10 +82,10 @@ test("rechaza pedidos que cambian datos sin la cabecera propia (CSRF)", async ()
 });
 
 test("valida los datos y las fotos", async () => {
-  const r1 = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: H, body: JSON.stringify(aviso({ titulo: "", telefono: "1" })) });
+  const r1 = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: H, body: JSON.stringify(aviso({ titulo: "", telefono: "1", pueblo: "" })) });
   assert.equal(r1.status, 422);
   const campos = (await r1.json()).campos.map((c: { campo: string }) => c.campo);
-  assert.deepEqual(campos.sort(), ["telefono", "titulo"]);
+  assert.deepEqual(campos.sort(), ["pueblo", "telefono", "titulo"]);
   const svgDisfrazado = "data:image/png;base64," + Buffer.from("<svg onload=alert(1)>").toString("base64");
   const r2 = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: H, body: JSON.stringify(aviso({ fotos: [svgDisfrazado] })) });
   assert.equal(r2.status, 400);
@@ -97,6 +117,108 @@ test("publicar → pendiente → aprobar → aparece y oculta los ejemplos", asy
 
   const contacto = await (await fetch(`${URL_BASE}/api/avisos/${id}/contacto`, { method: "POST", headers: H })).json();
   assert.match(contacto.url, /^https:\/\/wa\.me\/5493464555123\?text=/);
+});
+
+test("Don Roberto vive en Chabás y publica la casa de Sanford; otro publica en un pueblo fuera de la lista", async () => {
+  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
+  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  // Escribe "sanford" en minúscula: queda guardado como "Sanford" (el de la lista)
+  const casa = aviso({ rubro: "inmuebles", tipo: "Casa", titulo: "Casa que era de mi madre", precio: "45000", pueblo: "sanford", nombre: "Roberto", telefono: "3464 400000" });
+  const r1 = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: H, body: JSON.stringify(casa) });
+  assert.equal(r1.status, 201);
+  const id1 = (await r1.json()).id;
+  const r2 = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: H, body: JSON.stringify(aviso({ titulo: "Auto en Arequito", pueblo: "Arequito" })) });
+  const id2 = (await r2.json()).id;
+  for (const id of [id1, id2]) {
+    const ok = await fetch(`${URL_BASE}/api/admin/avisos/${id}`, { method: "PATCH", headers: { ...H, cookie }, body: JSON.stringify({ estado: "publicado" }) });
+    assert.equal(ok.status, 200);
+  }
+  const ficha = await (await fetch(`${URL_BASE}/api/avisos/${id1}`)).json();
+  assert.equal(ficha.pueblo, "Sanford");
+  const total = async (q: string) => (await (await fetch(`${URL_BASE}/api/avisos?${q}`)).json()).total as number;
+  assert.equal(await total("pueblo=Sanford"), 1);
+  assert.equal(await total("pueblo=Sanford&rubro=vehiculos"), 0);
+  assert.equal(await total(`pueblo=${encodeURIComponent("Chabás")}`), 1, "el auto del test anterior");
+  const otros = await (await fetch(`${URL_BASE}/api/avisos?pueblo=otro`)).json();
+  assert.equal(otros.total, 1);
+  assert.equal(otros.avisos[0].pueblo, "Arequito");
+  // la búsqueda por palabra también encuentra el pueblo
+  assert.equal(await total("q=sanford"), 1);
+});
+
+test("el panel edita todo: datos, y fotos (sacar, agregar, reordenar)", async () => {
+  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
+  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const HA = { ...H, cookie };
+  const creado = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: HA, body: JSON.stringify(aviso({ titulo: "Para editar", fotos: [PNG, PNG] })) })).json();
+  assert.equal(creado.fotos.length, 2);
+  const [f1, f2] = creado.fotos as string[];
+
+  // reordena, saca ninguna y agrega una nueva; cambia título, zona y datos
+  const r = await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, {
+    method: "PUT", headers: HA,
+    body: JSON.stringify(aviso({ titulo: "Editado completo", zona: "Barrio Norte", datos: ["Impecable"], precio: "7000", fotos: [f2, PNG, f1] })),
+  });
+  assert.equal(r.status, 200);
+  const e = await r.json();
+  assert.equal(e.titulo, "Editado completo");
+  assert.equal(e.zona, "Barrio Norte");
+  assert.deepEqual(e.datos, ["Impecable"]);
+  assert.equal(e.fotos.length, 3);
+  assert.equal(e.fotos[0], f2);
+  assert.equal(e.fotos[2], f1);
+
+  // saca dos fotos: las viejas se borran del disco
+  const r2 = await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, { method: "PUT", headers: HA, body: JSON.stringify(aviso({ titulo: "Editado completo", fotos: [f1] })) });
+  const e2 = await r2.json();
+  assert.deepEqual(e2.fotos, [f1]);
+  assert.equal((await fetch(`${URL_BASE}${f1}`)).status, 200);
+  assert.equal((await fetch(`${URL_BASE}${f2}`)).status, 404);
+
+  // no se pueden "robar" fotos de otro aviso ni sin sesión
+  const otra = await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, { method: "PUT", headers: HA, body: JSON.stringify(aviso({ fotos: ["/fotos/vehiculo-ejemplo.jpg"] })) });
+  assert.equal(otra.status, 400);
+  assert.equal((await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, { method: "PUT", headers: H, body: JSON.stringify(aviso()) })).status, 401);
+});
+
+test("baja todas las fotos de un aviso en un zip, solo con sesión", async () => {
+  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
+  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const creado = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: { ...H, cookie }, body: JSON.stringify(aviso({ fotos: [PNG, PNG, PNG] })) })).json();
+  assert.equal((await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}/fotos.zip`)).status, 401);
+  const r = await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}/fotos.zip`, { headers: { cookie } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "application/zip");
+  const zip = Buffer.from(await r.arrayBuffer());
+  assert.equal(zip.readUInt32LE(0), 0x04034b50);
+  assert.equal(zip.readUInt16LE(zip.length - 22 + 10), 3, "3 fotos adentro");
+  assert.ok(zip.includes(Buffer.from(`aviso-${creado.id}-foto-1.png`)));
+});
+
+test("la copia de seguridad trae la base y las fotos, solo con sesión", async () => {
+  assert.equal((await fetch(`${URL_BASE}/api/admin/copia`)).status, 401);
+  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
+  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const r = await fetch(`${URL_BASE}/api/admin/copia`, { headers: { cookie } });
+  assert.equal(r.status, 200);
+  const zip = Buffer.from(await r.arrayBuffer());
+  assert.ok(zip.includes(Buffer.from("vidriera.db")));
+  assert.ok(zip.includes(Buffer.from("SQLite format 3")));
+  assert.ok(zip.readUInt16LE(zip.length - 22 + 10) > 5, "base + fotos");
+});
+
+test("pedidos raros no rompen el servidor", async () => {
+  assert.equal((await fetch(`${URL_BASE}/fotos/%E0%A4%A`)).status, 404);
+  assert.equal((await fetch(`${URL_BASE}/api/admin/sesion`, { headers: { cookie: "vidriera_sesion=%E0%A4%A" } })).status, 200);
+  const r = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: { ...H, origin: "null" }, body: "{}" });
+  assert.equal(r.status, 403);
+  const otro = await fetch(`${URL_BASE}/api/publicaciones`, { method: "POST", headers: { ...H, origin: "https://otro-sitio.com" }, body: "{}" });
+  assert.equal(otro.status, 403);
+});
+
+test("una sesión inventada no entra al panel", async () => {
+  const r = await fetch(`${URL_BASE}/api/admin/avisos`, { headers: { ...H, cookie: "vidriera_sesion=inventado123" } });
+  assert.equal(r.status, 401);
 });
 
 test("no deja salir de las carpetas públicas", async () => {

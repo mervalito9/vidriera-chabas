@@ -1,8 +1,7 @@
-import type { Pueblo, Rubro, RubroId } from "./tipos.ts";
+import type { Rubro, RubroId } from "./tipos.ts";
 
 /**
- * WhatsApp que recibe los avisos para publicar, los "Avisame cuando aparezca"
- * y los pedidos de pueblos nuevos. Solo números: 549 + código de área sin 0 + número sin 15.
+ * WhatsApp que recibe los avisos para publicar y los "Avisame cuando aparezca". Solo números: 549 + código de área sin 0 + número sin 15.
  * Si queda vacío (""), el sitio muestra "Falta configurar el WhatsApp" en vez de un link roto.
  */
 export const WA_NUMERO = "5493464593621";
@@ -17,7 +16,7 @@ export const LIMITES = {
   nombre: 40,
   fotos: 8,
   /** tamaño máximo de cada foto ya achicada, en bytes */
-  fotoBytes: 2_500_000,
+  fotoBytes: 1_200_000,
   /** lado más largo al que se achican las fotos en el navegador */
   fotoLado: 1600,
 } as const;
@@ -54,15 +53,19 @@ export const RUBROS: Record<RubroId, Rubro> = {
 
 export const RUBRO_IDS = Object.keys(RUBROS) as RubroId[];
 
-/** Pueblos que todavía no están activos: se muestran como "Próximamente". */
-export const PUEBLOS_PROXIMOS: readonly Pueblo[] = [
-  { slug: "casilda", nombre: "Casilda" },
-  { slug: "firmat", nombre: "Firmat" },
-  { slug: "sanford", nombre: "Sanford" },
-  { slug: "villada", nombre: "Villada" },
-  { slug: "arequito", nombre: "Arequito" },
-  { slug: "otro", nombre: "Otro pueblo" },
-];
+/**
+ * Pueblos de la zona. Es la única lista: de acá salen el filtro de pueblo y el campo "¿Dónde está?" al publicar.
+ * Chabás va primero (es el pueblo principal). Para sumar un pueblo, agregá su nombre al final y subí el cambio.
+ * "Otro" se agrega solo: es para avisos de pueblos que no están en la lista.
+ */
+export const PUEBLOS: readonly string[] = ["Chabás", "Casilda", "Firmat", "Sanford", "Villada"];
+
+/** Valor del filtro para "Otro": avisos de pueblos que no están en PUEBLOS. */
+export const OTRO_PUEBLO = "otro";
+
+/** Nombre para mostrar del lugar que se está filtrando. */
+export const lugarDe = (pueblo: string): string =>
+  !pueblo ? "Chabás y la zona" : pueblo === OTRO_PUEBLO ? "otros pueblos de la zona" : pueblo;
 
 /** Botones rápidos de cada listado. La clave es "alquiler", "venta" o el tipo en minúsculas sin tildes. */
 export const ATAJOS: Record<RubroId | "todo", ReadonlyArray<readonly [string, string]>> = {

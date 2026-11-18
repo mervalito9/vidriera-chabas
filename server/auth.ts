@@ -18,13 +18,14 @@ export function hashearClave(clave: string): string {
 export function claveCorrecta(clave: string): boolean {
   const guardado = process.env.ADMIN_PASSWORD_HASH ?? "";
   const [alg, salHex, hashHex] = guardado.split(":");
-  if (alg !== "scrypt" || !salHex || !hashHex) return false;
+  if (alg !== "scrypt" || !salHex || !hashHex || hashHex.length < 64) return false;
   const esperado = Buffer.from(hashHex, "hex");
   const calculado = scryptSync(clave, Buffer.from(salHex, "hex"), esperado.length);
   return timingSafeEqual(esperado, calculado);
 }
 
-const sha = (t: string): string => createHash("sha256").update(t).digest("hex");
+/** El token se guarda hasheado junto con la contraseña actual: si cambiás la contraseña, todas las sesiones viejas dejan de servir. */
+const sha = (t: string): string => createHash("sha256").update(t).update("|").update(process.env.ADMIN_PASSWORD_HASH ?? "").digest("hex");
 
 export function iniciarSesion(res: ServerResponse): void {
   const token = randomBytes(32).toString("base64url");

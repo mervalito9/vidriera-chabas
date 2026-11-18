@@ -57,7 +57,7 @@ function avisosDemo(): AvisoPublico[] {
     const publicado = new Date(Date.now() - e.dias * 864e5);
     return {
       id: i + 1, rubro: e.rubro, tipo: e.tipo, operacion: e.operacion, titulo: e.titulo, precio: e.precio, moneda: e.moneda,
-      pueblo: "Chabás", zona: e.zona ?? "", descripcion: e.descripcion ?? "", datos: e.datos ?? [], permuta: !!e.permuta, financia: !!e.financia,
+      pueblo: e.pueblo, zona: e.zona ?? "", descripcion: e.descripcion ?? "", datos: e.datos ?? [], permuta: !!e.permuta, financia: !!e.financia,
       fotos: [`assets/img/${e.foto}`], ejemplo: true, publicadoEn: publicado.toISOString(),
       venceEn: new Date(publicado.getTime() + DIAS_VIGENCIA * 864e5).toISOString(), precioAnterior: null,
     };
@@ -76,7 +76,7 @@ const aQuery = (f: Partial<Filtros>, limite: number, desde: number): string => {
   return q.toString();
 };
 
-const FILTROS_VACIOS: Filtros = { rubro: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "" };
+const FILTROS_VACIOS: Filtros = { rubro: "", pueblo: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "" };
 
 export async function listarAvisos(f: Partial<Filtros>, limite: number, desde = 0): Promise<ListaAvisos> {
   if (await conServidor()) return pedir<ListaAvisos>("GET", `avisos?${aQuery(f, limite, desde)}`);
@@ -115,7 +115,8 @@ export const admin = {
   salir: () => pedir<{ ok: boolean }>("POST", "admin/logout", {}),
   sesion: () => pedir<{ ok: boolean }>("GET", "admin/sesion"),
   avisos: (estado: Estado | "") => pedir<AvisoAdmin[]>("GET", `admin/avisos?estado=${estado}`),
-  crear: (a: NuevoAviso) => pedir<AvisoAdmin>("POST", "admin/avisos", a),
+  crear: (a: NuevoAviso, pendiente = false) => pedir<AvisoAdmin>("POST", pendiente ? "admin/avisos?estado=pendiente" : "admin/avisos", a),
+  editar: (id: number, a: NuevoAviso) => pedir<AvisoAdmin>("PUT", `admin/avisos/${id}`, a),
   cambiar: (id: number, c: Record<string, unknown>) => pedir<AvisoAdmin>("PATCH", `admin/avisos/${id}`, c),
   borrar: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/avisos/${id}`),
   busquedas: () => pedir<Busqueda[]>("GET", "admin/busquedas"),

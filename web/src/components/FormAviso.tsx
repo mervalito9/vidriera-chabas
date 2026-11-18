@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { LIMITES, RUBRO_IDS, RUBROS } from "../../../shared/config.ts";
+import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../shared/config.ts";
 import { fmtNum, soloDigitos } from "../../../shared/texto.ts";
 import type { ErrorCampo, NuevoAviso, RubroId } from "../../../shared/tipos.ts";
 import { validarAviso } from "../../../shared/validar.ts";
@@ -19,13 +19,22 @@ export interface ValoresForm {
   nombre: string;
   telefono: string;
   fotos: string[];
+  /** ¿Dónde está? Uno de PUEBLOS, "otro" (y entonces vale puebloOtro) o "" si todavía no eligió */
+  pueblo: string;
+  puebloOtro: string;
+  /** Solo el panel los usa: barrio o zona, y datos destacados separados por coma */
+  zona: string;
+  datos: string;
 }
 
 export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
-  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [],
+  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "",
 });
 
-export const aNuevoAviso = (v: ValoresForm): unknown => ({ ...v, precio: v.precio, datos: [], zona: "" });
+/** El pueblo que quedó elegido (el de la lista o el que escribió en "Otro"). */
+export const puebloElegido = (v: ValoresForm): string => (v.pueblo === OTRO_PUEBLO ? v.puebloOtro.trim() : v.pueblo);
+
+export const aNuevoAviso = (v: ValoresForm): unknown => ({ ...v, pueblo: puebloElegido(v), precio: v.precio, datos: v.datos.split(",").map((d) => d.trim()).filter(Boolean), zona: v.zona });
 
 /** Mensaje de WhatsApp con todos los datos (se usa cuando no hay servidor o si la persona prefiere mandarlo así). */
 export function mensajeWhatsApp(v: ValoresForm): string {
@@ -33,12 +42,12 @@ export function mensajeWhatsApp(v: ValoresForm): string {
   const L = ["Hola! Quiero publicar un aviso en Vidriera Chabás.", ""];
   L.push(`Rubro: ${r?.nombre ?? "-"}`, `Tipo: ${v.tipo || "-"}`);
   if (v.rubro === "inmuebles") L.push(`Operación: ${v.operacion === "alquiler" ? "Alquiler" : "Venta"}`);
-  L.push(`Título: ${v.titulo.trim() || "-"}`);
+  L.push(`Título: ${v.titulo.trim() || "-"}`, `Dónde está: ${puebloElegido(v) || "-"}`);
   const p = soloDigitos(v.precio);
   L.push(`Precio: ${p ? `${fmtNum(Number(p))} ${v.moneda === "ARS" ? "Pesos ($)" : "Dólares (USD)"}${v.operacion === "alquiler" && v.rubro === "inmuebles" ? " por mes" : ""}` : "A consultar"}`);
   if (v.permuta) L.push("Acepta permuta: Sí");
   if (v.financia) L.push("Financia: Sí");
-  L.push(`Descripción: ${v.descripcion.trim() || "-"}`, "Pueblo: Chabás", `Nombre: ${v.nombre.trim() || "-"}`, `WhatsApp para que me contacten: ${soloDigitos(v.telefono) || "-"}`, "", "Ahora te mando las fotos por acá.");
+  L.push(`Descripción: ${v.descripcion.trim() || "-"}`, `Nombre: ${v.nombre.trim() || "-"}`, `WhatsApp para que me contacten: ${soloDigitos(v.telefono) || "-"}`, "", "Ahora te mando las fotos por acá.");
   return L.join("\n");
 }
 
@@ -52,9 +61,11 @@ interface Props {
   erroresServidor: ErrorCampo[];
   textoBoton: string;
   pie?: ReactNode;
+  /** En el panel: muestra zona y datos destacados */
+  avanzado?: boolean;
 }
 
-export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviando, erroresServidor, textoBoton, pie }: Props) {
+export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviando, erroresServidor, textoBoton, pie, avanzado }: Props) {
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
   const [procesando, setProcesando] = useState(false);
   const [errFoto, setErrFoto] = useState("");
@@ -82,12 +93,22 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
     set("fotos", [...v.fotos, ...nuevas].slice(0, LIMITES.fotos));
   };
 
+  const moverFoto = (i: number, a: number) => {
+    if (a < 0 || a >= v.fotos.length) return;
+    const lista = [...v.fotos];
+    const [f] = lista.splice(i, 1);
+    if (f !== undefined) lista.splice(a, 0, f);
+    set("fotos", lista);
+  };
+
   const enviar = (e: FormEvent) => {
     e.preventDefault();
     const r = validarAviso(aNuevoAviso(v), { exigirFotos });
     setErrores(r.errores);
     if (!r.ok) {
-      document.getElementById(r.errores[0]?.campo === "rubro" ? "rubro-inmuebles" : `f-${r.errores[0]?.campo}`)?.focus();
+      const campo = r.errores[0]?.campo;
+      const id = campo === "rubro" ? "rubro-inmuebles" : campo === "pueblo" && v.pueblo === OTRO_PUEBLO ? "f-pueblo-otro" : campo === "pueblo" ? "f-pueblo" : `f-${campo}`;
+      document.getElementById(id)?.focus();
       return;
     }
     onEnviar(r.valor);
@@ -137,6 +158,27 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         {err("titulo") && <p className="err">{err("titulo")}</p>}
       </div>
 
+      <fieldset className="donde">
+        <legend id="puebloL">¿Dónde está?</legend>
+        <p className="small">El pueblo donde está lo que publicás, aunque vos vivas en otro.</p>
+        <div className="pueblo-pick" role="radiogroup" aria-labelledby="puebloL" aria-invalid={!!err("pueblo") || undefined}>
+          {[...PUEBLOS, OTRO_PUEBLO].map((p, i) => (
+            <label key={p}>
+              <input type="radio" name="pueblo" id={i === 0 ? "f-pueblo" : undefined} value={p} checked={v.pueblo === p} onChange={() => set("pueblo", p)} />
+              <span>{p === OTRO_PUEBLO ? "Otro (escribilo)" : p}</span>
+            </label>
+          ))}
+        </div>
+        {v.pueblo === OTRO_PUEBLO && (
+          <div className="pueblo-otro">
+            <label className="lbl" htmlFor="f-pueblo-otro">Nombre del pueblo</label>
+            <input id="f-pueblo-otro" type="text" maxLength={40} autoComplete="off" placeholder="Ej: Arequito" value={v.puebloOtro}
+              aria-invalid={!!err("pueblo") || undefined} onChange={(e) => { onCambio({ ...v, puebloOtro: e.target.value }); setErrores(errores.filter((x) => x.campo !== "pueblo")); }} />
+          </div>
+        )}
+        {err("pueblo") && <p className="err">{err("pueblo")}</p>}
+      </fieldset>
+
       <div className="dos-col">
         <div>
           <label className="lbl" htmlFor="f-precio">Precio <span className="opc">(solo números)</span></label>
@@ -168,6 +210,13 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
             <div key={i} className="foto-mini">
               <img src={f} alt={`Foto ${i + 1}`} />
               <button type="button" aria-label={`Sacar foto ${i + 1}`} onClick={() => set("fotos", v.fotos.filter((_, j) => j !== i))}>×</button>
+              {i === 0 && <span className="foto-tapa">Tapa</span>}
+              {v.fotos.length > 1 && (
+                <span className="foto-mover">
+                  <button type="button" aria-label={`Mover la foto ${i + 1} a la izquierda`} disabled={i === 0} onClick={() => moverFoto(i, i - 1)}>‹</button>
+                  <button type="button" aria-label={`Mover la foto ${i + 1} a la derecha`} disabled={i === v.fotos.length - 1} onClick={() => moverFoto(i, i + 1)}>›</button>
+                </span>
+              )}
             </div>
           ))}
           {v.fotos.length < LIMITES.fotos && (
@@ -177,9 +226,22 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
           )}
         </div>
         <input id="f-fotos" className="sr" type="file" accept="image/*" multiple onChange={(e) => { void agregarFotos(e.target.files); e.target.value = ""; }} />
-        <p className="small">Hasta {LIMITES.fotos} fotos, con luz de día. La primera es la de tapa.</p>
+        <p className="small">Hasta {LIMITES.fotos} fotos, con luz de día. La primera es la de tapa; con las flechas ‹ › cambiás el orden.</p>
         {(err("fotos") || errFoto) && <p className="err">{err("fotos") || errFoto}</p>}
       </fieldset>
+
+      {avanzado && (
+        <div className="dos-col">
+          <div>
+            <label className="lbl" htmlFor="f-zona">Zona o barrio <span className="opc">(opcional)</span></label>
+            <input id="f-zona" type="text" maxLength={60} autoComplete="off" value={v.zona} onChange={(e) => set("zona", e.target.value)} />
+          </div>
+          <div>
+            <label className="lbl" htmlFor="f-datos">Datos destacados <span className="opc">(separados por coma)</span></label>
+            <input id="f-datos" type="text" maxLength={200} placeholder="Ej: 2 dormitorios, cochera, patio" autoComplete="off" value={v.datos} onChange={(e) => set("datos", e.target.value)} />
+          </div>
+        </div>
+      )}
 
       <fieldset>
         <legend>4. Tus datos</legend>

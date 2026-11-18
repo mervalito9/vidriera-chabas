@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent, type MouseEvent } from "react";
-import { RUBRO_IDS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
-import { plural } from "../../../shared/texto.ts";
+import { PUEBLOS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
+import { plural, slug } from "../../../shared/texto.ts";
 import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
 import { listarAvisos } from "../api.ts";
 import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
@@ -9,27 +9,31 @@ import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
+/** Foco en inmuebles y vehículos: la maquinaria agro está presente pero chica (botón aparte, sin sección propia). */
+const PRINCIPALES = ["inmuebles", "vehiculos"] as const;
+
 const EXPLORAR = [
   ["inmuebles", "casa", "ejemplo-casa", "Casas"],
-  ["inmuebles", "alquiler", "ejemplo-departamento", "Alquileres"],
+  ["inmuebles", "alquiler", "ejemplo-local", "Alquileres"],
+  ["inmuebles", "departamento", "ejemplo-departamento", "Deptos"],
   ["inmuebles", "terreno", "ejemplo-terreno", "Terrenos"],
   ["inmuebles", "galpon-o-local", "ejemplo-galpon", "Galpones y locales"],
   ["vehiculos", "auto", "ejemplo-auto", "Autos"],
   ["vehiculos", "camioneta-o-utilitario", "ejemplo-camioneta", "Camionetas"],
   ["vehiculos", "moto", "ejemplo-moto", "Motos"],
-  ["agro", "", "ejemplo-tractor", "Maquinaria agro"],
 ] as const;
 
-const CINTA = ["Casas", "Alquileres", "Terrenos", "Galpones y locales", "Autos", "Camionetas", "Motos", "Tractores", "Cosechadoras", "Herramientas"];
+const CINTA = ["Casas", "Alquileres", "Departamentos", "Terrenos", "Galpones y locales", "Autos", "Camionetas", "Utilitarios", "Motos"];
 
 export function Inicio() {
   useTitulo("");
   const lista = useCarga(() => listarAvisos({}, 60), []);
   const datos = lista.estado === "listo" ? lista.datos : null;
   const soloEjemplos = datos?.soloEjemplos ?? true;
+  // Con ejemplos: 3 inmuebles y 3 vehículos intercalados. Con avisos reales: los 6 más nuevos.
   const muestra = datos
     ? soloEjemplos
-      ? RUBRO_IDS.map((r) => datos.avisos.find((a) => a.rubro === r)).filter((a) => a !== undefined)
+      ? [0, 1, 2].flatMap((i) => PRINCIPALES.map((r) => datos.avisos.filter((a) => a.rubro === r)[i])).filter((a) => a !== undefined)
       : datos.avisos.slice(0, 6)
     : [];
   const rExplorar = useAparecer<HTMLElement>();
@@ -43,14 +47,14 @@ export function Inicio() {
       <section className="hero">
         <div className="wrap hero-in">
           <div className="hero-txt">
-            <h1>Casas, vehículos y maquinaria agro de Chabás.</h1>
+            <h1>Casas, autos y más de Chabás y la zona.</h1>
             <p className="sub">Publicá gratis. Hablá directo con el dueño.</p>
             <div className="hero-btns">
               <a className="btn btn-dark" href={ir("buscar")}><IconoBuscar />Buscar</a>
               <a className="btn btn-main" href={ir("publicar")}><IconoMas />Publicar gratis</a>
             </div>
             <div className="rubros">
-              {RUBRO_IDS.map((r) => (
+              {PRINCIPALES.map((r) => (
                 <a key={r} className="rubro" href={ir(r)}>
                   <span className="circ"><IconoRubro rubro={r} /></span>
                   <span className="txt">
@@ -59,6 +63,7 @@ export function Inicio() {
                   </span>
                 </a>
               ))}
+              <a className="rubro-chico" href={ir("agro")}>También: <b>{RUBROS.agro.nombre}</b>{datos && !soloEjemplos ? ` (${datos.conteo.agro})` : ""} →</a>
             </div>
             <ul className="confianza"><li>Gratis</li><li>Sin comisión</li><li>Sin intermediarios</li></ul>
           </div>
@@ -68,6 +73,11 @@ export function Inicio() {
 
       <section className="wrap explorar" aria-labelledby="explorar" ref={rExplorar}>
         <div className="sec-h"><h2 id="explorar">Explorá la vidriera</h2><a href={ir("buscar")}>Ver todo</a></div>
+        <nav className="por-pueblo" aria-label="Avisos por pueblo">
+          <span>Por pueblo:</span>
+          {PUEBLOS.map((p) => <a key={p} className="chip" href={ir("pueblo", slug(p))}>{p}</a>)}
+          <a className="chip" href={ir("pueblo", "otro")}>Otro</a>
+        </nav>
         <div className="tiles">
           {EXPLORAR.map(([rubro, atajo, img, nombre]) => (
             <a key={nombre} className="tile" href={ir(rubro, atajo)}>
@@ -93,7 +103,7 @@ export function Inicio() {
           <div className="arr-btns">
             <a className="btn btn-main" href={ir("publicar", "inmuebles")}>Publicar una casa o alquiler</a>
             <a className="btn btn-crema" href={ir("publicar", "vehiculos")}>Publicar un vehículo</a>
-            <a className="btn btn-crema" href={ir("publicar", "agro")}>Publicar maquinaria agro</a>
+            <a className="arr-chico" href={ir("publicar", "agro")}>¿Maquinaria agro? Publicala acá</a>
           </div>
           <div className="ticker" aria-hidden="true">
             <div className="ticker-in">{[...CINTA, ...CINTA].map((c, i) => <span key={i}>{c}</span>)}</div>
@@ -131,7 +141,7 @@ export function Inicio() {
             <p>La idea es simple:</p>
           </div>
           <ul className="objetivos">
-            <li><b>Que esté todo en un lugar.</b><span>Casas, alquileres, autos, motos y maquinaria del pueblo, para comprar o alquilar.</span></li>
+            <li><b>Que esté todo en un lugar.</b><span>Casas, alquileres, autos y motos de Chabás y la zona (y también maquinaria agro), para comprar o alquilar.</span></li>
             <li><b>Que los precios estén a la vista.</b><span>Así sabés cuánto se pide antes de preguntar, y podés comparar.</span></li>
             <li><b>Armar un historial de precios.</b><span>Para ver cuánto se pide por un alquiler, un terreno o un tractor, y cómo va cambiando. Ya lo estamos guardando.</span></li>
             <li><b>Que sea gratis y directo entre vecinos.</b><span>Sin comisiones y sin vueltas.</span></li>
@@ -166,9 +176,9 @@ function Telefono() {
         </div>
         <div className="scene s2">
           <div className="mini-top"><img src="assets/img/logo-horizontal-claro.svg" alt="" width={120} height={26} /></div>
-          <p className="mini-h">Inmuebles en Chabás</p>
+          <p className="mini-h">Inmuebles · Chabás y la zona</p>
           <div className="mini-card nuevo"><img src="assets/img/ejemplo-casa.svg" alt="" width={640} height={420} /><span className="mini-tag">Nuevo</span><b>USD 68.000</b><small>Tu casa · Chabás</small></div>
-          <div className="mini-card tenue"><img src="assets/img/ejemplo-terreno.svg" alt="" width={640} height={420} /><b>USD 14.500</b><small>Terreno · Chabás</small></div>
+          <div className="mini-card tenue"><img src="assets/img/ejemplo-terreno.svg" alt="" width={640} height={420} /><b>USD 14.500</b><small>Terreno · Casilda</small></div>
         </div>
         <div className="scene s3">
           <div className="wa-top"><span className="wa-av" />Nuevo mensaje</div>

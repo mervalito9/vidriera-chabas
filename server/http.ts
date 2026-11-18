@@ -70,17 +70,29 @@ export async function leerJson(req: IncomingMessage, maxBytes: number): Promise<
 export function leerCookie(req: IncomingMessage, nombre: string): string {
   for (const par of (req.headers.cookie ?? "").split(";")) {
     const [k, ...v] = par.trim().split("=");
-    if (k === nombre) return decodeURIComponent(v.join("="));
+    if (k === nombre) {
+      try {
+        return decodeURIComponent(v.join("="));
+      } catch {
+        return "";
+      }
+    }
   }
   return "";
 }
 
-/** IP del visitante. Detrás de un proxy (Caddy, Nginx, Cloudflare) poné TRUST_PROXY=1. */
+/**
+ * IP del visitante. En Railway todo llega por su proxy: sin esto, todos los visitantes compartirían la misma IP
+ * y los límites (publicar, contactar, login) serían para todo el sitio junto.
+ * Railway pisa X-Real-IP con la IP real en cada pedido (el visitante no lo puede falsificar).
+ * Fuera de Railway, detrás de otro proxy, poné TRUST_PROXY=1.
+ */
+const EN_RAILWAY = !!(process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY_ENVIRONMENT_NAME);
 export function ipDe(req: IncomingMessage): string {
-  if (process.env.TRUST_PROXY === "1") {
-    const xf = req.headers["x-forwarded-for"];
-    const primera = (Array.isArray(xf) ? xf[0] : xf)?.split(",")[0]?.trim();
-    if (primera) return primera;
+  if (EN_RAILWAY || process.env.TRUST_PROXY === "1") {
+    const real = req.headers["x-real-ip"];
+    const ip = (Array.isArray(real) ? real[0] : real)?.trim();
+    if (ip && /^[0-9a-fA-F:.]{3,45}$/.test(ip)) return ip;
   }
   return req.socket.remoteAddress ?? "?";
 }
@@ -96,6 +108,7 @@ export function crearLimitador(maximo: number, ventanaMs: number) {
     const ahora = Date.now();
     const g = golpes.get(clave);
     if (!g || ahora - g.desde > ventanaMs) {
+      if (golpes.size > 50_000) golpes.clear(); // tope de memoria ante un ataque con muchas IPs
       golpes.set(clave, { n: 1, desde: ahora });
       return;
     }
@@ -109,5 +122,10 @@ export function exigirMismoOrigen(req: IncomingMessage): void {
   if (req.headers["x-vidriera"] !== "1") throw new ErrorHttp(403, "Pedido no permitido.");
   const origen = req.headers.origin;
   const host = req.headers.host;
-  if (origen && host && new URL(origen).host !== host) throw new ErrorHttp(403, "Pedido no permitido.");
+  if (!origen) return;
+  let hostOrigen = "";
+  try {
+    hostOrigen = new URL(origen).host;
+  } catch { /* "null" u otro valor raro */ }
+  if (!host || hostOrigen !== host) throw new ErrorHttp(403, "Pedido no permitido.");
 }

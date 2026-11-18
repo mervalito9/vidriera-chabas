@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type DependencyList, type RefObject } from
 /** Cambia el título de la pestaña. */
 export function useTitulo(titulo: string): void {
   useEffect(() => {
-    document.title = titulo ? `${titulo} · Vidriera Chabás` : "Vidriera Chabás · Casas, vehículos y maquinaria agro de Chabás";
+    document.title = titulo ? `${titulo} · Vidriera Chabás` : "Vidriera Chabás · Casas, autos y más de Chabás y la zona";
   }, [titulo]);
 }
 
