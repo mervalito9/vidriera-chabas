@@ -209,7 +209,24 @@ details.mas-filtros[open] > summary::after { content: "–"; }
 /* ---------- aviso ---------- */
 .aviso-grid { display: grid; gap: 22px; margin-top: 6px; }
 .foto-main { position: relative; border-radius: 22px; overflow: hidden; background: var(--crema-2); box-shadow: var(--sombra); }
-.foto-main img { width: 100%; height: auto; aspect-ratio: 32/21; object-fit: cover; }
+.foto-main { aspect-ratio: 4 / 3; background: #1d1b16; }
+.foto-main .foto-fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(24px) brightness(.55); transform: scale(1.15); }
+.foto-abrir { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: zoom-in; display: block; width: 100%; height: 100%; }
+.foto-abrir img { width: 100%; height: 100%; object-fit: contain; }
+.foto-lupa { position: absolute; right: 12px; bottom: 12px; background: rgba(23,21,15,.7); color: #fff; font: 600 .82rem var(--sans); padding: 6px 10px; border-radius: 999px; pointer-events: none; }
+.foto-num { position: absolute; left: 12px; bottom: 12px; background: rgba(23,21,15,.7); color: #fff; font: 700 .82rem var(--sans); padding: 6px 10px; border-radius: 999px; pointer-events: none; }
+.foto-flecha { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(251,248,241,.9); color: var(--tinta); font-size: 1.8rem; line-height: 1; cursor: pointer; box-shadow: var(--sombra); }
+.foto-flecha.izq { left: 10px; } .foto-flecha.der { right: 10px; }
+.visor { position: fixed; inset: 0; z-index: 100; background: rgba(10,9,7,.96); display: grid; place-items: center; overflow: hidden; touch-action: pinch-zoom; }
+.visor img { max-width: 100vw; max-height: 100vh; width: auto; height: auto; object-fit: contain; cursor: zoom-in; transition: transform .2s ease; user-select: none; }
+.visor img.con-zoom { cursor: zoom-out; transition: transform .05s linear; }
+.visor-cerrar, .visor-flecha { position: absolute; border: 0; border-radius: 50%; background: rgba(251,248,241,.14); color: #fff; cursor: pointer; width: 52px; height: 52px; font-size: 1.6rem; line-height: 1; }
+.visor-cerrar { top: 14px; right: 14px; font-size: 1.3rem; }
+.visor-flecha { top: 50%; transform: translateY(-50%); font-size: 2.2rem; }
+.visor-flecha.izq { left: 14px; } .visor-flecha.der { right: 14px; }
+.visor-cerrar:hover, .visor-flecha:hover { background: rgba(251,248,241,.28); }
+.visor-pie { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,.8); font: 600 .9rem var(--sans); margin: 0; pointer-events: none; }
+@media (max-width: 600px) { .visor-flecha { width: 44px; height: 44px; } .foto-lupa { display: none; } }
 .thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .thumbs button { padding: 0; border: 3px solid transparent; border-radius: 12px; overflow: hidden; width: 96px; cursor: pointer; background: none; }
 .thumbs button[aria-current=true] { border-color: var(--terra); }

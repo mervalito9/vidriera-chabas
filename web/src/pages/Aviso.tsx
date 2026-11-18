@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as PE } from "react";
 import { RUBROS } from "../../../shared/config.ts";
 import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
@@ -31,6 +31,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
   const R = RUBROS[a.rubro];
   const fotos = a.fotos.map(fotoSegura).filter(Boolean);
   const [foto, setFoto] = useState(0);
+  const [grande, setGrande] = useState(false);
   const otros = useCarga(() => listarAvisos({ rubro: a.rubro }, 4), [a.id]);
   const meta = [a.tipo, a.operacion === "alquiler" ? "Alquiler" : "Venta", a.zona].filter(Boolean).join(" · ");
   const bajo = a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior;
@@ -43,9 +44,23 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
       <div className="aviso-grid">
         <div className="galeria">
           <div className="foto-main">
-            {fotos[foto] ? <img src={fotos[foto]} alt={`Foto del aviso: ${a.titulo}`} width={640} height={420} /> : <div className="sin-foto">Sin foto</div>}
+            {fotos[foto] ? (
+              <>
+                <img className="foto-fondo" src={fotos[foto]} alt="" aria-hidden="true" />
+                <button type="button" className="foto-abrir" aria-label="Ver la foto en grande" onClick={() => setGrande(true)}>
+                  <img src={fotos[foto]} alt={`Foto ${foto + 1} de ${fotos.length}: ${a.titulo}`} />
+                </button>
+                <span className="foto-lupa" aria-hidden="true">Tocá para agrandar</span>
+                {fotos.length > 1 && <>
+                  <button type="button" className="foto-flecha izq" aria-label="Foto anterior" onClick={() => setFoto((foto - 1 + fotos.length) % fotos.length)}>‹</button>
+                  <button type="button" className="foto-flecha der" aria-label="Foto siguiente" onClick={() => setFoto((foto + 1) % fotos.length)}>›</button>
+                  <span className="foto-num">{foto + 1} / {fotos.length}</span>
+                </>}
+              </>
+            ) : <div className="sin-foto">Sin foto</div>}
             {a.ejemplo && <span className="tag tag-ej big">Aviso de ejemplo</span>}
           </div>
+          {grande && fotos.length > 0 && <Visor fotos={fotos} inicial={foto} onCerrar={(i) => { setFoto(i); setGrande(false); }} />}
           {fotos.length > 1 && (
             <div className="thumbs">
               {fotos.map((f, i) => (
@@ -138,5 +153,52 @@ function Compartir({ a }: { a: AvisoPublico }) {
     <p className="compartir">
       <a className="btn btn-line" href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noopener noreferrer">Compartir por WhatsApp</a>
     </p>
+  );
+}
+
+/** Foto a pantalla completa: entera, con flechas, deslizar, teclado y zoom (tocar o rueda; en el celular también pellizcar). */
+function Visor({ fotos, inicial, onCerrar }: { fotos: string[]; inicial: number; onCerrar: (i: number) => void }) {
+  const [i, setI] = useState(inicial);
+  const [zoom, setZoom] = useState(1);
+  const [origen, setOrigen] = useState("50% 50%");
+  const toque = useRef<{ x: number; y: number } | null>(null);
+  const ir = (d: number) => { setZoom(1); setI((x) => (x + d + fotos.length) % fotos.length); };
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCerrar(i);
+      else if (e.key === "ArrowRight") ir(1);
+      else if (e.key === "ArrowLeft") ir(-1);
+    };
+    window.addEventListener("keydown", tecla);
+    const antes = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", tecla); document.body.style.overflow = antes; };
+  });
+  const punto = (e: PE<HTMLImageElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setOrigen(`${(((e.clientX - r.left) / r.width) * 100).toFixed(1)}% ${(((e.clientY - r.top) / r.height) * 100).toFixed(1)}%`);
+  };
+  return (
+    <div className="visor" role="dialog" aria-modal="true" aria-label="Fotos del aviso"
+      onClick={(e) => { if (e.target === e.currentTarget) onCerrar(i); }}
+      onPointerDown={(e) => { toque.current = { x: e.clientX, y: e.clientY }; }}
+      onPointerUp={(e) => {
+        const t = toque.current; toque.current = null;
+        if (!t || zoom > 1 || e.pointerType === "mouse") return;
+        const dx = e.clientX - t.x;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.clientY - t.y)) ir(dx < 0 ? 1 : -1);
+      }}
+      onWheel={(e) => setZoom((z) => Math.min(4, Math.max(1, z - e.deltaY * 0.002)))}>
+      <img key={fotos[i]} src={fotos[i]} alt={`Foto ${i + 1} de ${fotos.length}`} draggable={false}
+        className={zoom > 1 ? "con-zoom" : ""} style={{ transform: `scale(${zoom})`, transformOrigin: origen }}
+        onPointerMove={(e) => zoom > 1 && punto(e)}
+        onClick={(e) => { punto(e); setZoom((z) => (z > 1 ? 1 : 2.5)); }} />
+      <button type="button" className="visor-cerrar" aria-label="Cerrar" onClick={() => onCerrar(i)}>✕</button>
+      {fotos.length > 1 && <>
+        <button type="button" className="visor-flecha izq" aria-label="Foto anterior" onClick={() => ir(-1)}>‹</button>
+        <button type="button" className="visor-flecha der" aria-label="Foto siguiente" onClick={() => ir(1)}>›</button>
+      </>}
+      <p className="visor-pie">{i + 1} / {fotos.length} · {zoom > 1 ? "Tocá para alejar" : "Tocá la foto para acercar"}</p>
+    </div>
   );
 }
