@@ -719,7 +719,7 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .aviso-ojo { color: #7A5A12; }
 
 /* 18/11: portada más simple (sin vitrina ni dibujos), categorías como accesos, Reservado */
-.hero-solo { max-width: 760px; }
+.hero-solo .hero-txt { max-width: 760px; }
 .cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .cats > * { min-width: 0; }
 .cat { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 16px 18px; border-radius: 14px; background: var(--papel); box-shadow: var(--sombra); color: var(--tinta); font-weight: 700; text-decoration: none; transition: transform .2s ease, box-shadow .2s ease; }
@@ -743,3 +743,20 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 @media (min-width: 700px) { .lote-masa-campos { grid-template-columns: repeat(4, 1fr); } }
 .lote-cargar { justify-self: start; }
 .publica { margin: -4px 0 8px; }
+
+/* 18/11, ideas de V6: buscador grande, pestañas de avisos, datos como chips y antigüedad */
+.buscador { display: flex; gap: 8px; max-width: 620px; background: var(--papel); border-radius: 999px; padding: 6px; box-shadow: var(--sombra); margin: 4px 0 14px; }
+.buscador input { flex: 1; min-width: 0; border: 0; background: transparent; font: 500 1.08rem var(--sans); padding: 0 14px; outline: none; }
+.buscador input::-webkit-search-cancel-button { display: none; }
+.buscador:focus-within { box-shadow: 0 0 0 3px var(--terra-claro), var(--sombra); }
+.buscador .btn { min-height: 50px; padding-inline: 20px; }
+@media (max-width: 420px) { .buscador .btn span { display: none; } .buscador .btn { padding-inline: 16px; } }
+.publicar-home { margin-bottom: 18px; }
+.pestanas-home { display: flex; gap: 8px; overflow-x: auto; margin: 0 0 16px; padding-bottom: 2px; scrollbar-width: none; }
+.pestanas-home button { flex: none; border: 1px solid var(--crema-2); background: var(--papel); color: var(--tinta); font: 700 .95rem var(--sans); padding: 9px 16px; border-radius: 999px; cursor: pointer; }
+.pestanas-home button.activa { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.chips-datos { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; padding: 0; }
+.chips-datos li { background: var(--crema); color: var(--tinta-2); font: 600 .82rem/1 var(--sans); padding: 6px 9px; border-radius: 8px; white-space: nowrap; }
+.card-body { display: flex; flex-direction: column; flex: 1; }
+.card-pie { display: flex; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; font-size: .9rem; }
+@media (max-width: 699px) { .grid.mini .chips-datos li:nth-child(n+3) { display: none; } .grid.mini .chips-datos li { font-size: .74rem; padding: 5px 7px; } }

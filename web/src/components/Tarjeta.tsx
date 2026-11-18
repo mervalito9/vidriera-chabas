@@ -1,6 +1,6 @@
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
-import { fotoSegura, porMes, precioTexto } from "../formato.ts";
+import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
 
 export function Tarjeta({ aviso: a }: { aviso: AvisoPublico }) {
   const foto = fotoSegura(a.fotos[0] ?? "");
@@ -22,10 +22,14 @@ export function Tarjeta({ aviso: a }: { aviso: AvisoPublico }) {
           {porMes(a) && <span> por mes</span>}
         </p>
         <h3>{a.titulo}</h3>
-        <p className="meta">
-          <span className="lugar">{a.pueblo}</span> · {a.tipo}
-        </p>
+        {a.datos.length > 0 && (
+          <ul className="chips-datos">{a.datos.slice(0, 4).map((d) => <li key={d}>{d}</li>)}</ul>
+        )}
         {extras && <p className="perks">{extras}</p>}
+        <p className="meta card-pie">
+          <span className="lugar">{a.pueblo}</span>
+          <span>{hace(a.publicadoEn)}</span>
+        </p>
       </div>
     </a>
   );

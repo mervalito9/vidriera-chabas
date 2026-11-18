@@ -12,6 +12,12 @@ const PESTANAS = [["buscar", "Todo"], ["inmuebles", "Inmuebles"], ["vehiculos", 
 
 /** El pueblo elegido se mantiene al pasar de un rubro a otro (Inmuebles → Vehículos) mientras la página esté abierta. */
 let puebloRecordado = "";
+let textoInicial = "";
+/** La usa el buscador de la portada: abre el listado con ese texto ya escrito. */
+export function buscarDesdePortada(q: string): void {
+  textoInicial = q.trim().slice(0, 60);
+  window.location.hash = "#buscar";
+}
 const OPCIONES_PUEBLO: readonly (readonly [string, string])[] = [["", "Todos"], ...PUEBLOS.map((p) => [p, p] as const), [OTRO_PUEBLO, "Otro"]];
 
 /** Convierte un atajo ("alquiler", "moto", "galpon-o-local") en filtros. */
@@ -26,7 +32,11 @@ function aplicarAtajo(rubro: RubroId | "", atajo: string): Filtros {
 export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: string; pueblo?: string }) {
   const R = rubro ? RUBROS[rubro] : null;
   if (pueblo !== undefined) puebloRecordado = pueblo;
-  const [f, setF] = useState<Filtros>(() => ({ ...aplicarAtajo(rubro, atajo), pueblo: puebloRecordado }));
+  const [f, setF] = useState<Filtros>(() => {
+    const q = textoInicial;
+    textoInicial = "";
+    return { ...aplicarAtajo(rubro, atajo), pueblo: puebloRecordado, q };
+  });
   const lugar = lugarDe(f.pueblo);
   const titulo = R ? `${R.nombre} en ${lugar}` : f.pueblo ? `Avisos de ${lugar}` : "Todos los avisos de Chabás y la zona";
   useTitulo(titulo);
@@ -35,7 +45,9 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
   const [masAbierto, setMasAbierto] = useState(() => window.matchMedia?.("(min-width: 900px)").matches ?? false);
 
   // Si cambia la ruta (otro rubro u otro atajo), se reinician los filtros.
+  const primera = useRef(true);
   useEffect(() => {
+    if (primera.current) { primera.current = false; return; }
     const nuevo = aplicarAtajo(rubro, atajo);
     setF((v) => ({ ...nuevo, pueblo: v.pueblo }));
     setQEscrito("");

@@ -1,3 +1,4 @@
+import { useState, type FormEvent } from "react";
 import { PUEBLOS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
 import { plural, slug } from "../../../shared/texto.ts";
 import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
@@ -6,6 +7,7 @@ import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
 import { FaltaWhatsApp } from "../components/Pueblos.tsx";
 import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
+import { buscarDesdePortada } from "./Listado.tsx";
 import { ir } from "../router.ts";
 
 /** Foco en inmuebles y vehículos. Maquinaria agro sigue existiendo (se puede publicar y buscar) pero no está en la portada. */
@@ -40,10 +42,25 @@ export function Inicio() {
   const datos = lista.estado === "listo" ? lista.datos : null;
   const soloEjemplos = datos?.soloEjemplos ?? true;
   // Con ejemplos: 3 inmuebles y 3 vehículos. Con avisos reales: los 8 más nuevos, intercalando rubros, arriba de todo.
+  const [pestana, setPestana] = useState<"recientes" | "inmuebles" | "vehiculos" | "bajaron">("recientes");
+  const [texto, setTexto] = useState("");
+  const buscar = (e: FormEvent) => { e.preventDefault(); buscarDesdePortada(texto); };
+  const reales = datos && !soloEjemplos ? datos.avisos : [];
+  const bajaron = reales.filter((a) => a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior);
+  const PESTANAS = [
+    ["recientes", "Recientes", reales.length],
+    ["inmuebles", "Inmuebles", reales.filter((a) => a.rubro === "inmuebles").length],
+    ["vehiculos", "Vehículos", reales.filter((a) => a.rubro === "vehiculos").length],
+    ["bajaron", "Bajaron de precio", bajaron.length],
+  ] as const;
   const muestra = datos
     ? soloEjemplos
       ? [0, 1, 2].flatMap((i) => PRINCIPALES.map((r) => datos.avisos.filter((a) => a.rubro === r)[i])).filter((a) => a !== undefined)
-      : intercalar(datos.avisos, 8)
+      : pestana === "recientes"
+        ? intercalar(reales, 8)
+        : pestana === "bajaron"
+          ? bajaron.slice(0, 8)
+          : reales.filter((a) => a.rubro === pestana).slice(0, 8)
     : [];
   const rExplorar = useAparecer<HTMLElement>();
   const rVender = useAparecer<HTMLElement>();
@@ -54,9 +71,16 @@ export function Inicio() {
   const avisosBloque = (
     <section className="wrap ejemplos" aria-labelledby="ultTitulo" ref={rEjemplos}>
       <div className="sec-h">
-        <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : "Últimos avisos"}</h2>
+        <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : "Avisos"}</h2>
         {datos && !soloEjemplos && <a href={ir("buscar")}>Ver todos ({datos.total})</a>}
       </div>
+      {!soloEjemplos && PESTANAS.filter(([, , n]) => n > 0).length > 2 && (
+        <div className="pestanas-home" role="tablist" aria-label="Qué avisos mostrar">
+          {PESTANAS.filter(([, , n]) => n > 0).map(([id, nombre]) => (
+            <button key={id} type="button" role="tab" aria-selected={pestana === id} className={pestana === id ? "activa" : ""} onClick={() => setPestana(id)}>{nombre}</button>
+          ))}
+        </div>
+      )}
       {soloEjemplos && (
         <p className="nota-ejemplos"><span className="badge">Ejemplos</span> Todavía no hay avisos reales: estos son de muestra. ¡El tuyo puede ser el primero!</p>
       )}
@@ -75,10 +99,12 @@ export function Inicio() {
           <div className="hero-txt">
             <h1>Casas, autos y más de Chabás y la zona.</h1>
             <p className="sub">Publicá gratis. Hablá directo con el dueño.</p>
-            <div className="hero-btns">
-              <a className="btn btn-dark" href={ir("buscar")}><IconoBuscar />Buscar</a>
-              <a className="btn btn-main" href={ir("publicar")}><IconoMas />Publicar gratis</a>
-            </div>
+            <form className="buscador" role="search" onSubmit={buscar}>
+              <label className="sr" htmlFor="buscar-home">¿Qué buscás?</label>
+              <input id="buscar-home" type="search" maxLength={60} placeholder="¿Qué buscás? Casa, terreno, Hilux…" autoComplete="off" value={texto} onChange={(e) => setTexto(e.target.value)} />
+              <button type="submit" className="btn btn-dark"><IconoBuscar /><span>Buscar</span></button>
+            </form>
+            <a className="btn btn-main publicar-home" href={ir("publicar")}><IconoMas />Publicar gratis</a>
             <div className="rubros">
               {PRINCIPALES.map((r) => (
                 <a key={r} className="rubro" href={ir(r)}>

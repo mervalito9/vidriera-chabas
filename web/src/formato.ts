@@ -12,3 +12,15 @@ export const porMes = (a: Pick<AvisoPublico, "operacion" | "precio">): boolean =
 export function fotoSegura(ruta: string): string {
   return /^\/?(fotos|assets\/img)\/[A-Za-z0-9_\-]+\.(jpe?g|png|webp|svg)$/i.test(ruta) ? ruta : "";
 }
+
+/** "Hoy", "Ayer", "Hace 5 días", "Hace 3 semanas", "Hace 2 meses". */
+export function hace(iso: string): string {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const dias = Math.floor((Date.now() - t) / 864e5);
+  if (dias <= 0) return "Hoy";
+  if (dias === 1) return "Ayer";
+  if (dias < 14) return `Hace ${dias} días`;
+  if (dias < 60) return `Hace ${Math.floor(dias / 7)} semanas`;
+  return `Hace ${Math.floor(dias / 30)} meses`;
+}
