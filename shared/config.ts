@@ -14,6 +14,7 @@ export const LIMITES = {
   titulo: 80,
   descripcion: 1000,
   nombre: 40,
+  anunciante: 60,
   fotos: 8,
   /** tamaño máximo de cada foto ya achicada, en bytes */
   fotoBytes: 1_200_000,

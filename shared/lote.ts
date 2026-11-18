@@ -13,7 +13,7 @@ import { validarAviso } from "./validar.ts";
 
 const norm = (s: string): string => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9\s$]/g, " ").replace(/\s+/g, " ").trim();
 
-type Clave = "rubro" | "tipo" | "operacion" | "titulo" | "precio" | "moneda" | "pueblo" | "zona" | "descripcion" | "datos" | "permuta" | "financia" | "nombre" | "telefono" | "fotos" | "autorizacion";
+type Clave = "rubro" | "tipo" | "operacion" | "titulo" | "precio" | "moneda" | "pueblo" | "zona" | "descripcion" | "datos" | "permuta" | "financia" | "nombre" | "telefono" | "fotos" | "autorizacion" | "anunciante";
 const CLAVES: Record<string, Clave> = {
   rubro: "rubro", tipo: "tipo", operacion: "operacion", titulo: "titulo", precio: "precio", moneda: "moneda", pueblo: "pueblo",
   "zona o barrio": "zona", zona: "zona", barrio: "zona", descripcion: "descripcion", "datos destacados": "datos", datos: "datos",
@@ -21,6 +21,7 @@ const CLAVES: Record<string, Clave> = {
   "nombre del vendedor": "nombre", nombre: "nombre", vendedor: "nombre",
   "whatsapp del vendedor": "telefono", whatsapp: "telefono", telefono: "telefono", celular: "telefono",
   fotos: "fotos", "autorizacion del vendedor": "autorizacion", autorizacion: "autorizacion",
+  "publicado por": "anunciante", publica: "anunciante", anunciante: "anunciante", inmobiliaria: "anunciante",
 };
 
 export interface Ficha {
@@ -34,6 +35,8 @@ export interface Ficha {
 
 export interface FichaLista extends Ficha {
   aviso: NuevoAviso | null;
+  /** Lo que se pudo entender aunque tenga errores: sirve para abrirlo en el editor y completarlo. */
+  borrador: Omit<NuevoAviso, "rubro"> & { rubro: NuevoAviso["rubro"] | "" };
   errores: string[];
 }
 
@@ -104,14 +107,15 @@ export function fichaAAviso(f: Ficha): FichaLista {
   const datos = v("datos").split(/[,;]/).map((d) => d.trim()).filter(Boolean);
   const si = (k: Clave): boolean => /^(si|s)\b/.test(norm(v(k)));
   const aviso = {
-    rubro: rubro ?? "inmuebles", tipo: tipo ?? "", operacion: operacion || "venta", titulo: v("titulo"), precio: precioTxt, moneda, pueblo: v("pueblo"),
+    rubro: rubro ?? "inmuebles", tipo: tipo ?? "", operacion: operacion || "venta", titulo: v("titulo"), precio: precioTxt, moneda, pueblo: v("pueblo"), anunciante: v("anunciante"),
     zona: v("zona"), descripcion: v("descripcion"), datos, permuta: si("permuta"), financia: si("financia"), nombre: v("nombre"), telefono: v("telefono"), fotos: [],
   };
   const r = validarAviso(aviso, { exigirFotos: false });
   if (!r.ok) for (const e of r.errores) errores.push(e.msg);
   if (!f.campos.autorizacion || esVacio(f.campos.autorizacion)) faltan.push("autorización del vendedor");
   if (v("descripcion").length < 10) faltan.push("descripción");
-  return { ...f, avisos: [...f.avisos, ...faltan.map((x) => `Falta: ${x}`)], aviso: r.ok && !errores.length ? { ...r.valor, fotos: [] } : null, errores: [...new Set(errores)] };
+  const borrador = { ...r.valor, rubro: rubro ?? "", tipo: tipo ?? "", fotos: [] as string[] };
+  return { ...f, avisos: [...f.avisos, ...faltan.map((x) => `Falta: ${x}`)], aviso: r.ok && !errores.length ? { ...r.valor, fotos: [] } : null, borrador, errores: [...new Set(errores)] };
 }
 
 /** Clave "1-2" de un nombre de archivo de foto como "01-2.jpg" o "aviso 01 - 2.png". */

@@ -148,7 +148,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
       const r = validarAviso(await leerJson(req, MAX_CON_FOTOS), { exigirFotos: true });
       if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
       const archivos = guardarFotos(r.valor.fotos);
-      const id = datos.crearAviso(r.valor, archivos, { estado: "pendiente" });
+      const id = datos.crearAviso({ ...r.valor, anunciante: "" }, archivos, { estado: "pendiente" });
       return json(res, 201, { id });
     } finally {
       subidasEnCurso--;

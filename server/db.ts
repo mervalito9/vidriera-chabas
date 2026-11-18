@@ -76,7 +76,19 @@ CREATE TABLE IF NOT EXISTS sesiones (
 `);
 
 // Columnas agregadas después de crear la base: se suman solas si faltan.
-for (const [col, def] of [["pueblo", "TEXT NOT NULL DEFAULT 'Chabás'"], ["reservado", "INTEGER NOT NULL DEFAULT 0"]] as const) {
+// Preparado para cuentas de usuario: por ahora nadie inicia sesión, pero cada aviso ya puede quedar atado a uno.
+db.exec(`CREATE TABLE IF NOT EXISTS usuarios (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  nombre     TEXT NOT NULL,
+  telefono   TEXT NOT NULL DEFAULT '',
+  creado_en  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+)`);
+for (const [col, def] of [
+  ["pueblo", "TEXT NOT NULL DEFAULT 'Chabás'"],
+  ["reservado", "INTEGER NOT NULL DEFAULT 0"],
+  ["anunciante", "TEXT NOT NULL DEFAULT ''"],
+  ["usuario_id", "INTEGER REFERENCES usuarios(id) ON DELETE SET NULL"],
+] as const) {
   const hay = (db.prepare("PRAGMA table_info(avisos)").all() as { name: string }[]).some((c) => c.name === col);
   if (!hay) db.exec(`ALTER TABLE avisos ADD COLUMN ${col} ${def}`);
 }
@@ -121,6 +133,7 @@ function aPublico(f: Fila): AvisoPublico {
     precio,
     moneda: f.moneda === "ARS" ? "ARS" : "USD",
     pueblo: str(f.pueblo),
+    anunciante: str(f.anunciante),
     zona: str(f.zona),
     descripcion: str(f.descripcion),
     datos,
@@ -209,10 +222,10 @@ export function crearAviso(a: NuevoAviso, archivos: string[], opciones: { estado
   db.exec("BEGIN");
   try {
     const r = db
-      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(
-        opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.zona, a.descripcion, JSON.stringify(a.datos),
+        opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante ?? "", a.zona, a.descripcion, JSON.stringify(a.datos),
         a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, opciones.ejemplo ? 1 : 0,
         opciones.estado === "publicado" ? (opciones.publicadoEn ?? new Date().toISOString()) : null,
       );
@@ -299,9 +312,9 @@ export function editarAviso(id: number, a: NuevoAviso, archivosFinal: string[]):
   db.exec("BEGIN");
   try {
     db.prepare(
-      `UPDATE avisos SET rubro = ?, tipo = ?, operacion = ?, titulo = ?, precio = ?, moneda = ?, pueblo = ?, zona = ?, descripcion = ?, datos = ?,
+      `UPDATE avisos SET rubro = ?, tipo = ?, operacion = ?, titulo = ?, precio = ?, moneda = ?, pueblo = ?, anunciante = ?, zona = ?, descripcion = ?, datos = ?,
          permuta = ?, financia = ?, nombre = ?, telefono = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
-    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, id);
+    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante ?? "", a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, id);
     if (a.precio !== actual.precio || a.moneda !== actual.moneda) {
       db.prepare("INSERT INTO precios (aviso_id, precio, moneda) VALUES (?,?,?)").run(id, a.precio, a.moneda);
     }

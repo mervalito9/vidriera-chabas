@@ -152,7 +152,7 @@ function Panel({ onSalir }: { onSalir: () => void }) {
 
 const valoresDe = (a: AvisoAdmin): ValoresForm => ({
   rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio === null ? "" : String(a.precio), moneda: a.moneda,
-  permuta: a.permuta, financia: a.financia, descripcion: a.descripcion, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, zona: a.zona, datos: a.datos.join(", "),
+  permuta: a.permuta, financia: a.financia, descripcion: a.descripcion, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, zona: a.zona, datos: a.datos.join(", "), anunciante: a.anunciante,
   pueblo: PUEBLOS.includes(a.pueblo) ? a.pueblo : OTRO_PUEBLO, puebloOtro: PUEBLOS.includes(a.pueblo) ? "" : a.pueblo,
 });
 
@@ -235,7 +235,7 @@ function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<un
       {foto ? <img className="admin-foto" src={foto} alt="" width={120} height={80} /> : <div className="admin-foto sin-foto">Sin foto</div>}
       <div className="admin-datos">
         <b>{a.titulo}</b> {a.ejemplo && <span className="badge">Ejemplo</span>} {a.reservado && <span className="badge">Reservado</span>}
-        <p className="small"><b>{a.pueblo}</b> · {a.tipo} · {a.operacion} · {precioTexto(a)} · {a.fotos.length} foto(s)</p>
+        <p className="small">{a.anunciante && <><b>{a.anunciante}</b> · </>}<b>{a.pueblo}</b> · {a.tipo} · {a.operacion} · {precioTexto(a)} · {a.fotos.length} foto(s)</p>
         <p className="small">{a.nombre || "Sin nombre"} · {a.telefono || "sin WhatsApp"} · {a.estado === "publicado" ? `publicado ${fmtFecha(new Date(a.publicadoEn))}, vence ${fmtFecha(new Date(a.venceEn))}` : `cargado ${fmtFecha(new Date(a.creadoEn))}`}</p>
         <p className="small">{a.vistas} visitas · {a.contactos} contactos por WhatsApp</p>
         {a.descripcion && <details><summary>Descripción</summary><p className="small">{a.descripcion}</p></details>}

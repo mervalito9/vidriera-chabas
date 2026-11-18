@@ -729,3 +729,17 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 @media (min-width: 700px) { .cats { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
 .tag-res { background: var(--oliva); color: var(--papel); }
 .reservado { background: var(--oliva-claro); border-left: 4px solid var(--oliva); padding: 10px 14px; border-radius: 8px; margin: 8px 0 12px; }
+/* Cargar varios: filas anchas, miniatura, completar en masa */
+.lote-fila .admin-foto { object-fit: cover; border-radius: 10px; }
+.lote-fila.con-error { box-shadow: inset 4px 0 0 #A1341A, var(--sombra); }
+.lote-masa { background: var(--papel); border-radius: 16px; padding: 14px 16px; box-shadow: var(--sombra); }
+.lote-masa summary { cursor: pointer; }
+.lote-masa[open] { display: grid; gap: 12px; }
+.lote-masa-campos { display: grid; gap: 10px; grid-template-columns: 1fr; }
+.lote-masa-campos label { display: grid; gap: 4px; }
+.lote-masa input[type=text], .lote-masa input[type=tel], .lote-masa select { width: 100%; padding: 10px 12px; border: 1px solid var(--crema-2); border-radius: 10px; background: #fff; font: inherit; }
+.lote-masa .check { display: flex; gap: 8px; align-items: center; font-size: .95rem; }
+.lote-masa .btn { justify-self: start; }
+@media (min-width: 700px) { .lote-masa-campos { grid-template-columns: repeat(4, 1fr); } }
+.lote-cargar { justify-self: start; }
+.publica { margin: -4px 0 8px; }

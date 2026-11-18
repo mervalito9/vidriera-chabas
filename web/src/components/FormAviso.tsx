@@ -25,10 +25,12 @@ export interface ValoresForm {
   /** Solo el panel los usa: barrio o zona, y datos destacados separados por coma */
   zona: string;
   datos: string;
+  /** Solo el panel: quién publica (se ve en el aviso) */
+  anunciante: string;
 }
 
 export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
-  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "",
+  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "",
 });
 
 /** El pueblo que quedó elegido (el de la lista o el que escribió en "Otro"). */
@@ -239,6 +241,10 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
           <div>
             <label className="lbl" htmlFor="f-datos">Datos destacados <span className="opc">(separados por coma)</span></label>
             <input id="f-datos" type="text" maxLength={200} placeholder="Ej: 2 dormitorios, cochera, patio" autoComplete="off" value={v.datos} onChange={(e) => set("datos", e.target.value)} />
+          </div>
+          <div>
+            <label className="lbl" htmlFor="f-anunciante">Publicado por <span className="opc">(se ve en el aviso; opcional)</span></label>
+            <input id="f-anunciante" type="text" maxLength={60} placeholder="Ej: Dueño directo, Inmobiliaria Pérez" autoComplete="off" value={v.anunciante} onChange={(e) => set("anunciante", e.target.value)} />
           </div>
         </div>
       )}

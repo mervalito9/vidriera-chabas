@@ -31,6 +31,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const moneda = e.moneda === "ARS" ? "ARS" : "USD";
   const pueblo = normalizarPueblo(e.pueblo);
   const zona = recortar(e.zona, 60);
+  const anunciante = recortar(e.anunciante, LIMITES.anunciante);
   const descripcion = recortar(e.descripcion, LIMITES.descripcion);
   const datos = (Array.isArray(e.datos) ? e.datos : [])
     .map((d) => recortar(d, 40))
@@ -52,7 +53,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos },
   };
 }
 

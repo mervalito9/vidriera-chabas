@@ -58,6 +58,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
         </div>
         <div className="aviso-info">
           <p className="meta"><span className="lugar">{a.pueblo}</span> · {meta}</p>
+          {a.anunciante && <p className="small publica">Publica: <b>{a.anunciante}</b></p>}
           <h1>{a.titulo}</h1>
           {a.reservado && <p className="reservado"><b>Reservado.</b> El dueño ya lo tiene señado. Si querés quedar por si se cae, escribile igual.</p>}
           <p className="price big">

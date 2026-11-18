@@ -22,6 +22,8 @@ export interface AvisoPublico {
   permuta: boolean;
   financia: boolean;
   fotos: string[];
+  /** Quién publica, tal como se muestra en el aviso (ej. "Inmobiliaria Pérez"). Vacío = no se muestra. */
+  anunciante: string;
   ejemplo: boolean;
   /** El dueño lo tiene señado: sigue visible, marcado "Reservado". */
   reservado: boolean;
@@ -62,6 +64,8 @@ export interface NuevoAviso {
   moneda: Moneda;
   /** Dónde está lo que se publica (lo elige quien publica). Uno de PUEBLOS o el que escribió en "Otro". */
   pueblo: string;
+  /** Quién publica (lo pone el panel; el formulario público lo deja vacío). */
+  anunciante: string;
   zona: string;
   descripcion: string;
   datos: string[];
