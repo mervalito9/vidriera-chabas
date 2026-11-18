@@ -2,7 +2,8 @@
 // Uso: npm run build      (o npm run build -- --watch para que se rearme sola mientras editás)
 //      npm run build -- --vista-previa   arma web/dist-vista-previa: funciona sin backend, con avisos de ejemplo
 import { build, context } from "esbuild";
-import { cpSync, rmSync, mkdirSync, copyFileSync } from "node:fs";
+import { cpSync, rmSync, mkdirSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const raiz = new URL("..", import.meta.url).pathname;
 const mirar = process.argv.includes("--watch");
@@ -33,4 +34,11 @@ if (mirar) {
   await ctx.watch();
 } else {
   await build(opciones);
+  // Le pone una versión a app.js y style.css en index.html: así, después de cada cambio,
+  // los navegadores bajan lo nuevo en vez de seguir usando la copia vieja guardada.
+  const version = (archivo) => createHash("sha256").update(readFileSync(`${dist}/assets/${archivo}`)).digest("hex").slice(0, 10);
+  const html = readFileSync(`${dist}/index.html`, "utf8")
+    .replace('href="assets/style.css"', `href="assets/style.css?v=${version("style.css")}"`)
+    .replace('src="assets/app.js"', `src="assets/app.js?v=${version("app.js")}"`);
+  writeFileSync(`${dist}/index.html`, html);
 }
