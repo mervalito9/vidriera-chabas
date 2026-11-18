@@ -30,17 +30,34 @@ export function Inicio() {
   const lista = useCarga(() => listarAvisos({}, 60), []);
   const datos = lista.estado === "listo" ? lista.datos : null;
   const soloEjemplos = datos?.soloEjemplos ?? true;
-  // Con ejemplos: 3 inmuebles y 3 vehículos intercalados. Con avisos reales: los 6 más nuevos.
+  // Con ejemplos: 3 inmuebles y 3 vehículos intercalados. Con avisos reales: los 8 más nuevos, arriba de todo.
   const muestra = datos
     ? soloEjemplos
       ? [0, 1, 2].flatMap((i) => PRINCIPALES.map((r) => datos.avisos.filter((a) => a.rubro === r)[i])).filter((a) => a !== undefined)
-      : datos.avisos.slice(0, 6)
+      : datos.avisos.slice(0, 8)
     : [];
   const rExplorar = useAparecer<HTMLElement>();
   const rVender = useAparecer<HTMLElement>();
   const rEjemplos = useAparecer<HTMLElement>();
   const rBusco = useAparecer<HTMLElement>();
   const rCarta = useAparecer<HTMLElement>();
+
+  const avisosBloque = (
+    <section className="wrap ejemplos" aria-labelledby="ultTitulo" ref={rEjemplos}>
+      <div className="sec-h">
+        <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : "Últimos avisos"}</h2>
+        {datos && !soloEjemplos && <a href={ir("buscar")}>Ver todos ({datos.total})</a>}
+      </div>
+      {soloEjemplos && (
+        <p className="nota-ejemplos"><span className="badge">Ejemplos</span> Todavía no hay avisos reales: estos son de muestra. ¡El tuyo puede ser el primero!</p>
+      )}
+      {lista.estado === "listo" && muestra.length === 0 ? (
+        <Vacio texto="Todavía no hay avisos." />
+      ) : (
+        <div className="grid mini">{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
+      )}
+    </section>
+  );
 
   return (
     <>
@@ -70,6 +87,8 @@ export function Inicio() {
           <Vitrina />
         </div>
       </section>
+
+      {!soloEjemplos && avisosBloque}
 
       <section className="wrap explorar" aria-labelledby="explorar" ref={rExplorar}>
         <div className="sec-h"><h2 id="explorar">Explorá la vidriera</h2><a href={ir("buscar")}>Ver todo</a></div>
@@ -111,20 +130,7 @@ export function Inicio() {
         </div>
       </section>
 
-      <section className="wrap ejemplos" aria-labelledby="ultTitulo" ref={rEjemplos}>
-        <div className="sec-h">
-          <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : "Últimos avisos"}</h2>
-          {datos && !soloEjemplos && <a href={ir("buscar")}>Ver todos ({datos.total})</a>}
-        </div>
-        {soloEjemplos && (
-          <p className="nota-ejemplos"><span className="badge">Ejemplos</span> Todavía no hay avisos reales: estos son de muestra. ¡El tuyo puede ser el primero!</p>
-        )}
-        {lista.estado === "listo" && muestra.length === 0 ? (
-          <Vacio texto="Todavía no hay avisos." />
-        ) : (
-          <div className="grid mini">{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
-        )}
-      </section>
+      {soloEjemplos && avisosBloque}
 
       <section className="wrap" aria-label="Avisame cuando aparezca" ref={rBusco}>
         <aside className="busco">
