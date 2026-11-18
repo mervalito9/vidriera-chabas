@@ -27,6 +27,8 @@ export interface AvisoPublico {
   ejemplo: boolean;
   /** El dueño lo tiene señado: sigue visible, marcado "Reservado". */
   reservado: boolean;
+  /** Fijado arriba por Felipe: aparece primero en la portada y los listados. */
+  destacado: boolean;
   /** ISO 8601 */
   publicadoEn: string;
   /** ISO 8601 */

@@ -86,6 +86,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS usuarios (
 for (const [col, def] of [
   ["pueblo", "TEXT NOT NULL DEFAULT 'Chabás'"],
   ["reservado", "INTEGER NOT NULL DEFAULT 0"],
+  ["destacado", "INTEGER NOT NULL DEFAULT 0"],
   ["anunciante", "TEXT NOT NULL DEFAULT ''"],
   ["usuario_id", "INTEGER REFERENCES usuarios(id) ON DELETE SET NULL"],
 ] as const) {
@@ -142,6 +143,7 @@ function aPublico(f: Fila): AvisoPublico {
     fotos: fotosDe(id),
     ejemplo: num(f.ejemplo) === 1,
     reservado: num(f.reservado) === 1,
+    destacado: num(f.destacado) === 1,
     publicadoEn: publicado,
     venceEn: vence,
     precioAnterior: precioAnterior(id, precio),
@@ -182,7 +184,7 @@ export function listarPublicos(filtros: Filtros, limite: number, desde: number):
   const orden =
     filtros.orden === "barato" ? "moneda DESC, precio IS NULL, precio ASC"
     : filtros.orden === "caro" ? "moneda ASC, precio IS NULL, precio DESC"
-    : "publicado_en DESC, id DESC";
+    : "destacado DESC, publicado_en DESC, id DESC";
 
   let filas = db.prepare(`SELECT * FROM avisos WHERE ${where.join(" AND ")} ORDER BY ${orden}`).all(...args) as Fila[];
   // Búsqueda por palabras sin tildes (se hace acá para no depender de extensiones de SQLite)
@@ -260,6 +262,7 @@ export interface CambiosAdmin {
   moneda?: "USD" | "ARS";
   descripcion?: string;
   reservado?: boolean;
+  destacado?: boolean;
 }
 
 export function actualizarAviso(id: number, c: CambiosAdmin): AvisoAdmin | null {
@@ -276,6 +279,7 @@ export function actualizarAviso(id: number, c: CambiosAdmin): AvisoAdmin | null 
     args.push(c.estado);
     if (c.estado === "publicado" && actual.estado !== "publicado") sets.push("publicado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
   }
+  if (c.destacado !== undefined) { sets.push("destacado = ?"); args.push(c.destacado ? 1 : 0); }
   if (c.reservado !== undefined) { sets.push("reservado = ?"); args.push(c.reservado ? 1 : 0); }
   if (c.renovar) sets.push("publicado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
   db.prepare(`UPDATE avisos SET ${sets.join(", ")} WHERE id = ?`).run(...args, id);

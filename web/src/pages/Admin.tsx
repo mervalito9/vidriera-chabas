@@ -234,7 +234,7 @@ function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<un
     <li className="admin-item">
       {foto ? <img className="admin-foto" src={foto} alt="" width={120} height={80} /> : <div className="admin-foto sin-foto">Sin foto</div>}
       <div className="admin-datos">
-        <b>{a.titulo}</b> {a.ejemplo && <span className="badge">Ejemplo</span>} {a.reservado && <span className="badge">Reservado</span>}
+        <b>{a.titulo}</b> {a.ejemplo && <span className="badge">Ejemplo</span>} {a.reservado && <span className="badge">Reservado</span>} {a.destacado && <span className="badge">★ Arriba</span>}
         <p className="small">{a.anunciante && <><b>{a.anunciante}</b> · </>}<b>{a.pueblo}</b> · {a.tipo} · {a.operacion} · {precioTexto(a)} · {a.fotos.length} foto(s)</p>
         <p className="small">{a.nombre || "Sin nombre"} · {a.telefono || "sin WhatsApp"} · {a.estado === "publicado" ? `publicado ${fmtFecha(new Date(a.publicadoEn))}, vence ${fmtFecha(new Date(a.venceEn))}` : `cargado ${fmtFecha(new Date(a.creadoEn))}`}</p>
         <p className="small">{a.vistas} visitas · {a.contactos} contactos por WhatsApp</p>
@@ -249,6 +249,7 @@ function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<un
         {a.estado === "publicado" && <>
           <a className="btn btn-line" href={ir("aviso", a.id)}>Ver</a>
           <ParaRedes a={a} />
+          <button type="button" className="btn btn-line" onClick={() => cambiar({ destacado: !a.destacado })}>{a.destacado ? "Sacar de arriba" : "★ Fijar arriba"}</button>
           <button type="button" className="btn btn-line" onClick={() => cambiar({ reservado: !a.reservado })}>{a.reservado ? "Sacar «Reservado»" : "Reservado"}</button>
           <button type="button" className="btn btn-line" onClick={() => cambiar({ estado: "vendido" })}>Vendido</button>
           <button type="button" className="btn btn-line" onClick={() => cambiar({ renovar: true })}>Renovar 90 días</button>

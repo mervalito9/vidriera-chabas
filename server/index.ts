@@ -244,6 +244,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
           estado: estados.includes(c.estado as Estado) ? (c.estado as Estado) : undefined,
           renovar: c.renovar === true,
           reservado: typeof c.reservado === "boolean" ? c.reservado : undefined,
+          destacado: typeof c.destacado === "boolean" ? c.destacado : undefined,
           titulo: typeof c.titulo === "string" && recortar(c.titulo, LIMITES.titulo).length >= 4 ? recortar(c.titulo, LIMITES.titulo) : undefined,
           descripcion: typeof c.descripcion === "string" ? recortar(c.descripcion, LIMITES.descripcion) : undefined,
           precio: "precio" in c ? (soloDigitos(c.precio) ? Number(soloDigitos(c.precio).slice(0, 12)) : null) : undefined,

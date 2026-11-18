@@ -58,7 +58,7 @@ function avisosDemo(): AvisoPublico[] {
     return {
       id: i + 1, rubro: e.rubro, tipo: e.tipo, operacion: e.operacion, titulo: e.titulo, precio: e.precio, moneda: e.moneda,
       pueblo: e.pueblo, zona: e.zona ?? "", descripcion: e.descripcion ?? "", datos: e.datos ?? [], permuta: !!e.permuta, financia: !!e.financia,
-      fotos: [`assets/img/${e.foto}`], anunciante: "", ejemplo: true, reservado: false, publicadoEn: publicado.toISOString(),
+      fotos: [`assets/img/${e.foto}`], anunciante: "", ejemplo: true, reservado: false, destacado: false, publicadoEn: publicado.toISOString(),
       venceEn: new Date(publicado.getTime() + DIAS_VIGENCIA * 864e5).toISOString(), precioAnterior: null,
     };
   }).sort((a, b) => b.publicadoEn.localeCompare(a.publicadoEn));
