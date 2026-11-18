@@ -1,4 +1,3 @@
-import { useRef, useState, type PointerEvent, type MouseEvent } from "react";
 import { PUEBLOS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
 import { plural, slug } from "../../../shared/texto.ts";
 import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
@@ -9,19 +8,29 @@ import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
-/** Foco en inmuebles y vehículos: la maquinaria agro está presente pero chica (botón aparte, sin sección propia). */
+/** Foco en inmuebles y vehículos. Maquinaria agro sigue existiendo (se puede publicar y buscar) pero no está en la portada. */
 const PRINCIPALES = ["inmuebles", "vehiculos"] as const;
 
 const EXPLORAR = [
-  ["inmuebles", "casa", "ejemplo-casa", "Casas"],
-  ["inmuebles", "alquiler", "ejemplo-local", "Alquileres"],
-  ["inmuebles", "departamento", "ejemplo-departamento", "Deptos"],
-  ["inmuebles", "terreno", "ejemplo-terreno", "Terrenos"],
-  ["inmuebles", "galpon-o-local", "ejemplo-galpon", "Galpones y locales"],
-  ["vehiculos", "auto", "ejemplo-auto", "Autos"],
-  ["vehiculos", "camioneta-o-utilitario", "ejemplo-camioneta", "Camionetas"],
-  ["vehiculos", "moto", "ejemplo-moto", "Motos"],
+  ["inmuebles", "casa", "Casas"],
+  ["inmuebles", "alquiler", "Alquileres"],
+  ["inmuebles", "departamento", "Deptos"],
+  ["inmuebles", "terreno", "Terrenos"],
+  ["inmuebles", "galpon-o-local", "Galpones y locales"],
+  ["vehiculos", "auto", "Autos"],
+  ["vehiculos", "camioneta-o-utilitario", "Camionetas"],
+  ["vehiculos", "moto", "Motos"],
 ] as const;
+
+/** Intercala rubros (inmueble, vehículo, inmueble…) para que la portada no quede de un solo rubro aunque haya más de uno. */
+function intercalar<T extends { rubro: string }>(avisos: T[], cuantos: number): T[] {
+  const grupos = new Map<string, T[]>();
+  for (const a of avisos) grupos.set(a.rubro, [...(grupos.get(a.rubro) ?? []), a]);
+  const filas = [...grupos.values()];
+  const salida: T[] = [];
+  for (let i = 0; salida.length < cuantos && filas.some((f) => f[i]); i++) for (const f of filas) if (f[i] && salida.length < cuantos) salida.push(f[i]!);
+  return salida;
+}
 
 const CINTA = ["Casas", "Alquileres", "Departamentos", "Terrenos", "Galpones y locales", "Autos", "Camionetas", "Utilitarios", "Motos"];
 
@@ -30,11 +39,11 @@ export function Inicio() {
   const lista = useCarga(() => listarAvisos({}, 60), []);
   const datos = lista.estado === "listo" ? lista.datos : null;
   const soloEjemplos = datos?.soloEjemplos ?? true;
-  // Con ejemplos: 3 inmuebles y 3 vehículos intercalados. Con avisos reales: los 8 más nuevos, arriba de todo.
+  // Con ejemplos: 3 inmuebles y 3 vehículos. Con avisos reales: los 8 más nuevos, intercalando rubros, arriba de todo.
   const muestra = datos
     ? soloEjemplos
       ? [0, 1, 2].flatMap((i) => PRINCIPALES.map((r) => datos.avisos.filter((a) => a.rubro === r)[i])).filter((a) => a !== undefined)
-      : datos.avisos.slice(0, 8)
+      : intercalar(datos.avisos, 8)
     : [];
   const rExplorar = useAparecer<HTMLElement>();
   const rVender = useAparecer<HTMLElement>();
@@ -62,7 +71,7 @@ export function Inicio() {
   return (
     <>
       <section className="hero">
-        <div className="wrap hero-in">
+        <div className="wrap hero-solo">
           <div className="hero-txt">
             <h1>Casas, autos y más de Chabás y la zona.</h1>
             <p className="sub">Publicá gratis. Hablá directo con el dueño.</p>
@@ -76,33 +85,27 @@ export function Inicio() {
                   <span className="circ"><IconoRubro rubro={r} /></span>
                   <span className="txt">
                     <b>{RUBROS[r].nombre}</b>
-                    <span>{datos && !soloEjemplos ? plural(datos.conteo[r], "aviso", "avisos") : RUBROS[r].resumen}</span>
+                    <span>{datos && !soloEjemplos && datos.conteo[r] > 0 ? plural(datos.conteo[r], "aviso", "avisos") : RUBROS[r].resumen}</span>
                   </span>
                 </a>
               ))}
-              <a className="rubro-chico" href={ir("agro")}>También: <b>{RUBROS.agro.nombre}</b>{datos && !soloEjemplos ? ` (${datos.conteo.agro})` : ""} →</a>
             </div>
-            <ul className="confianza"><li>Gratis</li><li>Sin comisión</li><li>Sin intermediarios</li></ul>
           </div>
-          <Vitrina />
         </div>
       </section>
 
       {!soloEjemplos && avisosBloque}
 
       <section className="wrap explorar" aria-labelledby="explorar" ref={rExplorar}>
-        <div className="sec-h"><h2 id="explorar">Explorá la vidriera</h2><a href={ir("buscar")}>Ver todo</a></div>
+        <div className="sec-h"><h2 id="explorar">Buscá por categoría</h2><a href={ir("buscar")}>Ver todo</a></div>
         <nav className="por-pueblo" aria-label="Avisos por pueblo">
           <span>Por pueblo:</span>
           {PUEBLOS.map((p) => <a key={p} className="chip" href={ir("pueblo", slug(p))}>{p}</a>)}
           <a className="chip" href={ir("pueblo", "otro")}>Otro</a>
         </nav>
-        <div className="tiles">
-          {EXPLORAR.map(([rubro, atajo, img, nombre]) => (
-            <a key={nombre} className="tile" href={ir(rubro, atajo)}>
-              <img src={`assets/img/${img}.svg`} alt="" width={640} height={420} loading="lazy" />
-              <b>{nombre}</b>
-            </a>
+        <div className="cats">
+          {EXPLORAR.map(([rubro, atajo, nombre]) => (
+            <a key={nombre} className="cat" href={ir(rubro, atajo)}>{nombre}<span aria-hidden="true">→</span></a>
           ))}
         </div>
       </section>
@@ -122,7 +125,6 @@ export function Inicio() {
           <div className="arr-btns">
             <a className="btn btn-main" href={ir("publicar", "inmuebles")}>Publicar una casa o alquiler</a>
             <a className="btn btn-crema" href={ir("publicar", "vehiculos")}>Publicar un vehículo</a>
-            <a className="arr-chico" href={ir("publicar", "agro")}>¿Maquinaria agro? Publicala acá</a>
           </div>
           <div className="ticker" aria-hidden="true">
             <div className="ticker-in">{[...CINTA, ...CINTA].map((c, i) => <span key={i}>{c}</span>)}</div>
@@ -147,7 +149,7 @@ export function Inicio() {
             <p>La idea es simple:</p>
           </div>
           <ul className="objetivos">
-            <li><b>Que esté todo en un lugar.</b><span>Casas, alquileres, autos y motos de Chabás y la zona (y también maquinaria agro), para comprar o alquilar.</span></li>
+            <li><b>Que esté todo en un lugar.</b><span>Casas, alquileres, autos y motos de Chabás y la zona, para comprar o alquilar.</span></li>
             <li><b>Que los precios estén a la vista.</b><span>Así sabés cuánto se pide antes de preguntar, y podés comparar.</span></li>
             <li><b>Armar un historial de precios.</b><span>Para ver cuánto se pide por un alquiler, un terreno o un tractor, y cómo va cambiando. Ya lo estamos guardando.</span></li>
             <li><b>Que sea gratis y directo entre vecinos.</b><span>Sin comisiones y sin vueltas.</span></li>
@@ -194,70 +196,6 @@ function Telefono() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-const TEXTO_VITRINA = "Todo en una vidriera.";
-const VIDRIOS = [[124.16, 109.28], [237.68, 109.28], [124.16, 245.68], [237.68, 245.68]] as const;
-
-/** Ventana de la portada (escritorio): las luces siguen al cursor y cada vidrio se apaga o prende con un clic. */
-function Vitrina() {
-  const caja = useRef<HTMLDivElement>(null);
-  const vidrios = useRef<(SVGRectElement | null)[]>([]);
-  const [apagados, setApagados] = useState<boolean[]>([false, false, false, false]);
-  const calma = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-
-  const mover = (e: PointerEvent<HTMLDivElement>) => {
-    const v = caja.current;
-    if (!v) return;
-    const r = v.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-    v.classList.add("activa");
-    v.style.setProperty("--mx", `${x}px`);
-    v.style.setProperty("--my", `${y}px`);
-    if (!calma) {
-      v.style.setProperty("--tx", `${((x / r.width - 0.5) * 10).toFixed(1)}px`);
-      v.style.setProperty("--ty", `${((y / r.height - 0.5) * 10).toFixed(1)}px`);
-    }
-    for (const g of vidrios.current) {
-      if (!g) continue;
-      const b = g.getBoundingClientRect();
-      const d = Math.hypot(e.clientX - (b.left + b.width / 2), e.clientY - (b.top + b.height / 2));
-      g.style.setProperty("--luz", Math.max(0, 1 - d / (b.width * 2.2)).toFixed(3));
-    }
-  };
-  const salir = () => {
-    const v = caja.current;
-    if (!v) return;
-    v.classList.remove("activa");
-    v.style.setProperty("--tx", "0px");
-    v.style.setProperty("--ty", "0px");
-  };
-  const tocar = (e: MouseEvent<HTMLDivElement>) => {
-    const i = vidrios.current.findIndex((g) => g === e.target);
-    if (i >= 0) setApagados((a) => a.map((x, j) => (j === i ? !x : x)));
-    else if (apagados.every(Boolean)) setApagados([false, false, false, false]);
-  };
-  const todosApagados = apagados.every(Boolean);
-
-  return (
-    <div className="vitrina" aria-hidden="true" ref={caja} onPointerMove={mover} onPointerLeave={salir} onClick={tocar}>
-      <svg className="ventana" viewBox="0 0 456 520" width="456" height="520">
-        <defs>
-          <radialGradient id="litV" cx=".45" cy=".35" r=".8">
-            <stop offset="0" stopColor="#FFD08A" /><stop offset=".55" stopColor="#E98A47" /><stop offset="1" stopColor="#C4572F" />
-          </radialGradient>
-        </defs>
-        <rect x="89.84" y="74.96" width="276.32" height="322.08" rx="59.84" fill="none" stroke="#F2ECDF" strokeWidth="29.92" />
-        {VIDRIOS.map(([x, y], i) => (
-          <rect key={i} ref={(el) => { vidrios.current[i] = el; }} className={`vidrio v${i + 1}${apagados[i] ? " apagado" : ""}`}
-            x={x} y={y} width="94.16" height="117.04" rx="15.84" fill="url(#litV)" />
-        ))}
-        <rect x="60" y="426" width="336" height="34" rx="16" fill="#F2ECDF" />
-      </svg>
-      <p>{todosApagados ? "Se apagó la vidriera. Tocá para prender." : TEXTO_VITRINA}</p>
     </div>
   );
 }

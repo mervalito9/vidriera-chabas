@@ -717,3 +717,15 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .lote-fila .err { color: #A1341A; font-weight: 600; }
 .lote-fila .ok { color: var(--oliva); font-weight: 700; }
 .aviso-ojo { color: #7A5A12; }
+
+/* 18/11: portada más simple (sin vitrina ni dibujos), categorías como accesos, Reservado */
+.hero-solo { max-width: 760px; }
+.cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.cats > * { min-width: 0; }
+.cat { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 16px 18px; border-radius: 14px; background: var(--papel); box-shadow: var(--sombra); color: var(--tinta); font-weight: 700; text-decoration: none; transition: transform .2s ease, box-shadow .2s ease; }
+.cat span { color: var(--terra); transition: transform .2s ease; }
+.cat:hover { transform: translateY(-2px); }
+.cat:hover span { transform: translateX(3px); }
+@media (min-width: 700px) { .cats { grid-template-columns: repeat(4, 1fr); gap: 14px; } }
+.tag-res { background: var(--oliva); color: var(--papel); }
+.reservado { background: var(--oliva-claro); border-left: 4px solid var(--oliva); padding: 10px 14px; border-radius: 8px; margin: 8px 0 12px; }

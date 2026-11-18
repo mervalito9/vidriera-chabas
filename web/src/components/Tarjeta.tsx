@@ -11,6 +11,7 @@ export function Tarjeta({ aviso: a }: { aviso: AvisoPublico }) {
         {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" /> : <div className="sin-foto">Sin foto</div>}
         <div className="tags">
           {a.ejemplo && <span className="tag tag-ej">Ejemplo</span>}
+          {a.reservado && <span className="tag tag-res">Reservado</span>}
           <span className="tag">{a.operacion === "alquiler" ? "Alquiler" : "Venta"}</span>
           {a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior && <span className="tag tag-baja">Bajó de precio</span>}
         </div>

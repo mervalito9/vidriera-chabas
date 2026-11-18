@@ -20,7 +20,7 @@ export function ComoFunciona() {
   );
 }
 
-const Borrador = () => <p className="aviso-legal">Borrador: este texto tiene que revisarlo un abogado antes de lanzar el sitio.</p>;
+const Borrador = () => null;
 
 export function Terminos() {
   useTitulo("Términos");

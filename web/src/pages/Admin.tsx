@@ -9,6 +9,7 @@ import { Cargando } from "../components/Tarjeta.tsx";
 import { CargarVarios } from "./Lote.tsx";
 import { fotoSegura, precioTexto } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
+import { tarjetaRedes, textoRedes } from "../redes.ts";
 import { ir } from "../router.ts";
 
 type Pestana = Estado | "busquedas" | "cargar" | "lote";
@@ -187,6 +188,36 @@ function Editar({ a, onListo, onCancelar }: { a: AvisoAdmin; onListo: () => void
   );
 }
 
+/** Baja la imagen para Instagram/estados y copia el texto para pegar al lado. */
+function ParaRedes({ a }: { a: AvisoAdmin }) {
+  const [msg, setMsg] = useState("");
+  const hacer = async () => {
+    setMsg("Armando…");
+    try {
+      const blob = await tarjetaRedes(a);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `vidriera-aviso-${a.id}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      const texto = textoRedes(a, `${location.origin}/a/${a.id}`);
+      const copiado = await navigator.clipboard?.writeText(texto).then(() => true, () => false);
+      setMsg(copiado ? "Imagen bajada y texto copiado: pegalo al publicar." : "Imagen bajada.");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "No se pudo armar la imagen.");
+    }
+  };
+  return (
+    <>
+      <button type="button" className="btn btn-line" onClick={() => void hacer()}>Tarjeta para redes</button>
+      {msg && <span className="small" role="status">{msg}</span>}
+    </>
+  );
+}
+
 function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<unknown>) => Promise<void> }) {
   const [precio, setPrecio] = useState(a.precio === null ? "" : String(a.precio));
   const [editando, setEditando] = useState(false);
@@ -203,7 +234,7 @@ function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<un
     <li className="admin-item">
       {foto ? <img className="admin-foto" src={foto} alt="" width={120} height={80} /> : <div className="admin-foto sin-foto">Sin foto</div>}
       <div className="admin-datos">
-        <b>{a.titulo}</b> {a.ejemplo && <span className="badge">Ejemplo</span>}
+        <b>{a.titulo}</b> {a.ejemplo && <span className="badge">Ejemplo</span>} {a.reservado && <span className="badge">Reservado</span>}
         <p className="small"><b>{a.pueblo}</b> · {a.tipo} · {a.operacion} · {precioTexto(a)} · {a.fotos.length} foto(s)</p>
         <p className="small">{a.nombre || "Sin nombre"} · {a.telefono || "sin WhatsApp"} · {a.estado === "publicado" ? `publicado ${fmtFecha(new Date(a.publicadoEn))}, vence ${fmtFecha(new Date(a.venceEn))}` : `cargado ${fmtFecha(new Date(a.creadoEn))}`}</p>
         <p className="small">{a.vistas} visitas · {a.contactos} contactos por WhatsApp</p>
@@ -217,6 +248,8 @@ function ItemAviso({ a, accion }: { a: AvisoAdmin; accion: (fn: () => Promise<un
         </>}
         {a.estado === "publicado" && <>
           <a className="btn btn-line" href={ir("aviso", a.id)}>Ver</a>
+          <ParaRedes a={a} />
+          <button type="button" className="btn btn-line" onClick={() => cambiar({ reservado: !a.reservado })}>{a.reservado ? "Sacar «Reservado»" : "Reservado"}</button>
           <button type="button" className="btn btn-line" onClick={() => cambiar({ estado: "vendido" })}>Vendido</button>
           <button type="button" className="btn btn-line" onClick={() => cambiar({ renovar: true })}>Renovar 90 días</button>
         </>}

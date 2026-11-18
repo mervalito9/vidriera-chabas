@@ -4,7 +4,6 @@ import { ir, navegar } from "../router.ts";
 const NAV = [
   ["inmuebles", "Inmuebles"],
   ["vehiculos", "Vehículos"],
-  ["agro", "Maquinaria agro"],
   ["como-funciona", "Cómo funciona"],
 ] as const;
 

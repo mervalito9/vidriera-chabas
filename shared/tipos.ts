@@ -23,6 +23,8 @@ export interface AvisoPublico {
   financia: boolean;
   fotos: string[];
   ejemplo: boolean;
+  /** El dueño lo tiene señado: sigue visible, marcado "Reservado". */
+  reservado: boolean;
   /** ISO 8601 */
   publicadoEn: string;
   /** ISO 8601 */

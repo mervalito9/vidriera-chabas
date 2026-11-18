@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS avisos (
 );
 CREATE INDEX IF NOT EXISTS avisos_estado ON avisos (estado, publicado_en);
 CREATE INDEX IF NOT EXISTS avisos_rubro ON avisos (rubro, tipo);
-CREATE INDEX IF NOT EXISTS avisos_pueblo ON avisos (pueblo);
 
 CREATE TABLE IF NOT EXISTS fotos (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +74,13 @@ CREATE TABLE IF NOT EXISTS sesiones (
   expira      TEXT NOT NULL
 );
 `);
+
+// Columnas agregadas después de crear la base: se suman solas si faltan.
+for (const [col, def] of [["pueblo", "TEXT NOT NULL DEFAULT 'Chabás'"], ["reservado", "INTEGER NOT NULL DEFAULT 0"]] as const) {
+  const hay = (db.prepare("PRAGMA table_info(avisos)").all() as { name: string }[]).some((c) => c.name === col);
+  if (!hay) db.exec(`ALTER TABLE avisos ADD COLUMN ${col} ${def}`);
+}
+db.exec("CREATE INDEX IF NOT EXISTS avisos_pueblo ON avisos (pueblo);");
 
 type Fila = Record<string, unknown>;
 const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
@@ -122,6 +128,7 @@ function aPublico(f: Fila): AvisoPublico {
     financia: num(f.financia) === 1,
     fotos: fotosDe(id),
     ejemplo: num(f.ejemplo) === 1,
+    reservado: num(f.reservado) === 1,
     publicadoEn: publicado,
     venceEn: vence,
     precioAnterior: precioAnterior(id, precio),
@@ -239,6 +246,7 @@ export interface CambiosAdmin {
   precio?: number | null;
   moneda?: "USD" | "ARS";
   descripcion?: string;
+  reservado?: boolean;
 }
 
 export function actualizarAviso(id: number, c: CambiosAdmin): AvisoAdmin | null {
@@ -255,6 +263,7 @@ export function actualizarAviso(id: number, c: CambiosAdmin): AvisoAdmin | null 
     args.push(c.estado);
     if (c.estado === "publicado" && actual.estado !== "publicado") sets.push("publicado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
   }
+  if (c.reservado !== undefined) { sets.push("reservado = ?"); args.push(c.reservado ? 1 : 0); }
   if (c.renovar) sets.push("publicado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
   db.prepare(`UPDATE avisos SET ${sets.join(", ")} WHERE id = ?`).run(...args, id);
   const precioNuevo = c.precio !== undefined ? c.precio : actual.precio;

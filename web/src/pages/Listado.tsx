@@ -8,7 +8,7 @@ import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
 const VACIOS: Filtros = { rubro: "", pueblo: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "" };
-const PESTANAS = [["buscar", "Todo"], ["inmuebles", "Inmuebles"], ["vehiculos", "Vehículos"], ["agro", "Maquinaria agro"]] as const;
+const PESTANAS = [["buscar", "Todo"], ["inmuebles", "Inmuebles"], ["vehiculos", "Vehículos"]] as const;
 
 /** El pueblo elegido se mantiene al pasar de un rubro a otro (Inmuebles → Vehículos) mientras la página esté abierta. */
 let puebloRecordado = "";
@@ -68,7 +68,7 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
       <nav className="crumbs" aria-label="Estás en"><a href={ir("inicio")}>Inicio</a> › <span>{R ? R.nombre : "Todos los avisos"}</span></nav>
       <div className="page-h">
         <h1>{titulo}</h1>
-        <p>{R ? R.descripcion : "Inmuebles, vehículos y maquinaria agro. Filtrá y hablá directo con el dueño."}{" "}
+        <p>{R ? R.descripcion : "Casas, autos y más de Chabás y la zona. Filtrá y hablá directo con el dueño."}{" "}
           <a className="pub-link" href={ir("publicar", rubro)}>¿Tenés algo para vender? Publicalo gratis</a></p>
       </div>
       <div className="pueblo-filtro" role="group" aria-label="Filtrar por pueblo">
