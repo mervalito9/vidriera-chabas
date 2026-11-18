@@ -146,8 +146,9 @@ dialog::backdrop { background: rgba(23,21,15,.55); }
   box-shadow: var(--sombra); transition: transform .2s ease, box-shadow .2s ease; animation: subir .45s ease both; }
 .card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(23,21,15,.06), 0 16px 36px rgba(23,21,15,.13); }
 .card:nth-child(2) { animation-delay: .05s; } .card:nth-child(3) { animation-delay: .1s; } .card:nth-child(4) { animation-delay: .15s; } .card:nth-child(5) { animation-delay: .2s; } .card:nth-child(6) { animation-delay: .25s; }
-.card-ph { position: relative; aspect-ratio: 32 / 21; background: var(--crema-2); }
-.card-ph img { width: 100%; height: 100%; object-fit: cover; }
+.card-ph { position: relative; aspect-ratio: 32 / 21; background: var(--crema-2); overflow: hidden; min-height: 0; flex: none; }
+.card-ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.card-ph .sin-foto { position: absolute; inset: 0; }
 .sin-foto { display: grid; place-items: center; width: 100%; height: 100%; color: var(--tinta-2); font-weight: 600; aspect-ratio: 32/21; background: var(--crema-2); }
 .tags { position: absolute; left: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
 .tag { background: rgba(251,248,241,.95); color: var(--tinta); font: 700 .82rem/1 var(--sans); padding: 7px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
@@ -208,7 +209,7 @@ details.mas-filtros[open] > summary::after { content: "–"; }
 /* ---------- aviso ---------- */
 .aviso-grid { display: grid; gap: 22px; margin-top: 6px; }
 .foto-main { position: relative; border-radius: 22px; overflow: hidden; background: var(--crema-2); box-shadow: var(--sombra); }
-.foto-main img { width: 100%; aspect-ratio: 32/21; object-fit: cover; }
+.foto-main img { width: 100%; height: auto; aspect-ratio: 32/21; object-fit: cover; }
 .thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .thumbs button { padding: 0; border: 3px solid transparent; border-radius: 12px; overflow: hidden; width: 96px; cursor: pointer; background: none; }
 .thumbs button[aria-current=true] { border-color: var(--terra); }
