@@ -30,7 +30,7 @@ function Pagina({ ruta }: { ruta: Ruta }) {
     const p = param === "otro" ? "otro" : (PUEBLOS.find((x) => slug(x) === param) ?? "");
     return <Listado key={`pueblo-${p}`} rubro="" atajo="" pueblo={p} />;
   }
-  if (nombre === "admin") return <Admin />;
+  if (nombre === "admin") return <Admin param={param} />;
   return <NoEncontrado />;
 }
 

@@ -13,6 +13,9 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
   const esInicio = ruta === "inicio";
   const volver = () => (window.history.length > 1 ? window.history.back() : navegar(ir("inicio")));
 
+  // El panel tiene su propio menú: sin el encabezado ni el pie del sitio.
+  if (ruta === "admin") return <main ref={main} id="contenido" tabIndex={-1} className="pn-main">{children}</main>;
+
   return (
     <>
       <button type="button" className="skip" onClick={() => main.current?.focus()}>Saltar al contenido</button>

@@ -2,11 +2,14 @@ import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
 import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
 
-export function Tarjeta({ aviso: a }: { aviso: AvisoPublico }) {
-  const foto = fotoSegura(a.fotos[0] ?? "");
+/** `previa`: vista previa en el panel (sin link y aceptando fotos recién elegidas). */
+export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: boolean }) {
+  const tapa = a.fotos[0] ?? "";
+  const foto = previa && /^data:image\/(jpeg|png|webp);base64,/.test(tapa) ? tapa : fotoSegura(tapa);
+  const Caja = previa ? "div" : "a";
   const extras = [a.permuta && "Acepta permuta", a.financia && "Financia"].filter(Boolean).join(" · ");
   return (
-    <a className="card" href={ir("aviso", a.id)}>
+    <Caja className="card" {...(previa ? {} : { href: ir("aviso", a.id) })}>
       <div className="card-ph">
         {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" /> : <div className="sin-foto">Sin foto</div>}
         <div className="tags">
@@ -31,7 +34,7 @@ export function Tarjeta({ aviso: a }: { aviso: AvisoPublico }) {
           <span>{hace(a.publicadoEn)}</span>
         </p>
       </div>
-    </a>
+    </Caja>
   );
 }
 
