@@ -273,3 +273,19 @@ test("estadísticas: cuenta una vez por persona y día, sin robots ni el panel",
   // Sin sesión, no se ven
   assert.equal((await fetch(`${URL_BASE}/api/admin/estadisticas`)).status, 401);
 });
+
+test("sitio: comprime, 404 con diseño y vista previa de WhatsApp con links completos", async () => {
+  const js = await fetch(`${URL_BASE}/assets/app.js`, { headers: { "accept-encoding": "br" } });
+  assert.equal(js.headers.get("content-encoding"), "br");
+  assert.equal(js.headers.get("vary"), "Accept-Encoding");
+  const nada = await fetch(`${URL_BASE}/no-existe`);
+  assert.equal(nada.status, 404);
+  assert.match(await nada.text(), /Esta página no existe/);
+  const lista = await (await fetch(`${URL_BASE}/api/avisos`)).json();
+  const id = lista.avisos[0].id;
+  const html = await (await fetch(`${URL_BASE}/a/${id}?de=wa`, { headers: { "x-forwarded-proto": "https", "x-forwarded-host": "vidrierachabas.ar" } })).text();
+  assert.match(html, /og:image" content="https:\/\/vidrierachabas\.ar\//);
+  assert.match(html, /url=\/\?de=wa#aviso--/);
+  const raro = await (await fetch(`${URL_BASE}/a/${id}`, { headers: { "x-forwarded-host": "malo\"><script>" } })).text();
+  assert.doesNotMatch(raro, /<script>/);
+});

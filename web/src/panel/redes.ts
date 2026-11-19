@@ -1,8 +1,8 @@
 // "Tarjeta para redes": arma en el navegador una imagen 1080x1350 (formato Instagram/estados)
 // con la foto de tapa, el precio y el pueblo, y un texto listo para pegar.
-import type { AvisoPublico } from "../../shared/tipos.ts";
-import { fmtNum } from "../../shared/texto.ts";
-import { fotoSegura, porMes, precioTexto } from "./formato.ts";
+import type { AvisoPublico } from "../../../shared/tipos.ts";
+import { fmtNum } from "../../../shared/texto.ts";
+import { fotoSegura, porMes, precioTexto } from "../formato.ts";
 
 const W = 1080, H = 1350, FOTO_H = 860, M = 72;
 const C = { crema: "#F2ECDF", papel: "#FBF8F1", tinta: "#17150F", tinta2: "#4A463C", terra: "#C4572F", oliva: "#2E3A27" };

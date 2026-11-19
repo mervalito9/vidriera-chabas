@@ -1,11 +1,9 @@
-import type { Resumen } from "../../server/estad.ts";
-import type { Actividad } from "../../server/actividad.ts";
 // Cliente del backend. Si no hay servidor (por ejemplo, en la vista previa de Claude),
 // pasa solo a "modo vista previa" con los avisos de ejemplo y publica por WhatsApp.
 import { DIAS_VIGENCIA } from "../../shared/config.ts";
 import { EJEMPLOS } from "../../shared/ejemplos.ts";
 import { filtrarAvisos } from "../../shared/filtrar.ts";
-import type { AvisoAdmin, AvisoPublico, Busqueda, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso } from "../../shared/tipos.ts";
+import type { AvisoAdmin, AvisoPublico, Busqueda, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, ResumenActividad, ResumenEstadisticas } from "../../shared/tipos.ts";
 
 export class ErrorApi extends Error {
   readonly status: number;
@@ -122,7 +120,7 @@ export const admin = {
   cambiar: (id: number, c: Record<string, unknown>) => pedir<AvisoAdmin>("PATCH", `admin/avisos/${id}`, c),
   borrar: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/avisos/${id}`),
   busquedas: () => pedir<Busqueda[]>("GET", "admin/busquedas"),
-  actividad: (periodo: string) => pedir<Actividad>("GET", `admin/actividad?periodo=${periodo}`),
-  estadisticas: (dias: number) => pedir<Resumen>("GET", `admin/estadisticas?dias=${dias}`),
+  actividad: (periodo: string) => pedir<ResumenActividad>("GET", `admin/actividad?periodo=${periodo}`),
+  estadisticas: (dias: number) => pedir<ResumenEstadisticas>("GET", `admin/estadisticas?dias=${dias}`),
   borrarBusqueda: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/busquedas/${id}`),
 };

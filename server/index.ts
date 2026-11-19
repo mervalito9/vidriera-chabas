@@ -1,407 +1,44 @@
 // Servidor de Vidriera Chabás: API + web + fotos. Node 24, sin dependencias externas.
 // Arrancar: node server/index.ts   (ver README.md para las variables de entorno)
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { createReadStream, existsSync, statSync, statfsSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { randomBytes } from "node:crypto";
-import { join, resolve, extname, sep } from "node:path";
-import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
-import type { Estado, Filtros, RubroId } from "../shared/tipos.ts";
-import { recortar, soloDigitos, fmtNum } from "../shared/texto.ts";
-import { validarAviso, validarBusqueda } from "../shared/validar.ts";
-import { linkWA } from "../shared/whatsapp.ts";
-import * as datos from "./db.ts";
-import { FOTOS_DIR } from "./db.ts";
-import { ErrorHttp, cabecerasSeguridad, comprimir, crearLimitador, enviar, exigirMismoOrigen, ipDe, json, leerJson } from "./http.ts";
-import { claveCorrecta, cerrarSesion, esAdmin, exigirAdmin, iniciarSesion } from "./auth.ts";
-import * as estad from "./estad.ts";
+//
+// Mapa:
+//   config.ts        variables de entorno y topes
+//   rutas/publicas   avisos, contacto, publicar, búsquedas          (/api/…)
+//   rutas/medicion   estadísticas propias y "en vivo"               (/api/m, /api/latido)
+//   rutas/admin      panel                                          (/api/admin/…)
+//   estaticos.ts     web, fotos, /a/:id para compartir, 404
+//   db.ts            SQLite · estad.ts y actividad.ts: mediciones · auth.ts: sesión del panel
+import { createServer } from "node:http";
 import * as actividad from "./actividad.ts";
-import { guardarFotos, borrarFotos } from "./imagenes.ts";
-import { armarZip, escribirZip } from "./zip.ts";
+import { PUERTO, WEB_DIR } from "./config.ts";
 import { sincronizarEjemplos } from "./ejemplos.ts";
+import { servirSitio } from "./estaticos.ts";
+import { ErrorHttp, cabecerasSeguridad, exigirMismoOrigen, ipDe, json } from "./http.ts";
+import { rutasAdmin } from "./rutas/admin.ts";
+import type { Pedido, Rutas } from "./rutas/comun.ts";
+import { rutasMedicion } from "./rutas/medicion.ts";
+import { rutasPublicas } from "./rutas/publicas.ts";
 import { iniciarBot } from "./bot/index.ts";
 
-const PUERTO = Number(process.env.PORT ?? 3000);
-const WEB_DIR = resolve(process.env.WEB_DIR ?? join(process.cwd(), "web", "dist"));
-const SITE_URL = (process.env.SITE_URL ?? "").replace(/\/$/, "");
-
-/** Dirección pública del sitio. Si falta SITE_URL, la arma con el pedido (WhatsApp necesita links completos). */
-function sitioDe(req: IncomingMessage): string {
-  if (SITE_URL) return SITE_URL;
-  const host = String(req.headers["x-forwarded-host"] ?? req.headers.host ?? "");
-  if (!/^[a-z0-9.-]+(:\d{1,5})?$/i.test(host)) return "";
-  const proto = String(req.headers["x-forwarded-proto"] ?? "").split(",")[0]?.trim() || (/^(localhost|127\.)/.test(host) ? "http" : "https");
-  return `${proto === "http" ? "http" : "https"}://${host}`;
-}
-const MAX_JSON = 1_000_000;
-const MAX_CON_FOTOS = LIMITES.fotos * Math.ceil(LIMITES.fotoBytes * 1.4) + MAX_JSON;
-
-const limiteContacto = crearLimitador(30, 10 * 60_000);
-const limitePublicar = crearLimitador(6, 60 * 60_000);
-const limiteBusqueda = crearLimitador(10, 60 * 60_000);
-const limiteLogin = crearLimitador(8, 15 * 60_000);
-const limiteMedir = crearLimitador(400, 10 * 60_000);
-const limiteLatido = crearLimitador(120, 10 * 60_000);
-
-/** Topes para que nadie pueda llenar el disco o la memoria mandando avisos falsos. */
-const MAX_PENDIENTES = 100;
-const MIN_LIBRE_BYTES = 100 * 1024 * 1024; // el volumen de prueba de Railway es de 0,5 GB
-const MAX_SUBIDAS_A_LA_VEZ = 3;
-let subidasEnCurso = 0;
-function hayLugar(): boolean {
-  try {
-    const s = statfsSync(FOTOS_DIR);
-    return s.bavail * s.bsize > MIN_LIBRE_BYTES;
-  } catch {
-    return true;
-  }
-}
-
-const TIPOS_MIME: Record<string, string> = {
-  ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
-  ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".woff": "font/woff",
-  ".txt": "text/plain; charset=utf-8", ".json": "application/json", ".ico": "image/x-icon",
-};
-
-const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
-
-function idDe(texto: string | undefined): number {
-  const id = Number(texto);
-  if (!Number.isSafeInteger(id) || id <= 0) throw new ErrorHttp(404, "No encontrado.");
-  return id;
-}
-
-function filtrosDe(q: URLSearchParams): Filtros {
-  const rubro = q.get("rubro") ?? "";
-  const op = q.get("op");
-  const orden = q.get("orden");
-  const pueblo = q.get("pueblo") ?? "";
-  return {
-    rubro: rubro in RUBROS ? (rubro as RubroId) : "",
-    pueblo: pueblo === OTRO_PUEBLO || PUEBLOS.includes(pueblo) ? pueblo : "",
-    q: recortar(q.get("q"), 60),
-    tipo: recortar(q.get("tipo"), 40),
-    op: op === "venta" || op === "alquiler" ? op : "",
-    max: soloDigitos(q.get("max")).slice(0, 12),
-    moneda: q.get("moneda") === "ARS" ? "ARS" : "USD",
-    permuta: q.get("permuta") === "1",
-    financia: q.get("financia") === "1",
-    orden: orden === "barato" || orden === "caro" ? orden : "",
-  };
-}
-
-/** Archivo estático dentro de una carpeta, sin permitir salir de ella. */
-function servirArchivo(res: ServerResponse, raiz: string, ruta: string, cache: string): boolean {
-  let limpia: string;
-  try {
-    limpia = decodeURIComponent(ruta);
-  } catch {
-    return false;
-  }
-  if (limpia.includes("\0")) return false;
-  const destino = resolve(raiz, "." + limpia);
-  if (!destino.startsWith(raiz + sep) && destino !== raiz) return false;
-  if (!existsSync(destino)) return false;
-  const info = statSync(destino);
-  if (!info.isFile()) return false;
-  const ext = extname(destino).toLowerCase();
-  const cabeceras = { "Content-Type": TIPOS_MIME[ext] ?? "application/octet-stream", "Cache-Control": cache };
-  if (TEXTO.has(ext) && info.size < 5_000_000) {
-    // Código, estilos e íconos: se comprimen una vez y se guardan (275 KB de app.js pasan a ~70 KB).
-    const clave = `${destino}:${info.mtimeMs}`;
-    let c = comprimidos.get(clave);
-    if (!c) { c = { crudo: readFileSync(destino) }; comprimidos.set(clave, c); }
-    const entrada = c;
-    enviar(res, 200, cabeceras, entrada.crudo, (como) => (entrada[como] ??= comprimir(entrada.crudo, como)));
-    return true;
-  }
-  res.writeHead(200, { ...cabeceras, "Content-Length": String(info.size) });
-  createReadStream(destino).pipe(res);
-  return true;
-}
-const TEXTO = new Set([".js", ".css", ".html", ".svg", ".json", ".txt", ".webmanifest"]);
-const comprimidos = new Map<string, { crudo: Buffer; br?: Buffer; gzip?: Buffer }>();
-
-/** Página para compartir un aviso: WhatsApp lee la foto y el título; las personas pasan directo al aviso. */
-function paginaCompartir(req: IncomingMessage, res: ServerResponse, id: number, de: string): void {
-  const sitio = sitioDe(req);
-  const a = datos.obtenerPublico(id, false);
-  // La marca de origen (?de=wa) pasa al sitio para saber de dónde vino la gente.
-  const destino = `/${/^[a-z]{2,6}$/.test(de) ? `?de=${de}` : ""}#aviso--${id}`;
-  const titulo = a ? `${a.titulo} · Vidriera Chabás` : "Vidriera Chabás";
-  const precio = a?.precio ? `${a.moneda === "ARS" ? "$" : "USD"} ${fmtNum(a.precio)}${a.operacion === "alquiler" ? " por mes" : ""}` : "";
-  const desc = a ? [precio, a.tipo, a.pueblo].filter(Boolean).join(" · ") : "Casas, autos y más de Chabás y la zona.";
-  const foto = a?.fotos[0] ? `${sitio}${a.fotos[0]}` : `${sitio}/assets/img/og-vidriera-chabas.png`;
-  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" });
-  res.end(`<!DOCTYPE html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(titulo)}</title><meta property="og:type" content="website"><meta property="og:site_name" content="Vidriera Chabás">
-<meta property="og:title" content="${esc(titulo)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(foto)}"><meta property="og:url" content="${esc(`${sitio}/a/${id}`)}"><meta name="twitter:card" content="summary_large_image"><meta name="robots" content="noindex">
-<meta http-equiv="refresh" content="0; url=${esc(destino)}"><link rel="stylesheet" href="/assets/style.css"></head>
-<body><main class="wrap prose"><p><a href="${esc(destino)}">Ver el aviso en Vidriera Chabás</a></p></main></body></html>`);
-}
-
-async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
-  const partes = url.pathname.split("/").filter(Boolean); // ["api", ...]
-  const [, recurso, a1, a2] = partes;
-  const metodo = req.method ?? "GET";
-  const ip = ipDe(req);
-  if (metodo !== "GET") exigirMismoOrigen(req);
-
-  if (recurso === "salud" && metodo === "GET") return json(res, 200, { ok: true });
-
-  if (recurso === "avisos") {
-    if (!a1 && metodo === "GET") {
-      const limite = Math.min(Math.max(Number(url.searchParams.get("limite")) || 12, 1), 60);
-      const desde = Math.max(Number(url.searchParams.get("desde")) || 0, 0);
-      return json(res, 200, datos.listarPublicos(filtrosDe(url.searchParams), limite, desde));
-    }
-    const id = idDe(a1);
-    if (!a2 && metodo === "GET") {
-      const aviso = datos.obtenerPublico(id, false); // la visita la cuenta /api/m (una por persona y día)
-      if (!aviso) throw new ErrorHttp(404, "Este aviso ya no está.");
-      return json(res, 200, aviso);
-    }
-    if (a2 === "contacto" && metodo === "POST") {
-      limiteContacto(ip);
-      const c = datos.telefonoParaContacto(id);
-      if (!c) throw new ErrorHttp(404, "Este aviso no se puede contactar.");
-      if (!esAdmin(req) && !estad.esRobot(req) && estad.registrarContacto(req, id)) datos.sumarContacto(id);
-      return json(res, 200, { url: linkWA(c.telefono, `Hola! Vi tu aviso «${c.titulo}» en Vidriera Chabás. ¿Sigue disponible?`) });
-    }
-  }
-
-  if (recurso === "publicaciones" && metodo === "POST" && !a1) {
-    limitePublicar(ip);
-    if (datos.contarPendientes() >= MAX_PENDIENTES || !hayLugar()) throw new ErrorHttp(503, "Ahora no podemos recibir avisos. Mandalo por WhatsApp y lo cargamos nosotros.");
-    if (subidasEnCurso >= MAX_SUBIDAS_A_LA_VEZ) throw new ErrorHttp(503, "Hay mucha gente publicando. Probá de nuevo en un minuto.");
-    subidasEnCurso++;
-    try {
-      const r = validarAviso(await leerJson(req, MAX_CON_FOTOS), { exigirFotos: true });
-      if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
-      const archivos = guardarFotos(r.valor.fotos);
-      const id = datos.crearAviso({ ...r.valor, anunciante: "" }, archivos, { estado: "pendiente" });
-      return json(res, 201, { id });
-    } finally {
-      subidasEnCurso--;
-    }
-  }
-
-  if (recurso === "busquedas" && metodo === "POST" && !a1) {
-    limiteBusqueda(ip);
-    const r = validarBusqueda(await leerJson(req, MAX_JSON));
-    if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
-    return json(res, 201, { id: datos.crearBusqueda(r.valor) });
-  }
-
-  // "En vivo": cada página abierta avisa cada 30 s que sigue ahí.
-  if (recurso === "latido" && metodo === "POST" && !a1) {
-    try {
-      limiteLatido(ip);
-      if (!esAdmin(req)) {
-        const b = (await leerJson(req, 1_000)) as { pagina?: unknown };
-        actividad.latido(req, typeof b.pagina === "string" ? b.pagina : "inicio");
-      }
-    } catch { /* nunca falla para el visitante */ }
-    res.writeHead(204);
-    return void res.end();
-  }
-
-  // Medición propia (sin cookies): páginas vistas y búsquedas. Nunca falla para el visitante.
-  if (recurso === "m" && metodo === "POST" && !a1) {
-    try {
-      limiteMedir(ip);
-      if (!esAdmin(req) && !estad.esRobot(req)) {
-        const b = (await leerJson(req, 4_000)) as Record<string, unknown>;
-        const txt = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : "");
-        if (b.t === "pv") {
-          const avisoId = Number(b.aviso);
-          let propio = "";
-          try { propio = new URL(SITE_URL || `http://${req.headers.host ?? ""}`).hostname.replace(/^www\./, ""); } catch { /* sin host */ }
-          estad.registrarPagina(req, { avisoId: Number.isInteger(avisoId) && avisoId > 0 ? avisoId : null, de: txt(b.de, 10), ref: txt(b.ref, 300), propio });
-        } else if (b.t === "busca") {
-          const n = Number(b.n);
-          estad.registrarBusqueda(req, txt(b.q, 60), Number.isFinite(n) ? n : -1);
-        }
-      }
-    } catch { /* medir nunca rompe nada */ }
-    res.writeHead(204);
-    return void res.end();
-  }
-
-  if (recurso === "admin") {
-    if (a1 === "login" && metodo === "POST") {
-      limiteLogin(ip);
-      const cuerpo = (await leerJson(req, MAX_JSON)) as { clave?: unknown };
-      if (typeof cuerpo.clave !== "string" || !claveCorrecta(cuerpo.clave.slice(0, 200))) {
-        console.warn(new Date().toISOString(), "PANEL: contraseña incorrecta desde", ip);
-        actividad.contarLoginMal();
-        throw new ErrorHttp(401, "Contraseña incorrecta.");
-      }
-      console.log(new Date().toISOString(), "PANEL: entrada correcta desde", ip);
-      iniciarSesion(res);
-      return json(res, 200, { ok: true });
-    }
-    if (a1 === "logout" && metodo === "POST") {
-      cerrarSesion(req, res);
-      return json(res, 200, { ok: true });
-    }
-    if (a1 === "sesion" && metodo === "GET") {
-      try {
-        exigirAdmin(req);
-        return json(res, 200, { ok: true });
-      } catch {
-        return json(res, 200, { ok: false });
-      }
-    }
-    exigirAdmin(req);
-    if (a1 === "actividad" && !a2 && metodo === "GET") {
-      exigirAdmin(req);
-      const p = url.searchParams.get("periodo");
-      return json(res, 200, actividad.resumen(p === "7d" || p === "30d" ? p : "24h"));
-    }
-    if (a1 === "estadisticas" && !a2 && metodo === "GET") {
-      exigirAdmin(req);
-      const dias = [7, 30, 90].includes(Number(url.searchParams.get("dias"))) ? Number(url.searchParams.get("dias")) : 30;
-      return json(res, 200, estad.resumen(dias));
-    }
-    if (a1 === "copia" && !a2 && metodo === "GET") {
-      // Copia de seguridad completa: la base de datos + todas las fotos, en un solo .zip para guardar en la compu.
-      const tmp = join(tmpdir(), `copia-${randomBytes(8).toString("hex")}.db`);
-      try {
-        datos.copiarBase(tmp);
-        const fechaArchivo = new Date().toISOString().slice(0, 10);
-        res.writeHead(200, { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="vidriera-copia-${fechaArchivo}.zip"`, "Cache-Control": "no-store" });
-        const fotos = readdirSync(FOTOS_DIR).filter((f) => /^[A-Za-z0-9._-]+$/.test(f));
-        escribirZip(res, [
-          { nombre: "vidriera.db", leer: () => readFileSync(tmp) },
-          ...fotos.map((f) => ({ nombre: `fotos/${f}`, leer: () => { try { return readFileSync(join(FOTOS_DIR, f)); } catch { return null; } } })),
-        ]);
-        console.log(new Date().toISOString(), "PANEL: copia de seguridad descargada desde", ip);
-        return void res.end();
-      } finally {
-        rmSync(tmp, { force: true });
-      }
-    }
-    if (a1 === "avisos") {
-      if (!a2 && metodo === "GET") {
-        const e = url.searchParams.get("estado") ?? "";
-        const estado = (["pendiente", "publicado", "rechazado", "vendido"].includes(e) ? e : "") as Estado | "";
-        return json(res, 200, datos.listarAdmin(estado));
-      }
-      if (!a2 && metodo === "POST") {
-        const r = validarAviso(await leerJson(req, MAX_CON_FOTOS), { exigirFotos: false });
-        if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
-        // ?estado=pendiente lo usa "Cargar varios": entran como pendientes para revisarlos y aprobarlos uno por uno.
-        const estado = url.searchParams.get("estado") === "pendiente" ? "pendiente" : "publicado";
-        const id = datos.crearAviso(r.valor, guardarFotos(r.valor.fotos), { estado });
-        return json(res, 201, datos.obtenerAdmin(id));
-      }
-      const id = idDe(a2);
-      if (partes[4] === "fotos.zip" && metodo === "GET") {
-        // Todas las fotos del aviso juntas, en el orden del aviso (1 = tapa).
-        const archivos = datos.archivosDe(id).flatMap((archivo, i) => {
-          const ruta = join(FOTOS_DIR, archivo);
-          return existsSync(ruta) ? [{ nombre: `aviso-${id}-foto-${i + 1}${extname(archivo).toLowerCase()}`, datos: readFileSync(ruta) as Buffer }] : [];
-        });
-        if (!archivos.length) throw new ErrorHttp(404, "Este aviso no tiene fotos.");
-        const zip = armarZip(archivos);
-        res.writeHead(200, {
-          "Content-Type": "application/zip",
-          "Content-Disposition": `attachment; filename="aviso-${id}-fotos.zip"`,
-          "Content-Length": zip.length,
-          "Cache-Control": "no-store",
-        });
-        return void res.end(zip);
-      }
-      if (partes.length > 4) throw new ErrorHttp(404, "No encontrado.");
-      if (metodo === "PATCH") {
-        const c = (await leerJson(req, MAX_JSON)) as Record<string, unknown>;
-        const estados: Estado[] = ["pendiente", "publicado", "rechazado", "vendido"];
-        const aviso = datos.actualizarAviso(id, {
-          estado: estados.includes(c.estado as Estado) ? (c.estado as Estado) : undefined,
-          renovar: c.renovar === true,
-          reservado: typeof c.reservado === "boolean" ? c.reservado : undefined,
-          destacado: typeof c.destacado === "boolean" ? c.destacado : undefined,
-          titulo: typeof c.titulo === "string" && recortar(c.titulo, LIMITES.titulo).length >= 4 ? recortar(c.titulo, LIMITES.titulo) : undefined,
-          descripcion: typeof c.descripcion === "string" ? recortar(c.descripcion, LIMITES.descripcion) : undefined,
-          precio: "precio" in c ? (soloDigitos(c.precio) ? Number(soloDigitos(c.precio).slice(0, 12)) : null) : undefined,
-          moneda: c.moneda === "ARS" || c.moneda === "USD" ? c.moneda : undefined,
-        });
-        if (!aviso) throw new ErrorHttp(404, "No encontrado.");
-        return json(res, 200, aviso);
-      }
-      if (metodo === "PUT") {
-        // Edición completa: todos los datos y las fotos (las que ya estaban + las nuevas), en el orden que mandó el panel.
-        const r = validarAviso(await leerJson(req, MAX_CON_FOTOS), { exigirFotos: false });
-        if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
-        if (!datos.obtenerAdmin(id)) throw new ErrorHttp(404, "No encontrado.");
-        const propias = datos.archivosDe(id);
-        const nuevas: string[] = [];
-        const plan: ({ archivo: string } | { nueva: number })[] = [];
-        for (const f of r.valor.fotos) {
-          const ya = /^\/fotos\/([A-Za-z0-9._-]+)$/.exec(f);
-          if (ya?.[1]) {
-            if (!propias.includes(ya[1])) throw new ErrorHttp(400, "Una de las fotos no es de este aviso.", [{ campo: "fotos", msg: "Volvé a cargar las fotos." }]);
-            plan.push({ archivo: ya[1] });
-          } else {
-            plan.push({ nueva: nuevas.length });
-            nuevas.push(f);
-          }
-        }
-        const guardadas = guardarFotos(nuevas);
-        const final = plan.map((p) => ("archivo" in p ? p.archivo : (guardadas[p.nueva] ?? "")));
-        let resultado: ReturnType<typeof datos.editarAviso>;
-        try {
-          resultado = datos.editarAviso(id, r.valor, final);
-        } catch (err) {
-          borrarFotos(guardadas);
-          throw err;
-        }
-        if (!resultado) {
-          borrarFotos(guardadas);
-          throw new ErrorHttp(404, "No encontrado.");
-        }
-        borrarFotos(resultado.quitadas);
-        return json(res, 200, resultado.aviso);
-      }
-      if (metodo === "DELETE") {
-        borrarFotos(datos.borrarAviso(id));
-        return json(res, 200, { ok: true });
-      }
-    }
-    if (a1 === "busquedas") {
-      if (!a2 && metodo === "GET") return json(res, 200, datos.listarBusquedas());
-      if (a2 && metodo === "DELETE") {
-        datos.borrarBusqueda(idDe(a2));
-        return json(res, 200, { ok: true });
-      }
-    }
-  }
-  throw new ErrorHttp(404, "No encontrado.");
-}
+const RUTAS: Rutas[] = [rutasPublicas, rutasMedicion, rutasAdmin];
 
 const servidor = createServer(async (req, res) => {
   cabecerasSeguridad(res);
   const url = new URL(req.url ?? "/", "http://localhost");
   actividad.medirPedido(req, res, url.pathname);
   try {
-    if (url.pathname.startsWith("/api/")) return await api(req, res, url);
-    if (req.method !== "GET" && req.method !== "HEAD") throw new ErrorHttp(405, "Método no permitido.");
-    if (url.pathname === "/robots.txt") {
-      res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-      return void res.end(process.env.NOINDEX === "0" ? "User-agent: *\nDisallow: /api/\n" : "User-agent: *\nDisallow: /\n");
+    const metodo = req.method ?? "GET";
+    if (url.pathname.startsWith("/api/")) {
+      if (metodo !== "GET") exigirMismoOrigen(req);
+      const resto = url.pathname.split("/").filter(Boolean).slice(1); // sin "api"
+      const pedido: Pedido = { req, res, url, metodo, ip: ipDe(req), recurso: resto[0] ?? "", a1: resto[1], a2: resto[2], resto };
+      for (const rutas of RUTAS) if (await rutas(pedido)) return;
+      throw new ErrorHttp(404, "No encontrado.");
     }
-    const compartir = /^\/a\/(\d+)\/?$/.exec(url.pathname);
-    if (compartir) return paginaCompartir(req, res, idDe(compartir[1]), url.searchParams.get("de") ?? "");
-    if (url.pathname.startsWith("/fotos/") && servirArchivo(res, FOTOS_DIR, url.pathname.slice("/fotos".length), "public, max-age=31536000, immutable")) return;
-    if (url.pathname === "/" || url.pathname === "/index.html") {
-      if (servirArchivo(res, WEB_DIR, "/index.html", "no-cache")) return;
-    } else if (servirArchivo(res, WEB_DIR, url.pathname, url.pathname.startsWith("/assets/") ? "public, max-age=86400" : "no-cache")) return;
-    (res as typeof res & { mensajeError?: string }).mensajeError = "No existe esa dirección";
-    res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(existsSync(join(WEB_DIR, "404.html")) ? readFileSync(join(WEB_DIR, "404.html")) : "No encontrado");
+    if (metodo !== "GET" && metodo !== "HEAD") throw new ErrorHttp(405, "Método no permitido.");
+    servirSitio(req, res, url);
   } catch (err) {
-    (res as typeof res & { mensajeError?: string }).mensajeError = err instanceof Error ? err.message : String(err);
+    actividad.anotarError(res, err instanceof Error ? err.message : String(err));
     if (err instanceof ErrorHttp) return json(res, err.status, { error: err.message, campos: err.campos });
     console.error(new Date().toISOString(), req.method, url.pathname, err);
     if (!res.headersSent) json(res, 500, { error: "Algo salió mal. Probá de nuevo en un rato." });

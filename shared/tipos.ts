@@ -120,3 +120,46 @@ export interface ErrorCampo {
   campo: string;
   msg: string;
 }
+
+// ---------- Panel: estadísticas y actividad (las arma el servidor, las muestra el panel) ----------
+
+export interface ResumenEstadisticas {
+  dias: number;
+  serie: { fecha: string; personas: number; vistas: number; contactos: number }[];
+  total: { personas: number; vistas: number; contactos: number; paginas: number };
+  /** null si en el período anterior no había datos (no se compara contra la nada) */
+  anterior: { personas: number; vistas: number; contactos: number } | null;
+  avisos: { id: number; titulo: string; estado: string; vistas: number; contactos: number }[];
+  origenes: { nombre: string; n: number }[];
+  busquedas: { texto: string; n: number }[];
+  sinResultados: { texto: string; n: number }[];
+  rubros: { nombre: string; vistas: number; contactos: number }[];
+  pueblos: { nombre: string; vistas: number; contactos: number }[];
+  avisosEstado: Record<string, number>;
+  desde: string | null;
+}
+
+/** Contadores de una hora. */
+export interface CuentaActividad {
+  pedidos: number;   // todo lo que llega (menos los "latidos" de en vivo)
+  paginas: number;   // cargas del sitio (entrar o recargar) + links /a/:id
+  fotos: number;
+  api: number;
+  archivos: number;  // estilos, scripts, íconos
+  robots: number;
+  e4: number;        // errores del visitante (4xx)
+  e5: number;        // errores del servidor (5xx)
+  bytes: number;
+  ms: number;        // suma de tiempos de respuesta
+  lentos: number;    // más de 1 segundo
+  loginMal: number;  // contraseñas incorrectas en el panel
+}
+
+export interface ResumenActividad {
+  enVivo: { total: number; paginas: { nombre: string; n: number }[] };
+  periodo: "24h" | "7d" | "30d";
+  serie: { x: string; c: CuentaActividad }[];
+  total: CuentaActividad;
+  errores: { fecha: string; metodo: string; ruta: string; estado: number; mensaje: string; robot: boolean }[];
+  salud: { arranque: string; memoriaMB: number; baseMB: number; fotosMB: number; cantFotos: number; limiteMB: number; libreMB: number | null };
+}

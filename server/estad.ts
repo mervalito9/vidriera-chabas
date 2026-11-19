@@ -8,6 +8,7 @@ import type { IncomingMessage } from "node:http";
 import { db } from "./db.ts";
 import { ipDe } from "./http.ts";
 import { slug } from "../shared/texto.ts";
+import type { ResumenEstadisticas } from "../shared/tipos.ts";
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS estad (
@@ -125,23 +126,8 @@ export function registrarBusqueda(req: IncomingMessage, q: string, resultados: n
 
 // ---------- Resumen para el panel ----------
 
-export interface Resumen {
-  dias: number;
-  serie: { fecha: string; personas: number; vistas: number; contactos: number }[];
-  total: { personas: number; vistas: number; contactos: number; paginas: number };
-  /** null si en el período anterior no había datos (no se compara contra la nada) */
-  anterior: { personas: number; vistas: number; contactos: number } | null;
-  avisos: { id: number; titulo: string; estado: string; vistas: number; contactos: number }[];
-  origenes: { nombre: string; n: number }[];
-  busquedas: { texto: string; n: number }[];
-  sinResultados: { texto: string; n: number }[];
-  rubros: { nombre: string; vistas: number; contactos: number }[];
-  pueblos: { nombre: string; vistas: number; contactos: number }[];
-  avisosEstado: Record<string, number>;
-  desde: string | null;
-}
 
-export function resumen(dias: number): Resumen {
+export function resumen(dias: number): ResumenEstadisticas {
   const hasta = new Date();
   const fechas: string[] = [];
   for (let i = dias - 1; i >= 0; i--) fechas.push(hoy(new Date(hasta.getTime() - i * 864e5)));

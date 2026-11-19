@@ -7,7 +7,7 @@ import { ErrorApi, admin } from "../api.ts";
 import { FormAviso, type ValoresForm } from "../components/FormAviso.tsx";
 import { achicarFoto } from "../fotos.ts";
 import { precioTexto } from "../formato.ts";
-import { abrirZip, type EntradaZip } from "../zipleer.ts";
+import { abrirZip, type EntradaZip } from "./zipleer.ts";
 
 interface Fila extends FichaLista {
   /** Fotos del zip que le tocan a este aviso, en orden */

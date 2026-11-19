@@ -14,8 +14,22 @@ import { useRuta, type Ruta } from "./router.ts";
 import { medirPagina } from "./medir.ts";
 import { Cargando } from "./components/Tarjeta.tsx";
 
-// El panel solo lo usa Felipe: se baja aparte, así los visitantes no cargan su código.
-const Admin = lazy(() => import("./pages/Admin.tsx").then((m) => ({ default: m.Admin })));
+declare const __PANEL_CSS__: string;
+
+/** Agrega una hoja de estilos y espera a que esté lista (así el panel no aparece un instante sin diseño). */
+function cargarEstilos(href: string): Promise<void> {
+  if (document.querySelector(`link[href="${href}"]`)) return Promise.resolve();
+  return new Promise((listo) => {
+    const link = Object.assign(document.createElement("link"), { rel: "stylesheet", href });
+    link.onload = link.onerror = () => listo();
+    document.head.append(link);
+  });
+}
+
+// El panel solo lo usa Felipe: su código y sus estilos se bajan aparte, así los visitantes no los cargan.
+const Admin = lazy(() =>
+  Promise.all([import("./panel/index.tsx"), cargarEstilos(__PANEL_CSS__)]).then(([m]) => ({ default: m.Admin })),
+);
 
 function Pagina({ ruta }: { ruta: Ruta }) {
   const { nombre, param } = ruta;

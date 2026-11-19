@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Actividad as Datos, Cuenta } from "../../../server/actividad.ts";
+import type { CuentaActividad as Cuenta, ResumenActividad as Datos } from "../../../shared/tipos.ts";
 import { admin } from "../api.ts";
 import { Cargando } from "../components/Tarjeta.tsx";
 import { fmtNum } from "../../../shared/texto.ts";

@@ -6,6 +6,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 import { DATA_DIR, FOTOS_DIR, db } from "./db.ts";
 import { esRobot, idVisitante } from "./estad.ts";
+import type { CuentaActividad as Cuenta, ResumenActividad } from "../shared/tipos.ts";
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS act_hora (
@@ -23,21 +24,6 @@ CREATE TABLE IF NOT EXISTS act_errores (
 );
 `);
 
-/** Contadores de una hora. */
-export interface Cuenta {
-  pedidos: number;   // todo lo que llega (menos los "latidos" de en vivo)
-  paginas: number;   // cargas del sitio (entrar o recargar) + links /a/:id
-  fotos: number;
-  api: number;
-  archivos: number;  // estilos, scripts, íconos
-  robots: number;
-  e4: number;        // errores del visitante (4xx)
-  e5: number;        // errores del servidor (5xx)
-  bytes: number;
-  ms: number;        // suma de tiempos de respuesta
-  lentos: number;    // más de 1 segundo
-  loginMal: number;  // contraseñas incorrectas en el panel
-}
 const vacia = (): Cuenta => ({ pedidos: 0, paginas: 0, fotos: 0, api: 0, archivos: 0, robots: 0, e4: 0, e5: 0, bytes: 0, ms: 0, lentos: 0, loginMal: 0 });
 const sumarCuentas = (a: Cuenta, b: Partial<Cuenta>): Cuenta => {
   const r = { ...a };
@@ -77,6 +63,10 @@ for (const s of ["SIGTERM", "SIGINT"] as const) process.once(s, () => { try { gu
 
 export const contarLoginMal = (): void => sumar({ loginMal: 1 });
 
+/** Por qué falló cada respuesta (para la lista de errores del panel). */
+const motivos = new WeakMap<ServerResponse, string>();
+export const anotarError = (res: ServerResponse, motivo: string): void => void motivos.set(res, motivo);
+
 /** Se llama al empezar cada pedido; cuenta todo cuando termina la respuesta. */
 export function medirPedido(req: IncomingMessage, res: ServerResponse, ruta: string): void {
   if (ruta === "/api/latido") return; // los latidos de "en vivo" no son actividad
@@ -99,7 +89,7 @@ export function medirPedido(req: IncomingMessage, res: ServerResponse, ruta: str
       bytes: Math.max(0, req.socket.bytesWritten - bytesAntes), ms, lentos: ms > 1000 ? 1 : 0,
     });
     if (s >= 400) {
-      const mensaje = String((res as ServerResponse & { mensajeError?: string }).mensajeError ?? "").slice(0, 120);
+      const mensaje = (motivos.get(res) ?? "").slice(0, 120);
       db.prepare("INSERT INTO act_errores (fecha, metodo, ruta, estado, mensaje, robot) VALUES (?, ?, ?, ?, ?, ?)")
         .run(new Date().toISOString(), (req.method ?? "").slice(0, 8), ruta.slice(0, 100), s, mensaje, robot ? 1 : 0);
       db.prepare("DELETE FROM act_errores WHERE id <= (SELECT MAX(id) FROM act_errores) - 300").run();
@@ -141,16 +131,8 @@ function medirDisco() {
   return disco;
 }
 
-export interface Actividad {
-  enVivo: { total: number; paginas: { nombre: string; n: number }[] };
-  periodo: "24h" | "7d" | "30d";
-  serie: { x: string; c: Cuenta }[];
-  total: Cuenta;
-  errores: { fecha: string; metodo: string; ruta: string; estado: number; mensaje: string; robot: boolean }[];
-  salud: { arranque: string; memoriaMB: number; baseMB: number; fotosMB: number; cantFotos: number; limiteMB: number; libreMB: number | null };
-}
 
-export function resumen(periodo: "24h" | "7d" | "30d"): Actividad {
+export function resumen(periodo: "24h" | "7d" | "30d"): ResumenActividad {
   guardar();
   limpiar();
   const porPagina = new Map<string, number>();

@@ -1,7 +1,7 @@
 // Avisos de ejemplo: los carga el backend (npm run ejemplos) y los usa la vista previa sin servidor.
 import type { NuevoAviso, RubroId } from "./tipos.ts";
 
-export type Ej = Omit<NuevoAviso, "fotos" | "nombre" | "telefono" | "zona" | "datos" | "permuta" | "financia" | "descripcion"> &
+export type Ej = Omit<NuevoAviso, "fotos" | "nombre" | "telefono" | "zona" | "datos" | "permuta" | "financia" | "descripcion" | "anunciante"> &
   Partial<Pick<NuevoAviso, "zona" | "datos" | "permuta" | "financia" | "descripcion">> & { foto: string; dias: number };
 
 const r = (rubro: RubroId): RubroId => rubro;

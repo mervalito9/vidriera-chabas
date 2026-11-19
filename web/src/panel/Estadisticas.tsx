@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Resumen } from "../../../server/estad.ts";
+import type { ResumenEstadisticas as Resumen } from "../../../shared/tipos.ts";
 import { admin } from "../api.ts";
 import { Cargando } from "../components/Tarjeta.tsx";
 import { useCarga } from "../hooks.ts";

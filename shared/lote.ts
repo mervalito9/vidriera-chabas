@@ -114,7 +114,7 @@ export function fichaAAviso(f: Ficha): FichaLista {
   if (!r.ok) for (const e of r.errores) errores.push(e.msg);
   if (!f.campos.autorizacion || esVacio(f.campos.autorizacion)) faltan.push("autorización del vendedor");
   if (v("descripcion").length < 10) faltan.push("descripción");
-  const borrador = { ...r.valor, rubro: rubro ?? "", tipo: tipo ?? "", fotos: [] as string[] };
+  const borrador: FichaLista["borrador"] = { ...r.valor, rubro: rubro ?? "", tipo: tipo ?? "", fotos: [] };
   return { ...f, avisos: [...f.avisos, ...faltan.map((x) => `Falta: ${x}`)], aviso: r.ok && !errores.length ? { ...r.valor, fotos: [] } : null, borrador, errores: [...new Set(errores)] };
 }
 
