@@ -2,7 +2,7 @@
 // pasa solo a "modo vista previa" con los avisos de ejemplo y publica por WhatsApp.
 import { DIAS_VIGENCIA } from "../../shared/config.ts";
 import { EJEMPLOS } from "../../shared/ejemplos.ts";
-import { filtrarAvisos } from "../../shared/filtrar.ts";
+import { DOLAR_VISTA_PREVIA, filtrarAvisos } from "../../shared/filtrar.ts";
 import type { AvisoAdmin, AvisoPublico, Busqueda, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, ResumenActividad, ResumenEstadisticas } from "../../shared/tipos.ts";
 
 export class ErrorApi extends Error {
@@ -81,7 +81,7 @@ const FILTROS_VACIOS: Filtros = { rubro: "", pueblo: "", q: "", tipo: "", op: ""
 export async function listarAvisos(f: Partial<Filtros>, limite: number, desde = 0): Promise<ListaAvisos> {
   if (await conServidor()) return pedir<ListaAvisos>("GET", `avisos?${aQuery(f, limite, desde)}`);
   const res = filtrarAvisos(avisosDemo(), { ...FILTROS_VACIOS, ...f });
-  return { avisos: res.slice(desde, desde + limite), total: res.length, soloEjemplos: true, conteo: { inmuebles: 0, vehiculos: 0, agro: 0 } };
+  return { avisos: res.slice(desde, desde + limite), total: res.length, soloEjemplos: true, conteo: { inmuebles: 0, vehiculos: 0, agro: 0 }, dolar: DOLAR_VISTA_PREVIA };
 }
 
 export async function obtenerAviso(id: number): Promise<AvisoPublico | null> {

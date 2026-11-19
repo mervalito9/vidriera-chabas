@@ -47,7 +47,9 @@ test("lista los ejemplos sin teléfonos", async () => {
 
 test("filtra por palabra, precio y operación", async () => {
   assert.equal((await (await fetch(`${URL_BASE}/api/avisos?q=pala`)).json()).total, 1);
-  assert.equal((await (await fetch(`${URL_BASE}/api/avisos?max=20000&moneda=USD`)).json()).total, 4);
+  // "Hasta USD 20.000" también trae lo que está en pesos y cuesta menos que eso (con el dólar de referencia).
+  assert.equal((await (await fetch(`${URL_BASE}/api/avisos?max=20000&moneda=USD`)).json()).total, 10);
+  assert.equal((await (await fetch(`${URL_BASE}/api/avisos?max=1000000&moneda=ARS`)).json()).total, 4);
   assert.equal((await (await fetch(`${URL_BASE}/api/avisos?rubro=inmuebles&op=alquiler`)).json()).total, 4);
 });
 
@@ -62,7 +64,7 @@ test("filtro de pueblo: filtra y se combina con los demás filtros", async () =>
   assert.equal(await total(`pueblo=${encodeURIComponent("Chabás")}&rubro=vehiculos&tipo=Moto`), 1);
   assert.equal(await total(`pueblo=Sanford&rubro=inmuebles&op=alquiler`), 1);
   assert.equal(await total(`pueblo=Sanford&rubro=vehiculos`), 0);
-  assert.equal(await total(`pueblo=Firmat&max=20000&moneda=USD`), 0);
+  assert.equal(await total(`pueblo=Firmat&max=20000&moneda=USD`), 1);
   assert.equal(await total(`pueblo=Casilda&max=20000&moneda=USD`), 2);
   assert.equal(await total(`pueblo=${encodeURIComponent("Chabás")}&q=galpon`), 1);
   assert.equal(await total("pueblo=otro"), 0);
@@ -288,4 +290,11 @@ test("sitio: comprime, 404 con diseño y vista previa de WhatsApp con links comp
   assert.match(html, /url=\/\?de=wa#aviso--/);
   const raro = await (await fetch(`${URL_BASE}/a/${id}`, { headers: { "x-forwarded-host": "malo\"><script>" } })).text();
   assert.doesNotMatch(raro, /<script>/);
+});
+
+test("listado: ordenar por precio mezcla dólares y pesos con el dólar de referencia", async () => {
+  const r = await (await fetch(`${URL_BASE}/api/avisos?orden=barato&limite=100`)).json();
+  assert.ok(r.dolar > 0);
+  const enPesos = r.avisos.filter((a: { precio: number | null }) => a.precio !== null).map((a: { precio: number; moneda: string }) => (a.moneda === "USD" ? a.precio * r.dolar : a.precio));
+  assert.deepEqual(enPesos, [...enPesos].sort((x: number, y: number) => x - y));
 });

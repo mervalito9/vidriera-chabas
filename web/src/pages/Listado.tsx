@@ -165,6 +165,7 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
                   <option value="caro">Precio: de mayor a menor</option>
                 </select>
               </div>
+              {d && (f.orden || f.max) && <p className="small">Para comparar precios en dólares y en pesos tomamos el dólar a ${fmtNum(d.dolar)}.</p>}
             </div>
           </details>
           {hayFiltros && <button type="button" className="linkbtn" onClick={limpiar}>Borrar filtros</button>}

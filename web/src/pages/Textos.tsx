@@ -1,3 +1,5 @@
+import { WA_NUMERO } from "../../../shared/config.ts";
+import { linkWA } from "../../../shared/whatsapp.ts";
 import { useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
@@ -6,30 +8,30 @@ export function ComoFunciona() {
   return (
     <div className="wrap prose">
       <h1>Cómo <em>funciona.</em></h1>
-      <p>Vidriera Chabás es un tablón de avisos de Chabás y la zona: los dueños publican y los interesados les escriben directo. Nada más.</p>
+      <p>Vidriera Chabás es un tablón de avisos de Chabás y la zona: quien vende o alquila publica, y los interesados le escriben directo. Nada más.</p>
       <ol className="pasos">
         <li><b>Buscás o publicás.</b><span>Buscás por rubro, tipo, precio o palabra. Para publicar, completás un formulario corto con fotos (o nos mandás todo por WhatsApp).</span></li>
-        <li className="verde"><b>Hablás directo por WhatsApp.</b><span>Cada aviso tiene un botón para escribirle al dueño. No hay intermediarios.</span></li>
+        <li className="verde"><b>Hablás directo por WhatsApp.</b><span>Cada aviso tiene un botón para escribirle a quien lo publicó: el dueño, o la inmobiliaria o agencia si dice «Publica: …». Vidriera no se mete en el medio.</span></li>
         <li><b>Cerrás vos, sin comisión.</b><span>Vidriera no cobra comisión, no tasa y no participa de la operación.</span></li>
       </ol>
       <h2>¿Cuánto cuesta publicar?</h2><p>Nada. Publicar es gratis y no se cobra comisión por vender o alquilar.</p>
       <h2>¿Cuánto dura un aviso?</h2><p>90 días. Si no se vendió, lo volvemos a publicar gratis. Si se vendió antes, avisanos por WhatsApp y lo bajamos.</p>
+      <h2>¿Sos inmobiliaria, agencia o concesionaria?</h2>
+      <p>También podés publicar gratis. Si tenés varios avisos, mandanos la lista con las fotos por WhatsApp y los cargamos nosotros. En cada aviso aparece «Publica: el nombre de tu negocio», y las consultas te llegan directo a tu WhatsApp.</p>
+      <p><a className="btn btn-wa" target="_blank" rel="noopener noreferrer" href={linkWA(WA_NUMERO, "Hola Felipe! Tengo una inmobiliaria/agencia y quiero publicar mis avisos en Vidriera Chabás.")}>Mandar mis avisos por WhatsApp</a></p>
       <h2>¿Y los papeles?</h2><p>Las escrituras las hace una escribanía. Las transferencias de autos, motos y maquinaria se hacen en el Registro Automotor.</p>
       <p><a className="btn btn-main" href={ir("publicar")}>Publicar gratis</a></p>
     </div>
   );
 }
 
-const Borrador = () => null;
-
 export function Terminos() {
   useTitulo("Términos");
   return (
     <div className="wrap prose">
       <h1>Términos <em>de uso.</em></h1>
-      <Borrador />
       <h2>1. Qué es Vidriera Chabás</h2>
-      <p>Un tablón de avisos clasificados donde los dueños publican casas, alquileres, vehículos y maquinaria, y los interesados los contactan directo. Vidriera Chabás no es una inmobiliaria ni una concesionaria: no intermedia en las operaciones, no tasa, no participa en las negociaciones y no cobra comisión sobre ventas o alquileres.</p>
+      <p>Un tablón de avisos clasificados donde dueños, inmobiliarias y agencias publican casas, alquileres, vehículos y maquinaria, y los interesados los contactan directo. Vidriera Chabás no es una inmobiliaria ni una concesionaria: no intermedia en las operaciones, no tasa, no participa en las negociaciones y no cobra comisión sobre ventas o alquileres.</p>
       <h2>2. Responsabilidad de cada aviso</h2>
       <p>Cada aviso es responsabilidad de quien lo publica, que declara que la información es verdadera y que tiene derecho a vender o alquilar lo que ofrece. Vidriera Chabás revisa los avisos antes de publicarlos, pero no verifica la titularidad ni garantiza las operaciones. Antes de pagar, cada persona debe verificar la titularidad y los papeles.</p>
       <h2>3. Precio</h2><p>Publicar es gratis. No se cobra comisión.</p>
@@ -45,7 +47,6 @@ export function Privacidad() {
   return (
     <div className="wrap prose">
       <h1>Privacidad.</h1>
-      <Borrador />
       <h2>Qué datos guardamos</h2>
       <p>Para publicar: tu nombre, tu WhatsApp, los datos del aviso y las fotos. Para "Avisame cuando aparezca": tu nombre, lo que buscás y tu WhatsApp. Se guardan en el servidor de Vidriera Chabás.</p>
       <h2>Para qué</h2>

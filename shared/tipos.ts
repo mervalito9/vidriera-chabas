@@ -54,6 +54,8 @@ export interface ListaAvisos {
   soloEjemplos: boolean;
   /** cantidad de avisos reales vigentes por rubro */
   conteo: Record<RubroId, number>;
+  /** pesos por dólar con que se comparan precios en USD y en $ (al ordenar o filtrar por precio) */
+  dolar: number;
 }
 
 /** Datos que manda el formulario de publicar (y el panel al cargar un aviso). */

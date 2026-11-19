@@ -34,7 +34,7 @@ function AvisoQueNoEsta() {
       {lista.length > 0 && (
         <section className="relacionados" aria-labelledby="otrosT">
           <h2 id="otrosT">Mirá estos otros</h2>
-          <div className="grid">{lista.map((x) => <Tarjeta key={x.id} aviso={x} />)}</div>
+          <div className="grid mini reales">{lista.map((x) => <Tarjeta key={x.id} aviso={x} />)}</div>
         </section>
       )}
     </div>
@@ -48,7 +48,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
   const [grande, setGrande] = useState(false);
   const contacto = useContacto(a);
   const refBoton = useRef<HTMLDivElement>(null);
-  const otros = useCarga(() => listarAvisos({ rubro: a.rubro }, 4), [a.id]);
+  const otros = useCarga(() => listarAvisos({ rubro: a.rubro }, 5), [a.id]);
   const meta = [a.tipo, a.operacion === "alquiler" ? "Alquiler" : "Venta", a.zona].filter(Boolean).join(" · ");
   const bajo = a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior;
 
@@ -114,7 +114,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
       {otros.estado === "listo" && otros.datos.avisos.some((x) => x.id !== a.id) && (
         <>
           <div className="sec-h"><h2>Más avisos de {R.nombre.toLowerCase()}</h2><a href={ir(R.ruta)}>Ver todos</a></div>
-          <div className="grid">{otros.datos.avisos.filter((x) => x.id !== a.id).slice(0, 3).map((x) => <Tarjeta key={x.id} aviso={x} />)}</div>
+          <div className="grid mini reales">{otros.datos.avisos.filter((x) => x.id !== a.id).slice(0, 4).map((x) => <Tarjeta key={x.id} aviso={x} />)}</div>
         </>
       )}
     </div>
@@ -145,10 +145,10 @@ type EstadoContacto = ReturnType<typeof useContacto>;
 
 function BotonWA({ c, corto }: { c: EstadoContacto; corto?: boolean }) {
   return c.estado === "listo" ? (
-    <a className="btn btn-wa" href={c.url} target="_blank" rel="noopener noreferrer">{corto ? "Abrir WhatsApp" : "Abrir WhatsApp con el dueño"}</a>
+    <a className="btn btn-wa" href={c.url} target="_blank" rel="noopener noreferrer">{corto ? "Abrir" : "Abrir WhatsApp con el dueño"}</a>
   ) : (
     <button type="button" className="btn btn-wa" onClick={() => void c.pedir()} disabled={c.estado === "pidiendo"}>
-      {c.estado === "pidiendo" ? "Un segundo…" : corto ? "WhatsApp al dueño" : "Hablar por WhatsApp con el dueño"}
+      {c.estado === "pidiendo" ? "Un segundo…" : corto ? "WhatsApp" : "Hablar por WhatsApp con el dueño"}
     </button>
   );
 }

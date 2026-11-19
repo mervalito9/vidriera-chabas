@@ -54,3 +54,19 @@ test("datos guiados: escriben etiquetas, las leen y respetan lo demás", () => {
   assert.deepEqual(casa, ["1 dormitorio", "Cochera"]);
   assert.deepEqual(leerGuiados("inmuebles", ["3 dormitorios", "Patio", "180 m²"]), { valores: { dorm: "3", m2: "180" }, resto: ["Patio"] });
 });
+
+test("precios: dólares y pesos se comparan juntos al ordenar y filtrar", async () => {
+  const { filtrarAvisos } = await import("../shared/filtrar.ts");
+  const base = { rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "x", descripcion: "", zona: "", datos: [], pueblo: "Chabás", permuta: false, financia: false };
+  const avisos = [
+    { ...base, id: 1, precio: 32000, moneda: "USD" },
+    { ...base, id: 2, precio: 7_500_000, moneda: "ARS" },
+    { ...base, id: 3, precio: null, moneda: "ARS" },
+    { ...base, id: 4, precio: 46_000_000, moneda: "ARS" },
+  ] as never[];
+  const f = { rubro: "", pueblo: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "barato" } as const;
+  const ids = (l: { id: number }[]) => l.map((a) => a.id);
+  assert.deepEqual(ids(filtrarAvisos(avisos, f, 1000)), [2, 1, 4, 3]);
+  assert.deepEqual(ids(filtrarAvisos(avisos, { ...f, orden: "caro" }, 1000)), [4, 1, 2, 3]);
+  assert.deepEqual(ids(filtrarAvisos(avisos, { ...f, orden: "", max: "35000" }, 1000)), [1, 2], "hasta USD 35.000 incluye el auto de $7,5 millones");
+});
