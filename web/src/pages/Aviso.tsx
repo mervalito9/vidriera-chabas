@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as PE } from "react";
+import { useEffect, useRef, useState, type PointerEvent as PE, type RefObject } from "react";
 import { RUBROS } from "../../../shared/config.ts";
 import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
@@ -16,15 +16,29 @@ export function Aviso({ id }: { id: number }) {
 
   if (carga.estado === "cargando") return <div className="wrap"><Cargando /></div>;
   if (carga.estado === "error") return <div className="wrap prose"><p className="form-err" role="alert">{carga.mensaje}</p></div>;
-  if (!aviso)
-    return (
-      <div className="wrap prose">
+  if (!aviso) return <AvisoQueNoEsta />;
+  return <FichaAviso a={aviso} />;
+}
+
+/** El link llegó por WhatsApp o Instagram pero el aviso ya no está: en vez de un callejón sin salida, otros avisos. */
+function AvisoQueNoEsta() {
+  const otros = useCarga(() => listarAvisos({}, 4), []);
+  const lista = otros.estado === "listo" && !otros.datos.soloEjemplos ? otros.datos.avisos : [];
+  return (
+    <div className="wrap">
+      <div className="prose">
         <h1>Este aviso ya no está.</h1>
         <p>Puede que se haya vendido, que lo hayan bajado o que haya vencido (los avisos duran 90 días).</p>
-        <p><a className="btn btn-main" href={ir("buscar")}>Ver todos los avisos</a></p>
+        <p className="botones"><a className="btn btn-main" href={ir("buscar")}>Ver todos los avisos</a> <a className="btn btn-line" href={ir("busco")}>Avisame si aparece algo parecido</a></p>
       </div>
-    );
-  return <FichaAviso a={aviso} />;
+      {lista.length > 0 && (
+        <section className="relacionados" aria-labelledby="otrosT">
+          <h2 id="otrosT">Mirá estos otros</h2>
+          <div className="grid">{lista.map((x) => <Tarjeta key={x.id} aviso={x} />)}</div>
+        </section>
+      )}
+    </div>
+  );
 }
 
 function FichaAviso({ a }: { a: AvisoPublico }) {
@@ -32,6 +46,8 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
   const fotos = a.fotos.map(fotoSegura).filter(Boolean);
   const [foto, setFoto] = useState(0);
   const [grande, setGrande] = useState(false);
+  const contacto = useContacto(a);
+  const refBoton = useRef<HTMLDivElement>(null);
   const otros = useCarga(() => listarAvisos({ rubro: a.rubro }, 4), [a.id]);
   const meta = [a.tipo, a.operacion === "alquiler" ? "Alquiler" : "Venta", a.zona].filter(Boolean).join(" · ");
   const bajo = a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior;
@@ -83,7 +99,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           {bajo && a.precioAnterior !== null && (
             <p className="baja">Bajó de precio: antes {a.moneda === "ARS" ? "$" : "USD"} {fmtNum(a.precioAnterior)}</p>
           )}
-          <Contacto a={a} />
+          <Contacto a={a} c={contacto} refBoton={refBoton} />
           <ul className="datos">
             {a.datos.map((d) => <li key={d}>{d}</li>)}
             {a.permuta && <li className="ok">Acepta permuta</li>}
@@ -94,6 +110,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           {!a.ejemplo && <Compartir a={a} />}
         </div>
       </div>
+      <BarraContacto a={a} c={contacto} refBoton={refBoton} />
       {otros.estado === "listo" && otros.datos.avisos.some((x) => x.id !== a.id) && (
         <>
           <div className="sec-h"><h2>Más avisos de {R.nombre.toLowerCase()}</h2><a href={ir(R.ruta)}>Ver todos</a></div>
@@ -104,18 +121,11 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
   );
 }
 
-/** El teléfono del dueño lo da el backend recién cuando tocan el botón. */
-function Contacto({ a }: { a: AvisoPublico }) {
+/** El teléfono del dueño lo da el backend recién cuando tocan el botón. Lo usan el botón grande y la barra fija del celular. */
+function useContacto(a: AvisoPublico) {
   const [estado, setEstado] = useState<"" | "pidiendo" | "listo">("");
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
-  if (a.ejemplo)
-    return (
-      <div className="contacto">
-        <button type="button" className="btn btn-wa" disabled>Hablar por WhatsApp con el dueño</button>
-        <p className="nota-ej">Aviso de ejemplo: está para que veas cómo se ve. No tiene un dueño real para contactar.</p>
-      </div>
-    );
   const pedir = async () => {
     setEstado("pidiendo");
     setError("");
@@ -124,23 +134,57 @@ function Contacto({ a }: { a: AvisoPublico }) {
       setUrl(r.url);
       setEstado("listo");
       window.location.assign(r.url); // en el celular abre WhatsApp directo; si no, queda el botón
-
     } catch (e) {
       setEstado("");
       setError(e instanceof ErrorApi ? e.message : "No se pudo abrir el contacto. Probá de nuevo.");
     }
   };
+  return { estado, url, error, pedir };
+}
+type EstadoContacto = ReturnType<typeof useContacto>;
+
+function BotonWA({ c, corto }: { c: EstadoContacto; corto?: boolean }) {
+  return c.estado === "listo" ? (
+    <a className="btn btn-wa" href={c.url} target="_blank" rel="noopener noreferrer">{corto ? "Abrir WhatsApp" : "Abrir WhatsApp con el dueño"}</a>
+  ) : (
+    <button type="button" className="btn btn-wa" onClick={() => void c.pedir()} disabled={c.estado === "pidiendo"}>
+      {c.estado === "pidiendo" ? "Un segundo…" : corto ? "WhatsApp al dueño" : "Hablar por WhatsApp con el dueño"}
+    </button>
+  );
+}
+
+function Contacto({ a, c, refBoton }: { a: AvisoPublico; c: EstadoContacto; refBoton: RefObject<HTMLDivElement | null> }) {
+  if (a.ejemplo)
+    return (
+      <div className="contacto">
+        <button type="button" className="btn btn-wa" disabled>Hablar por WhatsApp con el dueño</button>
+        <p className="nota-ej">Aviso de ejemplo: está para que veas cómo se ve. No tiene un dueño real para contactar.</p>
+      </div>
+    );
   return (
-    <div className="contacto">
-      {estado === "listo" ? (
-        <a className="btn btn-wa" href={url} target="_blank" rel="noopener noreferrer">Abrir WhatsApp con el dueño</a>
-      ) : (
-        <button type="button" className="btn btn-wa" onClick={pedir} disabled={estado === "pidiendo"}>
-          {estado === "pidiendo" ? "Un segundo…" : "Hablar por WhatsApp con el dueño"}
-        </button>
-      )}
-      {error && <p className="err" role="alert">{error}</p>}
+    <div className="contacto" ref={refBoton}>
+      <BotonWA c={c} />
+      {c.error && <p className="err" role="alert">{c.error}</p>}
       <p className="small">Hablás directo con quien publicó. Vidriera Chabás no cobra comisión ni participa de la operación.</p>
+    </div>
+  );
+}
+
+/** En el celular: precio y WhatsApp siempre a mano, mientras el botón grande no está a la vista. */
+function BarraContacto({ a, c, refBoton }: { a: AvisoPublico; c: EstadoContacto; refBoton: RefObject<HTMLDivElement | null> }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = refBoton.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const o = new IntersectionObserver(([e]) => setVisible(!e!.isIntersecting), { threshold: 0 });
+    o.observe(el);
+    return () => o.disconnect();
+  }, [refBoton]);
+  if (a.ejemplo) return null;
+  return (
+    <div className={`barra-wa${visible ? " visible" : ""}`} aria-hidden={!visible} inert={!visible}>
+      <span className="barra-wa-precio"><b>{precioTexto(a)}</b>{porMes(a) && <small> por mes</small>}</span>
+      <BotonWA c={c} corto />
     </div>
   );
 }

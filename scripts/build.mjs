@@ -17,9 +17,12 @@ copyFileSync(`${raiz}web/index.html`, `${dist}/index.html`);
 
 const opciones = {
   entryPoints: [`${raiz}web/src/main.tsx`],
-  outfile: `${dist}/assets/app.js`,
+  outdir: `${dist}/assets`,
+  entryNames: "app",
+  chunkNames: "partes/[name]-[hash]",
   bundle: true,
-  format: "iife",
+  splitting: true,
+  format: "esm",
   target: ["es2020"],
   jsx: "automatic",
   minify: !mirar,

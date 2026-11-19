@@ -138,6 +138,8 @@ function Panel({ param, onSalir }: { param: string; onSalir: () => void }) {
   const nuevas = busquedas?.filter((b) => Date.now() - Date.parse(b.creadoEn) < 7 * DIA).length ?? 0;
   const salir = () => void admin.salir().finally(onSalir);
   const aviso = editarId && avisos ? avisos.find((a) => a.id === Number(editarId)) : undefined;
+  const NOMBRES: Record<Seccion, string> = { inicio: "Inicio", avisos: "Avisos", cargar: "Cargar aviso", varios: "Cargar varios", busquedas: "Búsquedas", estad: "Estadísticas", actividad: "Actividad", mas: "Más" };
+  useTitulo(aviso ? `Editar · ${aviso.titulo} · Panel` : `${NOMBRES[seccion]} · Panel`);
 
   const items: [Seccion, string, ReactNode, ReactNode?][] = [
     ["inicio", "Inicio", I.inicio],
@@ -564,7 +566,8 @@ function MenuAviso({ a, abierto, onAbrir, accion }: { a: AvisoAdmin; abierto: bo
       <button type="button" className="pn-puntos" aria-label={`Más acciones de ${a.titulo}`} aria-expanded={abierto} aria-haspopup="menu" onClick={() => onAbrir(!abierto)}><Ico d={I.puntos} size={20} /></button>
       {aviso && <span className="pn-toast" role="status">{aviso}</span>}
       {abierto && (
-        <div className="pn-pop" role="menu">
+        <div className="pn-pop" role="menu" aria-label={`Acciones de ${a.titulo}`}>
+          <p className="pn-pop-titulo">{a.titulo}</p>
           {pub && <a role="menuitem" href={ir("aviso", a.id)} target="_blank" rel="noopener">Ver en el sitio</a>}
           {pub && <button role="menuitem" type="button" onClick={() => hacer({ destacado: !a.destacado })}>{a.destacado ? "★ Sacar de arriba" : "★ Fijar arriba"}</button>}
           {pub && <button role="menuitem" type="button" onClick={() => hacer({ reservado: !a.reservado })}>{a.reservado ? "Sacar «Reservado»" : "Marcar reservado"}</button>}
@@ -646,7 +649,6 @@ function Editor({ a, accion, onListo }: { a: AvisoAdmin; accion: (fn: () => Prom
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
   const [error, setError] = useState("");
   const aprobar = useRef(false);
-  useTitulo(`Editar · ${a.titulo}`);
   const guardar = (n: NuevoAviso) => {
     setEnviando(true);
     setErrores([]);

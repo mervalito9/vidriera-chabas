@@ -154,8 +154,9 @@ export function resumen(periodo: "24h" | "7d" | "30d"): Actividad {
   guardar();
   limpiar();
   const porPagina = new Map<string, number>();
-  for (const v of enLinea.values()) porPagina.set(v.pagina, (porPagina.get(v.pagina) ?? 0) + 1);
-  const paginas = [...porPagina].map(([p, n]) => ({ nombre: nombrePagina(p), n })).sort((a, b) => b.n - a.n);
+  // Se agrupa por el nombre que se muestra ("publicar" y "publicar--autos" son la misma página para Felipe).
+  for (const v of enLinea.values()) { const n = nombrePagina(v.pagina); porPagina.set(n, (porPagina.get(n) ?? 0) + 1); }
+  const paginas = [...porPagina].map(([nombre, n]) => ({ nombre, n })).sort((a, b) => b.n - a.n);
 
   const ahora = Date.now();
   const horas = periodo === "24h" ? 24 : periodo === "7d" ? 24 * 7 : 24 * 30;

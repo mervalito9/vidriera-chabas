@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ATAJOS, OTRO_PUEBLO, POR_PAGINA, PUEBLOS, RUBROS, lugarDe } from "../../../shared/config.ts";
-import { plural, slug } from "../../../shared/texto.ts";
+import { fmtNum, plural, slug } from "../../../shared/texto.ts";
 import type { Filtros, ListaAvisos, RubroId } from "../../../shared/tipos.ts";
 import { listarAvisos } from "../api.ts";
 import { medirBusqueda } from "../medir.ts";
+import { OPCIONES, prepararBusqueda } from "./Busco.tsx";
 import { Cargando, Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
@@ -39,8 +40,7 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
     return { ...aplicarAtajo(rubro, atajo), pueblo: puebloRecordado, q };
   });
   const lugar = lugarDe(f.pueblo);
-  const titulo = R ? `${R.nombre} en ${lugar}` : f.pueblo ? `Avisos de ${lugar}` : "Todos los avisos de Chabás y la zona";
-  useTitulo(titulo);
+
   const [qEscrito, setQEscrito] = useState(f.q);
   const [limite, setLimite] = useState(POR_PAGINA);
   const [masAbierto, setMasAbierto] = useState(() => window.matchMedia?.("(min-width: 900px)").matches ?? false);
@@ -75,6 +75,20 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
   const atajos = ATAJOS[rubro || "todo"];
   const atajoActivo = f.op && !f.tipo ? f.op : f.tipo ? slug(f.tipo) : "";
   const hayFiltros = useMemo(() => !!(f.q || f.tipo || f.op || f.max || f.permuta || f.financia || f.pueblo), [f]);
+  const etiquetaAtajo = atajos.find(([k]) => k === atajoActivo)?.[1];
+  const titulo = atajoActivo === "venta" ? `Inmuebles en venta en ${lugar}` : etiquetaAtajo ? `${etiquetaAtajo} en ${lugar}` : R ? `${R.nombre} en ${lugar}` : f.pueblo ? `Avisos de ${lugar}` : "Todos los avisos de Chabás y la zona";
+  useTitulo(titulo);
+  useEffect(() => {
+    const opcion =
+      rubro === "agro" ? OPCIONES[6]
+      : f.tipo === "Terreno" ? OPCIONES[2]
+      : f.tipo === "Galpón o local" ? OPCIONES[3]
+      : rubro === "inmuebles" || ["Casa", "Departamento"].includes(f.tipo) ? (f.op === "alquiler" ? OPCIONES[1] : OPCIONES[0])
+      : f.tipo === "Moto" ? OPCIONES[5]
+      : rubro === "vehiculos" ? OPCIONES[4] : "";
+    const que = [etiquetaAtajo ?? f.tipo, f.pueblo && f.pueblo !== OTRO_PUEBLO ? `en ${f.pueblo}` : "", f.q].filter(Boolean).join(" ").trim();
+    prepararBusqueda({ rubro: opcion ?? "", que, presupuesto: f.max ? `hasta ${f.moneda === "ARS" ? "$" : "USD"} ${fmtNum(Number(f.max))}` : "" });
+  }, [rubro, f, etiquetaAtajo]);
   const limpiar = () => { puebloRecordado = ""; setF({ ...VACIOS, rubro }); setQEscrito(""); setLimite(POR_PAGINA); };
 
   return (

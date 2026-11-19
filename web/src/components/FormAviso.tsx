@@ -3,6 +3,7 @@ import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../share
 import { fmtNum, soloDigitos } from "../../../shared/texto.ts";
 import type { ErrorCampo, NuevoAviso, RubroId } from "../../../shared/tipos.ts";
 import { validarAviso } from "../../../shared/validar.ts";
+import { CAMPOS_GUIADOS, escribirGuiado, leerGuiados } from "../../../shared/datosGuiados.ts";
 import { achicarFoto } from "../fotos.ts";
 import { IconoRubro } from "./Iconos.tsx";
 
@@ -33,10 +34,19 @@ export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
   rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "",
 });
 
+/** Moneda que se usa en la zona para cada cosa (casas en venta y maquinaria en dólares; autos y alquileres en pesos).
+ * Si ya escribió un precio, no se la cambiamos. */
+export function monedaSugerida(rubro: RubroId | "", operacion: "venta" | "alquiler", v: Pick<ValoresForm, "precio" | "moneda">): "USD" | "ARS" {
+  if (v.precio) return v.moneda;
+  return (rubro === "inmuebles" && operacion === "venta") || rubro === "agro" ? "USD" : "ARS";
+}
+
+const listaDatos = (texto: string) => texto.split(",").map((d) => d.trim()).filter(Boolean);
+
 /** El pueblo que quedó elegido (el de la lista o el que escribió en "Otro"). */
 export const puebloElegido = (v: ValoresForm): string => (v.pueblo === OTRO_PUEBLO ? v.puebloOtro.trim() : v.pueblo);
 
-export const aNuevoAviso = (v: ValoresForm): unknown => ({ ...v, pueblo: puebloElegido(v), precio: v.precio, datos: v.datos.split(",").map((d) => d.trim()).filter(Boolean), zona: v.zona });
+export const aNuevoAviso = (v: ValoresForm): unknown => ({ ...v, pueblo: puebloElegido(v), precio: v.precio, datos: listaDatos(v.datos), zona: v.zona });
 
 /** Mensaje de WhatsApp con todos los datos (se usa cuando no hay servidor o si la persona prefiere mandarlo así). */
 export function mensajeWhatsApp(v: ValoresForm): string {
@@ -47,6 +57,7 @@ export function mensajeWhatsApp(v: ValoresForm): string {
   L.push(`Título: ${v.titulo.trim() || "-"}`, `Dónde está: ${puebloElegido(v) || "-"}`);
   const p = soloDigitos(v.precio);
   L.push(`Precio: ${p ? `${fmtNum(Number(p))} ${v.moneda === "ARS" ? "Pesos ($)" : "Dólares (USD)"}${v.operacion === "alquiler" && v.rubro === "inmuebles" ? " por mes" : ""}` : "A consultar"}`);
+  if (v.datos.trim()) L.push(`Datos: ${listaDatos(v.datos).join(", ")}`);
   if (v.permuta) L.push("Acepta permuta: Sí");
   if (v.financia) L.push("Financia: Sí");
   L.push(`Descripción: ${v.descripcion.trim() || "-"}`, `Nombre: ${v.nombre.trim() || "-"}`, `WhatsApp para que me contacten: ${soloDigitos(v.telefono) || "-"}`, "", "Ahora te mando las fotos por acá.");
@@ -63,7 +74,7 @@ interface Props {
   erroresServidor: ErrorCampo[];
   textoBoton: string;
   pie?: ReactNode;
-  /** En el panel: muestra zona y datos destacados */
+  /** En el panel: muestra zona, datos libres y "Publicado por", con textos para Felipe en vez de para el vecino */
   avanzado?: boolean;
 }
 
@@ -119,12 +130,15 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
   return (
     <form className="form" noValidate onSubmit={enviar}>
       <fieldset>
-        <legend>1. ¿Qué querés publicar?</legend>
+        <legend>{avanzado ? "1. ¿Qué es?" : "1. ¿Qué querés publicar?"}</legend>
         <div className="rubro-pick">
           {RUBRO_IDS.map((r) => (
             <label key={r}>
               <input type="radio" name="rubro" id={`rubro-${r}`} value={r} checked={v.rubro === r}
-                onChange={() => onCambio({ ...v, rubro: r, tipo: RUBROS[r].tipos.includes(v.tipo) ? v.tipo : "", operacion: r === "inmuebles" ? v.operacion : "venta" })} />
+                onChange={() => {
+                  onCambio({ ...v, rubro: r, tipo: RUBROS[r].tipos.includes(v.tipo) ? v.tipo : "", operacion: r === "inmuebles" ? v.operacion : "venta", moneda: monedaSugerida(r, r === "inmuebles" ? v.operacion : "venta", v) });
+                  setErrores(errores.filter((x) => x.campo !== "rubro"));
+                }} />
               <span><IconoRubro rubro={r} color="#17150F" />{r === "inmuebles" ? "Inmueble" : r === "vehiculos" ? "Vehículo" : "Maquinaria agro"}</span>
             </label>
           ))}
@@ -146,7 +160,7 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
             <span className="lbl" id="opL">¿Venta o alquiler?</span>
             <div className="seg dos" role="radiogroup" aria-labelledby="opL">
               {(["venta", "alquiler"] as const).map((o) => (
-                <label key={o}><input type="radio" name="operacion" checked={v.operacion === o} onChange={() => set("operacion", o)} /><span>{o === "venta" ? "Venta" : "Alquiler"}</span></label>
+                <label key={o}><input type="radio" name="operacion" checked={v.operacion === o} onChange={() => onCambio({ ...v, operacion: o, moneda: monedaSugerida(v.rubro, o, v) })} /><span>{o === "venta" ? "Venta" : "Alquiler"}</span></label>
               ))}
             </div>
           </div>
@@ -157,7 +171,9 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         <label className="lbl" htmlFor="f-titulo">2. Título del aviso</label>
         <input id="f-titulo" type="text" maxLength={LIMITES.titulo} autoComplete="off" placeholder={R?.placeholder ?? "Ej: Casa de 2 dormitorios con patio"}
           value={v.titulo} aria-invalid={!!err("titulo") || undefined} onChange={(e) => set("titulo", e.target.value)} />
-        {err("titulo") && <p className="err">{err("titulo")}</p>}
+        {err("titulo") ? <p className="err">{err("titulo")}</p> : v.titulo.trim().length > 0 && v.titulo.trim().length < 18 && (
+          <p className="small consejo">Tip: un buen título dice qué es y lo que lo hace distinto. {R?.placeholder ?? "Ej: Casa de 3 dormitorios con patio"}</p>
+        )}
       </div>
 
       <fieldset className="donde">
@@ -197,8 +213,11 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         </div>
       </div>
       <div>
-        <label className="check"><input type="checkbox" checked={v.permuta} onChange={(e) => set("permuta", e.target.checked)} /> Acepto permuta</label>
-        <label className="check"><input type="checkbox" checked={v.financia} onChange={(e) => set("financia", e.target.checked)} /> Ofrezco financiación</label>
+        <label className="check"><input type="checkbox" checked={v.permuta} onChange={(e) => set("permuta", e.target.checked)} /> {avanzado ? "Acepta permuta" : "Acepto permuta"}</label>
+        <label className="check"><input type="checkbox" checked={v.financia} onChange={(e) => set("financia", e.target.checked)} /> {avanzado ? "Financia" : "Ofrezco financiación"}</label>
+      </div>
+      {v.rubro && <DatosGuiados key={v.rubro} rubro={v.rubro} datos={v.datos} onCambio={(d) => set("datos", d)} />}
+      <div>
       </div>
       <div>
         <label className="lbl" htmlFor="f-descripcion">Descripción <span className="opc">(opcional)</span></label>
@@ -239,7 +258,7 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
             <input id="f-zona" type="text" maxLength={60} autoComplete="off" value={v.zona} onChange={(e) => set("zona", e.target.value)} />
           </div>
           <div>
-            <label className="lbl" htmlFor="f-datos">Datos destacados <span className="opc">(separados por coma)</span></label>
+            <label className="lbl" htmlFor="f-datos">Otros datos destacados <span className="opc">(separados por coma)</span></label>
             <input id="f-datos" type="text" maxLength={200} placeholder="Ej: 2 dormitorios, cochera, patio" autoComplete="off" value={v.datos} onChange={(e) => set("datos", e.target.value)} />
           </div>
           <div>
@@ -250,26 +269,63 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
       )}
 
       <fieldset>
-        <legend>4. Tus datos</legend>
+        <legend>{avanzado ? "4. Contacto del vendedor" : "4. Tus datos"}</legend>
         <div className="dos-col">
           <div>
-            <label className="lbl" htmlFor="f-nombre">Tu nombre</label>
+            <label className="lbl" htmlFor="f-nombre">{avanzado ? "Nombre" : "Tu nombre"}</label>
             <input id="f-nombre" type="text" maxLength={LIMITES.nombre} autoComplete="given-name" value={v.nombre} aria-invalid={!!err("nombre") || undefined} onChange={(e) => set("nombre", e.target.value)} />
             {err("nombre") && <p className="err">{err("nombre")}</p>}
           </div>
           <div>
-            <label className="lbl" htmlFor="f-telefono">Tu WhatsApp <span className="opc">(con código de área)</span></label>
-            <input id="f-telefono" type="tel" inputMode="tel" maxLength={20} placeholder="Código de área y número" autoComplete="tel" value={v.telefono}
-              aria-invalid={!!err("telefono") || undefined} onChange={(e) => set("telefono", e.target.value.replace(/[^\d\s-]/g, ""))} />
+            <label className="lbl" htmlFor="f-telefono">{avanzado ? "WhatsApp" : "Tu WhatsApp"} <span className="opc">(con código de área)</span></label>
+            <input id="f-telefono" type="tel" inputMode="tel" maxLength={22} placeholder="Ej: 3464 40-1234" autoComplete="tel" value={v.telefono}
+              aria-invalid={!!err("telefono") || undefined} onChange={(e) => set("telefono", e.target.value.replace(/[^\d\s()+-]/g, ""))} />
             {err("telefono") && <p className="err">{err("telefono")}</p>}
           </div>
         </div>
-        <p className="small">Tu número no se muestra en la página: lo usamos para que los interesados te escriban cuando tocan el botón.</p>
+        {!avanzado && <p className="small">Tu número no se muestra en la página: lo usamos para que los interesados te escriban cuando tocan el botón.</p>}
       </fieldset>
 
       {todos.length > 0 && <p className="form-err" role="alert">{todos.length === 1 ? "Falta completar un dato (está marcado en rojo)." : `Faltan completar ${todos.length} datos (están marcados en rojo).`}</p>}
       <button type="submit" className="btn btn-main btn-xl" disabled={enviando || procesando}>{enviando ? "Enviando…" : textoBoton}</button>
       {pie}
     </form>
+  );
+}
+
+/** Año, km, dormitorios… según el rubro. Se guardan como etiquetas en "datos". */
+function DatosGuiados({ rubro, datos, onCambio }: { rubro: RubroId; datos: string; onCambio: (d: string) => void }) {
+  const lista = listaDatos(datos);
+  const { valores } = leerGuiados(rubro, lista);
+  // Lo que está escribiendo en los campos de números (un año a medio escribir todavía no es válido y no se guarda).
+  const [crudo, setCrudo] = useState<Record<string, string>>({});
+  const poner = (id: string, valor: string) => onCambio(escribirGuiado(rubro, lista, id, valor).join(", "));
+  return (
+    <fieldset className="guiados">
+      <legend>Lo que más preguntan <span className="opc">(opcional, pero ayuda mucho)</span></legend>
+      <div className="guiados-campos">
+        {CAMPOS_GUIADOS[rubro].map((c) => {
+          const id = `g-${c.id}`;
+          if (c.tipo === "si") return (
+            <label key={c.id} className="check guiado-si"><input type="checkbox" checked={valores[c.id] === "si"} onChange={(e) => poner(c.id, e.target.checked ? "si" : "")} /> {c.etiqueta}</label>
+          );
+          return (
+            <div key={c.id}>
+              <label className="lbl" htmlFor={id}>{c.etiqueta}</label>
+              {c.tipo === "opciones" ? (
+                <select id={id} value={valores[c.id] ?? ""} onChange={(e) => poner(c.id, e.target.value)}>
+                  <option value="">—</option>
+                  {c.opciones?.map((o) => <option key={o} value={o}>{o}{c.id === "dorm" && o === "5" ? " o más" : ""}</option>)}
+                </select>
+              ) : (
+                <input id={id} type="text" inputMode="numeric" maxLength={9} autoComplete="off" placeholder={c.placeholder} value={crudo[c.id] ?? valores[c.id] ?? ""}
+                  onChange={(e) => { const t = soloDigitos(e.target.value); setCrudo({ ...crudo, [c.id]: t }); poner(c.id, t); }}
+                  onBlur={() => setCrudo(Object.fromEntries(Object.entries(crudo).filter(([k]) => k !== c.id)))} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }

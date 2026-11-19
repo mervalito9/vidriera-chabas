@@ -1,5 +1,6 @@
 // Utilidades HTTP: respuestas JSON, lectura del cuerpo con límite, cookies, límite de pedidos y cabeceras de seguridad.
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { brotliCompressSync, constants as zlibConstants, gzipSync } from "node:zlib";
 
 export class ErrorHttp extends Error {
   readonly status: number;
@@ -38,9 +39,30 @@ export function cabecerasSeguridad(res: ServerResponse): void {
 }
 
 export function json(res: ServerResponse, status: number, cuerpo: unknown): void {
-  const texto = JSON.stringify(cuerpo);
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
-  res.end(texto);
+  enviar(res, status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }, Buffer.from(JSON.stringify(cuerpo)));
+}
+
+/** Qué compresión acepta quien pide (brotli > gzip > nada). */
+function compresionDe(res: ServerResponse): "br" | "gzip" | "" {
+  const acepta = String(res.req?.headers["accept-encoding"] ?? "");
+  return /\bbr\b/.test(acepta) ? "br" : /\bgzip\b/.test(acepta) ? "gzip" : "";
+}
+
+export function comprimir(cuerpo: Buffer, como: "br" | "gzip"): Buffer {
+  return como === "br"
+    ? brotliCompressSync(cuerpo, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } })
+    : gzipSync(cuerpo, { level: 6 });
+}
+
+/**
+ * Manda una respuesta de texto, comprimida si conviene (más de 1 KB y el navegador la acepta).
+ * `yaComprimido` permite pasar versiones ya hechas (los archivos del sitio se comprimen una sola vez).
+ */
+export function enviar(res: ServerResponse, status: number, cabeceras: Record<string, string>, cuerpo: Buffer, yaComprimido?: (como: "br" | "gzip") => Buffer): void {
+  const como = cuerpo.length > 1024 ? compresionDe(res) : "";
+  const salida = como ? (yaComprimido?.(como) ?? comprimir(cuerpo, como)) : cuerpo;
+  res.writeHead(status, { ...cabeceras, Vary: "Accept-Encoding", "Content-Length": String(salida.length), ...(como ? { "Content-Encoding": como } : {}) });
+  res.end(res.req?.method === "HEAD" ? undefined : salida);
 }
 
 /** Lee el cuerpo JSON con un tope de bytes. Corta la conexión si se pasa. */

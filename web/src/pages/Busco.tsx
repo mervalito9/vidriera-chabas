@@ -8,14 +8,22 @@ import { FaltaWhatsApp } from "../components/Pueblos.tsx";
 import { useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
-const OPCIONES = ["Casa o departamento para comprar", "Casa o departamento para alquilar", "Terreno", "Galpón o local", "Auto o camioneta", "Moto", "Maquinaria agro o herramientas", "Otra cosa"];
+let sugerida: Partial<NuevaBusqueda> = {};
+/** El listado deja preparada la búsqueda con lo que la persona estaba filtrando, así no lo escribe de nuevo. */
+export function prepararBusqueda(b: Partial<NuevaBusqueda>): void { sugerida = b; }
+
+export const OPCIONES = ["Casa o departamento para comprar", "Casa o departamento para alquilar", "Terreno", "Galpón o local", "Auto o camioneta", "Moto", "Maquinaria agro o herramientas", "Otra cosa"];
 
 const mensaje = (b: NuevaBusqueda): string =>
   ["Hola! Estoy buscando esto en Chabás y la zona:", "", `Rubro: ${b.rubro || "-"}`, `Busco: ${b.que || "-"}`, `Presupuesto: ${b.presupuesto || "-"}`, `Nombre: ${b.nombre || "-"}`, "", "Si aparece algo así, avisame por acá."].join("\n");
 
 export function Busco() {
   useTitulo("Avisame cuando aparezca");
-  const [b, setB] = useState<NuevaBusqueda>({ rubro: "", que: "", presupuesto: "", nombre: "", telefono: "" });
+  const [b, setB] = useState<NuevaBusqueda>(() => {
+    const inicial = { rubro: "", que: "", presupuesto: "", nombre: "", telefono: "", ...sugerida };
+    sugerida = {};
+    return inicial;
+  });
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
   const [estado, setEstado] = useState<"" | "enviando" | "ok" | "whatsapp">("");
   const [error, setError] = useState("");
@@ -91,7 +99,7 @@ export function Busco() {
           </div>
           <div>
             <label className="lbl" htmlFor="b-telefono">Tu WhatsApp <span className="opc">(para avisarte)</span></label>
-            <input id="b-telefono" type="tel" inputMode="tel" maxLength={20} placeholder="Código de área y número" autoComplete="tel" value={b.telefono}
+            <input id="b-telefono" type="tel" inputMode="tel" maxLength={20} placeholder="Ej: 3464 40-1234" autoComplete="tel" value={b.telefono}
               aria-invalid={!!err("telefono") || undefined} onChange={(e) => set("telefono", e.target.value.replace(/[^\d\s-]/g, ""))} />
             {err("telefono") && <p className="err">{err("telefono")}</p>}
           </div>

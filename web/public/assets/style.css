@@ -327,7 +327,7 @@ footer .legal { font-size: .88rem; color: #A9A293; }
 /* home: avisos compactos en celular */
 @media (max-width: 559px) {
   .grid.mini { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .grid.mini .card:nth-child(n+5) { display: none; }
+  .grid.mini.ej .card:nth-child(n+5) { display: none; }
   .grid.mini .card-body { padding: 10px 12px 12px; }
   .grid.mini .price { font-size: 1.2rem; }
   .grid.mini .price span { font-size: .85rem; }
@@ -338,7 +338,7 @@ footer .legal { font-size: .88rem; color: #A9A293; }
   .pasos li { padding: 14px 16px; }
   .pasos li::before { font-size: 2.1rem; }
 }
-@media (max-width: 899px) { .grid.mini .card:nth-child(n+5) { display: none; } }
+@media (max-width: 899px) { .grid.mini.ej .card:nth-child(n+5) { display: none; } }
 .subnav.tabs { display: flex; padding: 6px 0 2px; }
 .rubro .txt { display: flex; flex-direction: column; }
 .prox-l { margin-left: 10px; font: 700 .8rem/1 var(--sans); text-transform: uppercase; letter-spacing: .05em; color: var(--terra-txt); }
@@ -394,10 +394,10 @@ legend { padding: 0; }
 .nota-ejemplos .badge, .banda-ej .badge { background: var(--tinta); color: var(--crema); margin-right: 6px; }
 .banda-ej a { font-weight: 700; color: var(--terra-txt); }
 .ejemplos { padding-top: 12px; }
-@media (max-width: 559px) { .ejemplos .grid.mini .card:nth-child(n+3) { display: none; } }
+@media (max-width: 559px) { .grid.mini.ej .card:nth-child(n+3) { display: none; } }
 @media (min-width: 900px) {
   .arranque { grid-template-columns: 1.3fr 1fr; align-items: center; padding: 40px 44px; gap: 36px; }
-  .ejemplos .grid.mini .card:nth-child(n+4) { display: none; }
+  .grid.mini.ej .card:nth-child(n+4) { display: none; }
 }
 .solo-ej { display: none; }
 body.solo-ejemplos .solo-ej { display: block; }
@@ -1102,3 +1102,48 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 }
 @media (prefers-reduced-motion: reduce) { .pn-vivo-etq i.on { animation: none; } }
 .pn-edit-form .form { background: none; box-shadow: none; padding: 0; border-radius: 0; }
+
+/* Portada con avisos reales: hasta 8, en 4 columnas en la compu */
+@media (min-width: 1100px) { .grid.mini.reales { grid-template-columns: repeat(4, 1fr); gap: 18px; } }
+
+/* Formulario: datos guiados, tip del título, rubros sin cortar palabras */
+.guiados { border: 0; padding: 0; margin: 0; }
+.guiados-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; align-items: end; }
+.guiado-si { min-height: 48px; }
+.consejo { color: var(--tinta-2); margin: 6px 0 0; }
+.rubro-pick { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); }
+.rubro-pick span { overflow-wrap: normal; word-break: normal; hyphens: manual; text-align: center; }
+.estad-ejes { display: flex; justify-content: space-between; font-size: 12px; color: var(--tinta-2); margin-top: 4px; }
+.pn-pop-titulo { display: none; margin: 6px 12px 8px; font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 899px) {
+  .pn-pop-titulo { display: block; }
+  .pn-vivo-pill { min-height: 40px; box-sizing: border-box; }
+  .pn-abajo a { font-size: 12px; }
+  .pn-caja-h a { min-height: 40px; display: inline-flex; align-items: center; }
+}
+.pn-etq { font-size: 12px; }
+.botones { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Ficha en el celular: barra fija con precio y WhatsApp mientras el botón grande no se ve */
+.barra-wa { display: none; }
+@media (max-width: 899px) {
+  .barra-wa { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; align-items: center; gap: 12px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: var(--papel); border-top: 1px solid var(--crema-2); box-shadow: 0 -6px 20px rgba(23,21,15,.10); transform: translateY(110%); transition: transform .25s ease; }
+  .barra-wa.visible { transform: none; }
+  .barra-wa-precio { flex: 1; min-width: 0; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .barra-wa-precio small { font-size: .85rem; color: var(--tinta-2); }
+  .barra-wa .btn { flex: none; min-height: 48px; padding: 0 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .barra-wa { transition: none; } }
+
+/* Listado en el celular: menos alto antes de los resultados (antes eran 1,5 pantallas de filtros) */
+@media (max-width: 699px) {
+  .wrap > .crumbs { display: none; }
+  .page-h { margin-bottom: 10px; }
+  .page-h h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .page-h p { font-size: .95rem; margin: 0; }
+  .page-h p .pub-link { display: inline; }
+  .pueblo-filtro, .atajos { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; padding-bottom: 4px; -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+  .pueblo-filtro::-webkit-scrollbar, .atajos::-webkit-scrollbar { display: none; }
+  .pueblo-filtro > *, .atajos > * { flex: none; }
+  .filtros { padding: 12px 14px; gap: 10px; }
+}

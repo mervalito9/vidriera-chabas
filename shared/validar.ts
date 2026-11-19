@@ -3,6 +3,9 @@
 import { RUBROS, LIMITES, PUEBLOS, OTRO_PUEBLO } from "./config.ts";
 import type { ErrorCampo, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
 import { recortar, slug, soloDigitos } from "./texto.ts";
+import { telefonoArgentino } from "./whatsapp.ts";
+
+const MSG_TELEFONO = "Escribí tu WhatsApp con código de área, por ejemplo 3464 40-1234.";
 
 /** Pueblo de un aviso: si coincide con uno de la lista (aunque esté escrito sin tilde), queda con el nombre de la lista. */
 export function normalizarPueblo(texto: unknown): string {
@@ -38,7 +41,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
     .filter(Boolean)
     .slice(0, 8);
   const nombre = recortar(e.nombre, LIMITES.nombre);
-  const telefono = soloDigitos(e.telefono).slice(0, 15);
+  const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
   const fotos = (Array.isArray(e.fotos) ? e.fotos : []).filter((f): f is string => typeof f === "string").slice(0, LIMITES.fotos);
 
   if (!rubro) errores.push({ campo: "rubro", msg: "Elegí qué querés publicar." });
@@ -47,7 +50,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   if (titulo.length < 4) errores.push({ campo: "titulo", msg: "Escribí un título corto (qué es)." });
   if (precio !== null && (precio <= 0 || !Number.isSafeInteger(precio))) errores.push({ campo: "precio", msg: "El precio tiene que ser un número." });
   if (!nombre) errores.push({ campo: "nombre", msg: "Escribí tu nombre." });
-  if (telefono.length < 8) errores.push({ campo: "telefono", msg: "Escribí tu WhatsApp con código de área (solo números)." });
+  if (!telefono) errores.push({ campo: "telefono", msg: MSG_TELEFONO });
   if (opciones.exigirFotos && fotos.length === 0) errores.push({ campo: "fotos", msg: "Agregá al menos una foto." });
 
   return {
@@ -65,11 +68,11 @@ export function validarBusqueda(entrada: unknown): Resultado<NuevaBusqueda> {
     que: recortar(e.que, 160),
     presupuesto: recortar(e.presupuesto, 40),
     nombre: recortar(e.nombre, LIMITES.nombre),
-    telefono: soloDigitos(e.telefono).slice(0, 15),
+    telefono: telefonoArgentino(typeof e.telefono === "string" ? e.telefono : ""),
   };
   if (!valor.rubro) errores.push({ campo: "rubro", msg: "Elegí qué buscás." });
   if (valor.que.length < 3) errores.push({ campo: "que", msg: "Contanos en pocas palabras qué buscás." });
   if (!valor.nombre) errores.push({ campo: "nombre", msg: "Escribí tu nombre." });
-  if (valor.telefono.length < 8) errores.push({ campo: "telefono", msg: "Escribí tu WhatsApp con código de área." });
+  if (!valor.telefono) errores.push({ campo: "telefono", msg: MSG_TELEFONO });
   return { ok: errores.length === 0, errores, valor };
 }

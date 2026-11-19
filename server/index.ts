@@ -12,7 +12,7 @@ import { validarAviso, validarBusqueda } from "../shared/validar.ts";
 import { linkWA } from "../shared/whatsapp.ts";
 import * as datos from "./db.ts";
 import { FOTOS_DIR } from "./db.ts";
-import { ErrorHttp, cabecerasSeguridad, crearLimitador, exigirMismoOrigen, ipDe, json, leerJson } from "./http.ts";
+import { ErrorHttp, cabecerasSeguridad, comprimir, crearLimitador, enviar, exigirMismoOrigen, ipDe, json, leerJson } from "./http.ts";
 import { claveCorrecta, cerrarSesion, esAdmin, exigirAdmin, iniciarSesion } from "./auth.ts";
 import * as estad from "./estad.ts";
 import * as actividad from "./actividad.ts";
@@ -24,6 +24,15 @@ import { iniciarBot } from "./bot/index.ts";
 const PUERTO = Number(process.env.PORT ?? 3000);
 const WEB_DIR = resolve(process.env.WEB_DIR ?? join(process.cwd(), "web", "dist"));
 const SITE_URL = (process.env.SITE_URL ?? "").replace(/\/$/, "");
+
+/** Dirección pública del sitio. Si falta SITE_URL, la arma con el pedido (WhatsApp necesita links completos). */
+function sitioDe(req: IncomingMessage): string {
+  if (SITE_URL) return SITE_URL;
+  const host = String(req.headers["x-forwarded-host"] ?? req.headers.host ?? "");
+  if (!/^[a-z0-9.-]+(:\d{1,5})?$/i.test(host)) return "";
+  const proto = String(req.headers["x-forwarded-proto"] ?? "").split(",")[0]?.trim() || (/^(localhost|127\.)/.test(host) ? "http" : "https");
+  return `${proto === "http" ? "http" : "https"}://${host}`;
+}
 const MAX_JSON = 1_000_000;
 const MAX_CON_FOTOS = LIMITES.fotos * Math.ceil(LIMITES.fotoBytes * 1.4) + MAX_JSON;
 
@@ -92,25 +101,41 @@ function servirArchivo(res: ServerResponse, raiz: string, ruta: string, cache: s
   if (limpia.includes("\0")) return false;
   const destino = resolve(raiz, "." + limpia);
   if (!destino.startsWith(raiz + sep) && destino !== raiz) return false;
-  if (!existsSync(destino) || !statSync(destino).isFile()) return false;
-  res.writeHead(200, { "Content-Type": TIPOS_MIME[extname(destino).toLowerCase()] ?? "application/octet-stream", "Cache-Control": cache });
+  if (!existsSync(destino)) return false;
+  const info = statSync(destino);
+  if (!info.isFile()) return false;
+  const ext = extname(destino).toLowerCase();
+  const cabeceras = { "Content-Type": TIPOS_MIME[ext] ?? "application/octet-stream", "Cache-Control": cache };
+  if (TEXTO.has(ext) && info.size < 5_000_000) {
+    // Código, estilos e íconos: se comprimen una vez y se guardan (275 KB de app.js pasan a ~70 KB).
+    const clave = `${destino}:${info.mtimeMs}`;
+    let c = comprimidos.get(clave);
+    if (!c) { c = { crudo: readFileSync(destino) }; comprimidos.set(clave, c); }
+    const entrada = c;
+    enviar(res, 200, cabeceras, entrada.crudo, (como) => (entrada[como] ??= comprimir(entrada.crudo, como)));
+    return true;
+  }
+  res.writeHead(200, { ...cabeceras, "Content-Length": String(info.size) });
   createReadStream(destino).pipe(res);
   return true;
 }
+const TEXTO = new Set([".js", ".css", ".html", ".svg", ".json", ".txt", ".webmanifest"]);
+const comprimidos = new Map<string, { crudo: Buffer; br?: Buffer; gzip?: Buffer }>();
 
 /** Página para compartir un aviso: WhatsApp lee la foto y el título; las personas pasan directo al aviso. */
-function paginaCompartir(res: ServerResponse, id: number, de: string): void {
+function paginaCompartir(req: IncomingMessage, res: ServerResponse, id: number, de: string): void {
+  const sitio = sitioDe(req);
   const a = datos.obtenerPublico(id, false);
   // La marca de origen (?de=wa) pasa al sitio para saber de dónde vino la gente.
   const destino = `/${/^[a-z]{2,6}$/.test(de) ? `?de=${de}` : ""}#aviso--${id}`;
   const titulo = a ? `${a.titulo} · Vidriera Chabás` : "Vidriera Chabás";
   const precio = a?.precio ? `${a.moneda === "ARS" ? "$" : "USD"} ${fmtNum(a.precio)}${a.operacion === "alquiler" ? " por mes" : ""}` : "";
   const desc = a ? [precio, a.tipo, a.pueblo].filter(Boolean).join(" · ") : "Casas, autos y más de Chabás y la zona.";
-  const foto = a?.fotos[0] ? `${SITE_URL}${a.fotos[0]}` : `${SITE_URL}/assets/img/og-vidriera-chabas.png`;
+  const foto = a?.fotos[0] ? `${sitio}${a.fotos[0]}` : `${sitio}/assets/img/og-vidriera-chabas.png`;
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" });
   res.end(`<!DOCTYPE html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(titulo)}</title><meta property="og:type" content="website"><meta property="og:site_name" content="Vidriera Chabás">
-<meta property="og:title" content="${esc(titulo)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(foto)}">
+<meta property="og:title" content="${esc(titulo)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(foto)}"><meta property="og:url" content="${esc(`${sitio}/a/${id}`)}"><meta name="twitter:card" content="summary_large_image"><meta name="robots" content="noindex">
 <meta http-equiv="refresh" content="0; url=${esc(destino)}"><link rel="stylesheet" href="/assets/style.css"></head>
 <body><main class="wrap prose"><p><a href="${esc(destino)}">Ver el aviso en Vidriera Chabás</a></p></main></body></html>`);
 }
@@ -367,7 +392,7 @@ const servidor = createServer(async (req, res) => {
       return void res.end(process.env.NOINDEX === "0" ? "User-agent: *\nDisallow: /api/\n" : "User-agent: *\nDisallow: /\n");
     }
     const compartir = /^\/a\/(\d+)\/?$/.exec(url.pathname);
-    if (compartir) return paginaCompartir(res, idDe(compartir[1]), url.searchParams.get("de") ?? "");
+    if (compartir) return paginaCompartir(req, res, idDe(compartir[1]), url.searchParams.get("de") ?? "");
     if (url.pathname.startsWith("/fotos/") && servirArchivo(res, FOTOS_DIR, url.pathname.slice("/fotos".length), "public, max-age=31536000, immutable")) return;
     if (url.pathname === "/" || url.pathname === "/index.html") {
       if (servirArchivo(res, WEB_DIR, "/index.html", "no-cache")) return;

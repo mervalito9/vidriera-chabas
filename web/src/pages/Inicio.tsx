@@ -87,7 +87,7 @@ export function Inicio() {
       {lista.estado === "listo" && muestra.length === 0 ? (
         <Vacio texto="Todavía no hay avisos." />
       ) : (
-        <div className="grid mini">{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
+        <div className={`grid mini ${soloEjemplos ? "ej" : "reales"}`}>{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
       )}
     </section>
   );

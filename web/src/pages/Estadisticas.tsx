@@ -114,9 +114,8 @@ export function Barras({ titulo, serie, color, etiqueta = diaCorto, formato = (n
   return (
     <figure className="estad-barras">
       <figcaption><b>{titulo}</b> <span className="small">{v ? `${etiqueta(v.x)}: ${formato(v.y)}` : `Total: ${formato(total)} · máximo: ${formato(max)}`}</span></figcaption>
-      <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`${titulo}: total ${total}`} onPointerLeave={() => setSel(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${titulo}: total ${total}`} onPointerLeave={() => setSel(null)}>
         <line x1="0" x2={W} y1={H} y2={H} stroke="var(--crema-2)" strokeWidth="1" />
-        <text x="0" y="10" className="estad-eje">{formato(max)}</text>
         {serie.map((s, i) => {
           const h = s.y === 0 ? 0 : Math.max(3, (s.y / max) * (H - 16));
           return (
@@ -126,10 +125,9 @@ export function Barras({ titulo, serie, color, etiqueta = diaCorto, formato = (n
             </g>
           );
         })}
-        {marcas.map((i) => serie[i] && (
-          <text key={i} x={i * paso + paso / 2} y={H + 16} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"} className="estad-eje">{etiqueta(serie[i]!.x)}</text>
-        ))}
       </svg>
+      {/* Las fechas van como texto común (dentro del dibujo quedaban diminutas en el celular). */}
+      <div className="estad-ejes" aria-hidden="true">{marcas.map((i) => serie[i] && <span key={i}>{etiqueta(serie[i]!.x)}</span>)}</div>
       <details className="small"><summary>Ver como tabla</summary>
         <table className="estad-tabla"><tbody>{serie.filter((s) => s.y > 0).reverse().map((s) => <tr key={s.x}><td>{etiqueta(s.x)}</td><td>{formato(s.y)}</td></tr>)}</tbody></table>
       </details>

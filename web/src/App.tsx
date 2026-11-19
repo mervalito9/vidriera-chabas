@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { PUEBLOS, RUBROS } from "../../shared/config.ts";
 import { slug } from "../../shared/texto.ts";
 import type { RubroId } from "../../shared/tipos.ts";
 import { listarAvisos } from "./api.ts";
 import { Marco } from "./components/Marco.tsx";
-import { Admin } from "./pages/Admin.tsx";
 import { Aviso } from "./pages/Aviso.tsx";
 import { Busco } from "./pages/Busco.tsx";
 import { Inicio } from "./pages/Inicio.tsx";
@@ -13,6 +12,10 @@ import { Publicar } from "./pages/Publicar.tsx";
 import { ComoFunciona, NoEncontrado, Privacidad, Terminos } from "./pages/Textos.tsx";
 import { useRuta, type Ruta } from "./router.ts";
 import { medirPagina } from "./medir.ts";
+import { Cargando } from "./components/Tarjeta.tsx";
+
+// El panel solo lo usa Felipe: se baja aparte, así los visitantes no cargan su código.
+const Admin = lazy(() => import("./pages/Admin.tsx").then((m) => ({ default: m.Admin })));
 
 function Pagina({ ruta }: { ruta: Ruta }) {
   const { nombre, param } = ruta;
@@ -30,7 +33,7 @@ function Pagina({ ruta }: { ruta: Ruta }) {
     const p = param === "otro" ? "otro" : (PUEBLOS.find((x) => slug(x) === param) ?? "");
     return <Listado key={`pueblo-${p}`} rubro="" atajo="" pueblo={p} />;
   }
-  if (nombre === "admin") return <Admin param={param} />;
+  if (nombre === "admin") return <Suspense fallback={<div className="pn-centro"><Cargando /></div>}><Admin param={param} /></Suspense>;
   return <NoEncontrado />;
 }
 
