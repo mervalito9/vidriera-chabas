@@ -63,8 +63,9 @@ em, .serif { font-family: var(--serif); font-style: italic; font-weight: 400; co
 .top .spacer { flex: 1; }
 
 .top .btn-main { display: none; min-height: 48px; padding: 10px 20px; }
-.subnav { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 0 12px; }
-.subnav a { padding: 10px 14px; min-height: 48px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--papel); border: 1px solid rgba(23,21,15,.12); text-decoration: none; font-weight: 600; font-size: 1rem; }
+.subnav { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 4px 0 12px; }
+.subnav > a { flex: none; }
+.subnav a { padding: 8px 13px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--papel); border: 1px solid rgba(23,21,15,.12); text-decoration: none; font-weight: 600; font-size: 1rem; }
 .subnav a[aria-current] { background: var(--tinta); color: var(--crema); border-color: var(--tinta); }
 
 /* tira de pueblos (escritorio) */

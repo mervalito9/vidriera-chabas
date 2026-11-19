@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
 import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
@@ -38,15 +39,17 @@ export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: bo
   );
 }
 
-export function Vacio({ texto }: { texto: string }) {
+/** Sin resultados. En un listado, quien llegó está buscando: lo primero es ofrecerle que le avisemos. */
+export function Vacio({ texto, buscando = false, extra }: { texto: string; buscando?: boolean; extra?: ReactNode }) {
+  const publicar = <a className={`btn ${buscando ? "btn-line" : "btn-main"}`} href={ir("publicar")}>Publicar gratis</a>;
+  const avisame = <a className={`btn ${buscando ? "btn-main" : "btn-line"}`} href={ir("busco")}>Avisame cuando aparezca</a>;
   return (
     <div className="empty">
       <img src="assets/img/isotipo-claro.svg" alt="" width={64} height={73} />
       <p className="empty-t">{texto}</p>
-      <p>Publicá el primero, es gratis.</p>
+      <p>{buscando ? "Dejanos qué buscás y te escribimos por WhatsApp cuando alguien lo publique." : "Publicá el primero, es gratis."}</p>
       <div className="empty-btns">
-        <a className="btn btn-main" href={ir("publicar")}>Publicar gratis</a>
-        <a className="btn btn-line" href={ir("busco")}>Avisame cuando aparezca</a>
+        {buscando ? <>{avisame}{extra}{publicar}</> : <>{publicar}{avisame}</>}
       </div>
     </div>
   );
