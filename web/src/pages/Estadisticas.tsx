@@ -62,7 +62,7 @@ export function Estadisticas({ pendientes, irPendientes }: { pendientes: number;
                 <tbody>
                   {d.avisos.map((a) => (
                     <tr key={a.id}>
-                      <td><a href={ir("aviso", a.id)}>{a.titulo}</a>{a.estado !== "publicado" && <span className="small"> · {ESTADOS[a.estado]?.toLowerCase() ?? a.estado}</span>}</td>
+                      <td><a href={ir("admin", `editar-${a.id}`)}>{a.titulo}</a>{a.estado !== "publicado" && <span className="small"> · {ESTADOS[a.estado]?.toLowerCase() ?? a.estado}</span>}</td>
                       <td>{a.vistas}</td>
                       <td><b>{a.contactos}</b></td>
                       <td>{a.vistas >= 20 ? Math.round((a.contactos / a.vistas) * 100) : "—"}</td>
