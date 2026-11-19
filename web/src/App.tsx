@@ -12,6 +12,7 @@ import { Listado } from "./pages/Listado.tsx";
 import { Publicar } from "./pages/Publicar.tsx";
 import { ComoFunciona, NoEncontrado, Privacidad, Terminos } from "./pages/Textos.tsx";
 import { useRuta, type Ruta } from "./router.ts";
+import { medirPagina } from "./medir.ts";
 
 function Pagina({ ruta }: { ruta: Ruta }) {
   const { nombre, param } = ruta;
@@ -36,6 +37,7 @@ function Pagina({ ruta }: { ruta: Ruta }) {
 export function App() {
   const ruta = useRuta();
   const [soloEjemplos, setSoloEjemplos] = useState(false);
+  useEffect(() => medirPagina(ruta.nombre, ruta.param), [ruta.nombre, ruta.param]);
   useEffect(() => {
     listarAvisos({}, 1).then((l) => setSoloEjemplos(l.soloEjemplos && l.total > 0), () => setSoloEjemplos(false));
   }, []);

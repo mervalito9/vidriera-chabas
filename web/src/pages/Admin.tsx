@@ -7,14 +7,15 @@ import { ErrorApi, admin, conServidor } from "../api.ts";
 import { FormAviso, valoresIniciales, type ValoresForm } from "../components/FormAviso.tsx";
 import { Cargando } from "../components/Tarjeta.tsx";
 import { CargarVarios } from "./Lote.tsx";
+import { Estadisticas } from "./Estadisticas.tsx";
 import { fotoSegura, precioTexto } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { tarjetaRedes, textoRedes } from "../redes.ts";
 import { ir } from "../router.ts";
 
-type Pestana = Estado | "busquedas" | "cargar" | "lote";
+type Pestana = Estado | "busquedas" | "cargar" | "lote" | "estad";
 const PESTANAS: [Pestana, string][] = [
-  ["pendiente", "Pendientes"], ["publicado", "Publicados"], ["vendido", "Vendidos"], ["rechazado", "Rechazados"], ["busquedas", "Búsquedas"], ["cargar", "Cargar aviso"], ["lote", "Cargar varios"],
+  ["pendiente", "Pendientes"], ["publicado", "Publicados"], ["estad", "Estadísticas"], ["vendido", "Vendidos"], ["rechazado", "Rechazados"], ["busquedas", "Búsquedas"], ["cargar", "Cargar aviso"], ["lote", "Cargar varios"],
 ];
 const mensajeError = (e: unknown) => (e instanceof Error ? e.message : "Algo salió mal.");
 
@@ -80,7 +81,7 @@ function Panel({ onSalir }: { onSalir: () => void }) {
       const pend = await admin.avisos("pendiente");
       setPendientes(pend.length);
       if (pestana === "busquedas") setBusquedas(await admin.busquedas());
-      else if (pestana !== "cargar" && pestana !== "lote") setAvisos(pestana === "pendiente" ? pend : await admin.avisos(pestana));
+      else if (pestana !== "cargar" && pestana !== "lote" && pestana !== "estad") setAvisos(pestana === "pendiente" ? pend : await admin.avisos(pestana));
     } catch (e) {
       if (e instanceof ErrorApi && e.status === 401) onSalir();
       else setError(mensajeError(e));
@@ -120,7 +121,9 @@ function Panel({ onSalir }: { onSalir: () => void }) {
         ))}
       </nav>
       {error && <p className="form-err" role="alert">{error}</p>}
-      {pestana === "lote" ? (
+      {pestana === "estad" ? (
+        <Estadisticas pendientes={pendientes} irPendientes={() => setPestana("pendiente")} />
+      ) : pestana === "lote" ? (
         <CargarVarios onListo={() => setPestana("pendiente")} />
       ) : pestana === "cargar" ? (
         <Cargar onListo={() => setPestana("publicado")} />
@@ -203,7 +206,7 @@ function ParaRedes({ a }: { a: AvisoAdmin }) {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      const texto = textoRedes(a, `${location.origin}/a/${a.id}`);
+      const texto = textoRedes(a, `${location.origin}/a/${a.id}?de=redes`);
       const copiado = await navigator.clipboard?.writeText(texto).then(() => true, () => false);
       setMsg(copiado ? "Imagen bajada y texto copiado: pegalo al publicar." : "Imagen bajada.");
     } catch (e) {

@@ -232,3 +232,44 @@ test("manda cabeceras de seguridad", async () => {
   assert.equal(r.headers.get("x-content-type-options"), "nosniff");
   assert.equal(r.headers.get("x-frame-options"), "DENY");
 });
+
+test("estadísticas: cuenta una vez por persona y día, sin robots ni el panel", async () => {
+  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
+  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const creado = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: { ...H, cookie }, body: JSON.stringify(aviso({ titulo: "Amarok V6 para estadísticas" })) })).json();
+  const id = creado.id as number;
+  const antes = await (await fetch(`${URL_BASE}/api/admin/estadisticas?dias=7`, { headers: { cookie } })).json();
+  const navA = { ...H, "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" };
+  const navB = { ...H, "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Safari/604.1" };
+  const m = (h: Record<string, string>, b: unknown) => fetch(`${URL_BASE}/api/m`, { method: "POST", headers: h, body: JSON.stringify(b) });
+  // Persona A entra desde WhatsApp, ve el aviso dos veces y lo contacta dos veces
+  assert.equal((await m(navA, { t: "pv", aviso: null, de: "wa", ref: "" })).status, 204);
+  await m(navA, { t: "pv", aviso: id, de: "", ref: "" });
+  await m(navA, { t: "pv", aviso: id, de: "", ref: "" });
+  await fetch(`${URL_BASE}/api/avisos/${id}/contacto`, { method: "POST", headers: navA });
+  await fetch(`${URL_BASE}/api/avisos/${id}/contacto`, { method: "POST", headers: navA });
+  // Persona B llega de Google, busca algo que no hay
+  await m(navB, { t: "pv", aviso: id, de: "", ref: "https://www.google.com/" });
+  await m(navB, { t: "busca", q: "Tractor Hanomag", n: 0 });
+  await m(navB, { t: "busca", q: "3464555123", n: 0 }); // un teléfono: no se guarda
+  // Un robot y Felipe con el panel abierto: no cuentan
+  await m({ ...H, "user-agent": "Googlebot/2.1" }, { t: "pv", aviso: id });
+  await m({ ...H, "user-agent": "Mozilla/5.0 Felipe", cookie }, { t: "pv", aviso: id });
+  await fetch(`${URL_BASE}/api/avisos/${id}/contacto`, { method: "POST", headers: { ...H, cookie, "user-agent": "Mozilla/5.0 Felipe" } });
+
+  const r = await (await fetch(`${URL_BASE}/api/admin/estadisticas?dias=7`, { headers: { cookie } })).json();
+  assert.equal(r.total.personas - antes.total.personas, 2);
+  assert.equal(r.total.vistas - antes.total.vistas, 2);
+  assert.equal(r.total.contactos - antes.total.contactos, 1);
+  const fila = r.avisos.find((a: { id: number }) => a.id === id);
+  assert.deepEqual([fila.vistas, fila.contactos], [2, 1]);
+  const origen = (n: string) => r.origenes.find((o: { nombre: string }) => o.nombre === n)?.n ?? 0;
+  assert.ok(origen("WhatsApp") >= 1 && origen("Google") >= 1);
+  assert.deepEqual(r.sinResultados.map((b: { texto: string }) => b.texto), ["tractor hanomag"]);
+  assert.equal(r.serie.length, 7);
+  // El contador del aviso también se mueve igual
+  const adm = (await (await fetch(`${URL_BASE}/api/admin/avisos?estado=publicado`, { headers: { cookie } })).json()).find((a: { id: number }) => a.id === id);
+  assert.deepEqual([adm.vistas, adm.contactos], [2, 1]);
+  // Sin sesión, no se ven
+  assert.equal((await fetch(`${URL_BASE}/api/admin/estadisticas`)).status, 401);
+});

@@ -147,7 +147,7 @@ function Contacto({ a }: { a: AvisoPublico }) {
 
 /** Link para compartir el aviso por WhatsApp (con foto y título en la vista previa). */
 function Compartir({ a }: { a: AvisoPublico }) {
-  const link = `${window.location.origin}/a/${a.id}`;
+  const link = `${window.location.origin}/a/${a.id}?de=wa`;
   const texto = `${a.titulo} · ${precioTexto(a)} — ${link}`;
   return (
     <p className="compartir">

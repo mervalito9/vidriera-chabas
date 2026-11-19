@@ -3,6 +3,7 @@ import { ATAJOS, OTRO_PUEBLO, POR_PAGINA, PUEBLOS, RUBROS, lugarDe } from "../..
 import { plural, slug } from "../../../shared/texto.ts";
 import type { Filtros, ListaAvisos, RubroId } from "../../../shared/tipos.ts";
 import { listarAvisos } from "../api.ts";
+import { medirBusqueda } from "../medir.ts";
 import { Cargando, Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
@@ -63,6 +64,7 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
   // Mientras carga, se sigue mostrando el último resultado (sin parpadeos al tocar "Ver más").
   const ultimo = useRef<ListaAvisos | null>(null);
   if (lista.estado === "listo") ultimo.current = lista.datos;
+  useEffect(() => { if (lista.estado === "listo" && f.q) medirBusqueda(f.q, lista.datos.total); }, [lista.estado, f.q]); // eslint-disable-line react-hooks/exhaustive-deps
   const d = lista.estado === "listo" ? lista.datos : lista.estado === "cargando" ? ultimo.current : null;
   const cambiar = <K extends keyof Filtros>(k: K, v: Filtros[K]) => {
     if (k === "pueblo") puebloRecordado = String(v);

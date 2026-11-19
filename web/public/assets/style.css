@@ -778,3 +778,34 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .card-body { display: flex; flex-direction: column; flex: 1; }
 .card-pie { display: flex; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; font-size: .9rem; }
 @media (max-width: 699px) { .grid.mini .chips-datos li:nth-child(n+3) { display: none; } .grid.mini .chips-datos li { font-size: .74rem; padding: 5px 7px; } }
+/* Estadísticas del panel */
+.estad { display: grid; gap: 18px; }
+.estad-cab { display: grid; gap: 4px; }
+.estad-alerta { background: var(--terra-claro); border-radius: 12px; padding: 10px 14px; margin: 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.estad-num { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 800px) { .estad-num { grid-template-columns: repeat(4, 1fr); } }
+.estad-tile { background: var(--papel); border-radius: 16px; padding: 14px 16px; box-shadow: var(--sombra); display: grid; gap: 2px; align-content: start; min-width: 0; }
+.estad-tile.fuerte { box-shadow: inset 0 0 0 2px var(--oliva), var(--sombra); }
+.estad-t { font-weight: 700; color: var(--tinta-2); font-size: .9rem; }
+.estad-v { font: 800 2rem/1.1 var(--sans); color: var(--tinta); font-variant-numeric: tabular-nums; }
+.estad-vacio { background: var(--papel); border-radius: 16px; padding: 18px; margin: 0; }
+.estad-graf { display: grid; gap: 14px; }
+@media (min-width: 900px) { .estad-graf { grid-template-columns: 1fr 1fr; } }
+.estad-barras { margin: 0; background: var(--papel); border-radius: 16px; padding: 14px 16px; box-shadow: var(--sombra); min-width: 0; }
+.estad-barras figcaption { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.estad-barras svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.estad-eje { font: 600 11px var(--sans); fill: var(--tinta-2); }
+.estad-bloque { background: var(--papel); border-radius: 16px; padding: 14px 16px; box-shadow: var(--sombra); min-width: 0; }
+.estad-bloque h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.estad-dos { display: grid; gap: 14px; }
+@media (min-width: 900px) { .estad-dos { grid-template-columns: 1fr 1fr; } }
+.estad-tabla { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
+.estad-tabla th { text-align: left; color: var(--tinta-2); font-weight: 600; padding: 6px 6px; border-bottom: 1px solid var(--crema-2); }
+.estad-tabla td { padding: 7px 6px; border-bottom: 1px solid var(--crema-2); }
+.estad-tabla th:not(:first-child), .estad-tabla td:not(:first-child) { text-align: right; white-space: nowrap; }
+.estad-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.estad-lista li { display: grid; grid-template-columns: minmax(0, 9rem) 1fr auto; gap: 10px; align-items: center; font-size: .92rem; }
+.estad-lista-k { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.estad-lista-b { background: var(--crema); border-radius: 4px; height: 8px; overflow: hidden; }
+.estad-lista-b i { display: block; height: 100%; background: var(--terra); border-radius: 4px; }
+.estad-pie { margin: 0; }

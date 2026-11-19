@@ -212,11 +212,10 @@ export function obtenerPublico(id: number, contarVista: boolean): AvisoPublico |
   return aPublico(f);
 }
 
-/** Devuelve el teléfono solo de un aviso real vigente, y suma un contacto. */
+/** Devuelve el teléfono solo de un aviso real vigente (el contacto lo cuenta estad.ts). */
 export function telefonoParaContacto(id: number): { telefono: string; titulo: string } | null {
   const f = db.prepare(`SELECT telefono, titulo, ejemplo FROM avisos WHERE id = ? AND ${VIGENTE}`).get(id) as Fila | undefined;
   if (!f || num(f.ejemplo) === 1 || !str(f.telefono)) return null;
-  db.prepare("UPDATE avisos SET contactos = contactos + 1 WHERE id = ?").run(id);
   return { telefono: str(f.telefono), titulo: str(f.titulo) };
 }
 
@@ -358,4 +357,8 @@ export function borrarBusqueda(id: number): void {
 
 export function contarAvisos(): number {
   return num((db.prepare("SELECT COUNT(*) AS n FROM avisos").get() as Fila).n);
+}
+
+export function sumarContacto(id: number): void {
+  db.prepare("UPDATE avisos SET contactos = contactos + 1 WHERE id = ?").run(id);
 }

@@ -1,3 +1,4 @@
+import type { Resumen } from "../../server/estad.ts";
 // Cliente del backend. Si no hay servidor (por ejemplo, en la vista previa de Claude),
 // pasa solo a "modo vista previa" con los avisos de ejemplo y publica por WhatsApp.
 import { DIAS_VIGENCIA } from "../../shared/config.ts";
@@ -120,5 +121,6 @@ export const admin = {
   cambiar: (id: number, c: Record<string, unknown>) => pedir<AvisoAdmin>("PATCH", `admin/avisos/${id}`, c),
   borrar: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/avisos/${id}`),
   busquedas: () => pedir<Busqueda[]>("GET", "admin/busquedas"),
+  estadisticas: (dias: number) => pedir<Resumen>("GET", `admin/estadisticas?dias=${dias}`),
   borrarBusqueda: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/busquedas/${id}`),
 };

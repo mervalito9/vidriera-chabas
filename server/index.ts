@@ -13,7 +13,8 @@ import { linkWA } from "../shared/whatsapp.ts";
 import * as datos from "./db.ts";
 import { FOTOS_DIR } from "./db.ts";
 import { ErrorHttp, cabecerasSeguridad, crearLimitador, exigirMismoOrigen, ipDe, json, leerJson } from "./http.ts";
-import { claveCorrecta, cerrarSesion, exigirAdmin, iniciarSesion } from "./auth.ts";
+import { claveCorrecta, cerrarSesion, esAdmin, exigirAdmin, iniciarSesion } from "./auth.ts";
+import * as estad from "./estad.ts";
 import { guardarFotos, borrarFotos } from "./imagenes.ts";
 import { armarZip, escribirZip } from "./zip.ts";
 import { sincronizarEjemplos } from "./ejemplos.ts";
@@ -29,6 +30,7 @@ const limiteContacto = crearLimitador(30, 10 * 60_000);
 const limitePublicar = crearLimitador(6, 60 * 60_000);
 const limiteBusqueda = crearLimitador(10, 60 * 60_000);
 const limiteLogin = crearLimitador(8, 15 * 60_000);
+const limiteMedir = crearLimitador(400, 10 * 60_000);
 
 /** Topes para que nadie pueda llenar el disco o la memoria mandando avisos falsos. */
 const MAX_PENDIENTES = 100;
@@ -95,9 +97,10 @@ function servirArchivo(res: ServerResponse, raiz: string, ruta: string, cache: s
 }
 
 /** Página para compartir un aviso: WhatsApp lee la foto y el título; las personas pasan directo al aviso. */
-function paginaCompartir(res: ServerResponse, id: number): void {
+function paginaCompartir(res: ServerResponse, id: number, de: string): void {
   const a = datos.obtenerPublico(id, false);
-  const destino = `/#aviso--${id}`;
+  // La marca de origen (?de=wa) pasa al sitio para saber de dónde vino la gente.
+  const destino = `/${/^[a-z]{2,6}$/.test(de) ? `?de=${de}` : ""}#aviso--${id}`;
   const titulo = a ? `${a.titulo} · Vidriera Chabás` : "Vidriera Chabás";
   const precio = a?.precio ? `${a.moneda === "ARS" ? "$" : "USD"} ${fmtNum(a.precio)}${a.operacion === "alquiler" ? " por mes" : ""}` : "";
   const desc = a ? [precio, a.tipo, a.pueblo].filter(Boolean).join(" · ") : "Casas, autos y más de Chabás y la zona.";
@@ -127,7 +130,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
     }
     const id = idDe(a1);
     if (!a2 && metodo === "GET") {
-      const aviso = datos.obtenerPublico(id, true);
+      const aviso = datos.obtenerPublico(id, false); // la visita la cuenta /api/m (una por persona y día)
       if (!aviso) throw new ErrorHttp(404, "Este aviso ya no está.");
       return json(res, 200, aviso);
     }
@@ -135,6 +138,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
       limiteContacto(ip);
       const c = datos.telefonoParaContacto(id);
       if (!c) throw new ErrorHttp(404, "Este aviso no se puede contactar.");
+      if (!esAdmin(req) && !estad.esRobot(req) && estad.registrarContacto(req, id)) datos.sumarContacto(id);
       return json(res, 200, { url: linkWA(c.telefono, `Hola! Vi tu aviso «${c.titulo}» en Vidriera Chabás. ¿Sigue disponible?`) });
     }
   }
@@ -162,6 +166,28 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
     return json(res, 201, { id: datos.crearBusqueda(r.valor) });
   }
 
+  // Medición propia (sin cookies): páginas vistas y búsquedas. Nunca falla para el visitante.
+  if (recurso === "m" && metodo === "POST" && !a1) {
+    try {
+      limiteMedir(ip);
+      if (!esAdmin(req) && !estad.esRobot(req)) {
+        const b = (await leerJson(req, 4_000)) as Record<string, unknown>;
+        const txt = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : "");
+        if (b.t === "pv") {
+          const avisoId = Number(b.aviso);
+          let propio = "";
+          try { propio = new URL(SITE_URL || `http://${req.headers.host ?? ""}`).hostname.replace(/^www\./, ""); } catch { /* sin host */ }
+          estad.registrarPagina(req, { avisoId: Number.isInteger(avisoId) && avisoId > 0 ? avisoId : null, de: txt(b.de, 10), ref: txt(b.ref, 300), propio });
+        } else if (b.t === "busca") {
+          const n = Number(b.n);
+          estad.registrarBusqueda(req, txt(b.q, 60), Number.isFinite(n) ? n : -1);
+        }
+      }
+    } catch { /* medir nunca rompe nada */ }
+    res.writeHead(204);
+    return void res.end();
+  }
+
   if (recurso === "admin") {
     if (a1 === "login" && metodo === "POST") {
       limiteLogin(ip);
@@ -187,6 +213,11 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
       }
     }
     exigirAdmin(req);
+    if (a1 === "estadisticas" && !a2 && metodo === "GET") {
+      exigirAdmin(req);
+      const dias = [7, 30, 90].includes(Number(url.searchParams.get("dias"))) ? Number(url.searchParams.get("dias")) : 30;
+      return json(res, 200, estad.resumen(dias));
+    }
     if (a1 === "copia" && !a2 && metodo === "GET") {
       // Copia de seguridad completa: la base de datos + todas las fotos, en un solo .zip para guardar en la compu.
       const tmp = join(tmpdir(), `copia-${randomBytes(8).toString("hex")}.db`);
@@ -314,7 +345,7 @@ const servidor = createServer(async (req, res) => {
       return void res.end(process.env.NOINDEX === "0" ? "User-agent: *\nDisallow: /api/\n" : "User-agent: *\nDisallow: /\n");
     }
     const compartir = /^\/a\/(\d+)\/?$/.exec(url.pathname);
-    if (compartir) return paginaCompartir(res, idDe(compartir[1]));
+    if (compartir) return paginaCompartir(res, idDe(compartir[1]), url.searchParams.get("de") ?? "");
     if (url.pathname.startsWith("/fotos/") && servirArchivo(res, FOTOS_DIR, url.pathname.slice("/fotos".length), "public, max-age=31536000, immutable")) return;
     if (url.pathname === "/" || url.pathname === "/index.html") {
       if (servirArchivo(res, WEB_DIR, "/index.html", "no-cache")) return;

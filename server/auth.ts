@@ -42,6 +42,11 @@ export function cerrarSesion(req: IncomingMessage, res: ServerResponse): void {
   res.setHeader("Set-Cookie", `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0`);
 }
 
+/** Si quien pide tiene el panel abierto (no lanza error). */
+export function esAdmin(req: IncomingMessage): boolean {
+  try { exigirAdmin(req); return true; } catch { return false; }
+}
+
 export function exigirAdmin(req: IncomingMessage): void {
   const token = leerCookie(req, COOKIE);
   if (!token) throw new ErrorHttp(401, "Tenés que entrar al panel.");
