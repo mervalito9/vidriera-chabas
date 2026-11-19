@@ -3,7 +3,7 @@ import { RUBROS, WA_NUMERO } from "../../../shared/config.ts";
 import type { ErrorCampo, NuevoAviso, RubroId } from "../../../shared/tipos.ts";
 import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
 import { ErrorApi, SinServidor, conServidor, publicar } from "../api.ts";
-import { FormAviso, mensajeWhatsApp, valoresIniciales, type ValoresForm } from "../components/FormAviso.tsx";
+import { FormAviso, mensajeWhatsApp, valoresIniciales, type ValoresForm } from "../components/form/FormAviso.tsx";
 import { FaltaWhatsApp } from "../components/Pueblos.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";

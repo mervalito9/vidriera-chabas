@@ -1,68 +1,14 @@
+// Formulario de aviso: lo usan "Publicá gratis" (el vecino) y el panel (Felipe, con más campos: avanzado).
 import { useState, type FormEvent, type ReactNode } from "react";
-import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../shared/config.ts";
-import { fmtNum, soloDigitos } from "../../../shared/texto.ts";
-import type { ErrorCampo, NuevoAviso, RubroId } from "../../../shared/tipos.ts";
-import { validarAviso } from "../../../shared/validar.ts";
-import { CAMPOS_GUIADOS, escribirGuiado, leerGuiados } from "../../../shared/datosGuiados.ts";
-import { achicarFoto } from "../fotos.ts";
-import { IconoRubro } from "./Iconos.tsx";
+import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../../shared/config.ts";
+import type { ErrorCampo, NuevoAviso } from "../../../../shared/tipos.ts";
+import { validarAviso } from "../../../../shared/validar.ts";
+import { IconoRubro } from "../Iconos.tsx";
+import { DatosGuiados } from "./DatosGuiados.tsx";
+import { ElegirFotos } from "./ElegirFotos.tsx";
+import { aNuevoAviso, monedaSugerida, type ValoresForm } from "./valores.ts";
 
-export interface ValoresForm {
-  rubro: RubroId | "";
-  tipo: string;
-  operacion: "venta" | "alquiler";
-  titulo: string;
-  precio: string;
-  moneda: "USD" | "ARS";
-  permuta: boolean;
-  financia: boolean;
-  descripcion: string;
-  nombre: string;
-  telefono: string;
-  fotos: string[];
-  /** ¿Dónde está? Uno de PUEBLOS, "otro" (y entonces vale puebloOtro) o "" si todavía no eligió */
-  pueblo: string;
-  puebloOtro: string;
-  /** Solo el panel los usa: barrio o zona, y datos destacados separados por coma */
-  zona: string;
-  datos: string;
-  /** Solo el panel: quién publica (se ve en el aviso) */
-  anunciante: string;
-}
-
-export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
-  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "",
-});
-
-/** Moneda que se usa en la zona para cada cosa (casas en venta y maquinaria en dólares; autos y alquileres en pesos).
- * Si ya escribió un precio, no se la cambiamos. */
-export function monedaSugerida(rubro: RubroId | "", operacion: "venta" | "alquiler", v: Pick<ValoresForm, "precio" | "moneda">): "USD" | "ARS" {
-  if (v.precio) return v.moneda;
-  return (rubro === "inmuebles" && operacion === "venta") || rubro === "agro" ? "USD" : "ARS";
-}
-
-const listaDatos = (texto: string) => texto.split(",").map((d) => d.trim()).filter(Boolean);
-
-/** El pueblo que quedó elegido (el de la lista o el que escribió en "Otro"). */
-export const puebloElegido = (v: ValoresForm): string => (v.pueblo === OTRO_PUEBLO ? v.puebloOtro.trim() : v.pueblo);
-
-export const aNuevoAviso = (v: ValoresForm): unknown => ({ ...v, pueblo: puebloElegido(v), precio: v.precio, datos: listaDatos(v.datos), zona: v.zona });
-
-/** Mensaje de WhatsApp con todos los datos (se usa cuando no hay servidor o si la persona prefiere mandarlo así). */
-export function mensajeWhatsApp(v: ValoresForm): string {
-  const r = v.rubro ? RUBROS[v.rubro] : null;
-  const L = ["Hola! Quiero publicar un aviso en Vidriera Chabás.", ""];
-  L.push(`Rubro: ${r?.nombre ?? "-"}`, `Tipo: ${v.tipo || "-"}`);
-  if (v.rubro === "inmuebles") L.push(`Operación: ${v.operacion === "alquiler" ? "Alquiler" : "Venta"}`);
-  L.push(`Título: ${v.titulo.trim() || "-"}`, `Dónde está: ${puebloElegido(v) || "-"}`);
-  const p = soloDigitos(v.precio);
-  L.push(`Precio: ${p ? `${fmtNum(Number(p))} ${v.moneda === "ARS" ? "Pesos ($)" : "Dólares (USD)"}${v.operacion === "alquiler" && v.rubro === "inmuebles" ? " por mes" : ""}` : "A consultar"}`);
-  if (v.datos.trim()) L.push(`Datos: ${listaDatos(v.datos).join(", ")}`);
-  if (v.permuta) L.push("Acepta permuta: Sí");
-  if (v.financia) L.push("Financia: Sí");
-  L.push(`Descripción: ${v.descripcion.trim() || "-"}`, `Nombre: ${v.nombre.trim() || "-"}`, `WhatsApp para que me contacten: ${soloDigitos(v.telefono) || "-"}`, "", "Ahora te mando las fotos por acá.");
-  return L.join("\n");
-}
+export { mensajeWhatsApp, valoresIniciales, type ValoresForm } from "./valores.ts";
 
 interface Props {
   valores: ValoresForm;
@@ -81,7 +27,6 @@ interface Props {
 export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviando, erroresServidor, textoBoton, pie, avanzado }: Props) {
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
   const [procesando, setProcesando] = useState(false);
-  const [errFoto, setErrFoto] = useState("");
   const todos = [...errores, ...erroresServidor];
   const err = (c: string) => todos.find((e) => e.campo === c)?.msg ?? "";
   const set = <K extends keyof ValoresForm>(k: K, valor: ValoresForm[K]) => {
@@ -89,30 +34,6 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
     if (errores.length) setErrores(errores.filter((e) => e.campo !== k));
   };
   const R = v.rubro ? RUBROS[v.rubro] : null;
-
-  const agregarFotos = async (lista: FileList | null) => {
-    if (!lista?.length) return;
-    setErrFoto("");
-    setProcesando(true);
-    const nuevas: string[] = [];
-    for (const archivo of Array.from(lista).slice(0, LIMITES.fotos - v.fotos.length)) {
-      try {
-        nuevas.push(await achicarFoto(archivo));
-      } catch (e) {
-        setErrFoto(e instanceof Error ? e.message : "No se pudo agregar una foto.");
-      }
-    }
-    setProcesando(false);
-    set("fotos", [...v.fotos, ...nuevas].slice(0, LIMITES.fotos));
-  };
-
-  const moverFoto = (i: number, a: number) => {
-    if (a < 0 || a >= v.fotos.length) return;
-    const lista = [...v.fotos];
-    const [f] = lista.splice(i, 1);
-    if (f !== undefined) lista.splice(a, 0, f);
-    set("fotos", lista);
-  };
 
   const enviar = (e: FormEvent) => {
     e.preventDefault();
@@ -218,38 +139,11 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
       </div>
       {v.rubro && <DatosGuiados key={v.rubro} rubro={v.rubro} datos={v.datos} onCambio={(d) => set("datos", d)} />}
       <div>
-      </div>
-      <div>
         <label className="lbl" htmlFor="f-descripcion">Descripción <span className="opc">(opcional)</span></label>
         <textarea id="f-descripcion" maxLength={LIMITES.descripcion} placeholder="Estado, medidas, año, kilómetros, qué incluye…" value={v.descripcion} onChange={(e) => set("descripcion", e.target.value)} />
       </div>
 
-      <fieldset>
-        <legend>3. Fotos {exigirFotos ? "" : <span className="opc">(opcional)</span>}</legend>
-        <div className="fotos-pick">
-          {v.fotos.map((f, i) => (
-            <div key={i} className="foto-mini">
-              <img src={f} alt={`Foto ${i + 1}`} />
-              <button type="button" aria-label={`Sacar foto ${i + 1}`} onClick={() => set("fotos", v.fotos.filter((_, j) => j !== i))}>×</button>
-              {i === 0 && <span className="foto-tapa">Tapa</span>}
-              {v.fotos.length > 1 && (
-                <span className="foto-mover">
-                  <button type="button" aria-label={`Mover la foto ${i + 1} a la izquierda`} disabled={i === 0} onClick={() => moverFoto(i, i - 1)}>‹</button>
-                  <button type="button" aria-label={`Mover la foto ${i + 1} a la derecha`} disabled={i === v.fotos.length - 1} onClick={() => moverFoto(i, i + 1)}>›</button>
-                </span>
-              )}
-            </div>
-          ))}
-          {v.fotos.length < LIMITES.fotos && (
-            <label className="foto-add" htmlFor="f-fotos">
-              <span aria-hidden="true">+</span>{procesando ? "Preparando…" : v.fotos.length ? "Agregar más" : "Agregar fotos"}
-            </label>
-          )}
-        </div>
-        <input id="f-fotos" className="sr" type="file" accept="image/*" multiple onChange={(e) => { void agregarFotos(e.target.files); e.target.value = ""; }} />
-        <p className="small">Hasta {LIMITES.fotos} fotos, con luz de día. La primera es la de tapa; con las flechas ‹ › cambiás el orden.</p>
-        {(err("fotos") || errFoto) && <p className="err">{err("fotos") || errFoto}</p>}
-      </fieldset>
+      <ElegirFotos fotos={v.fotos} exigir={exigirFotos} error={err("fotos")} onCambio={(f) => set("fotos", f)} onProcesando={setProcesando} />
 
       {avanzado && (
         <div className="dos-col">
@@ -290,42 +184,5 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
       <button type="submit" className="btn btn-main btn-xl" disabled={enviando || procesando}>{enviando ? "Enviando…" : textoBoton}</button>
       {pie}
     </form>
-  );
-}
-
-/** Año, km, dormitorios… según el rubro. Se guardan como etiquetas en "datos". */
-function DatosGuiados({ rubro, datos, onCambio }: { rubro: RubroId; datos: string; onCambio: (d: string) => void }) {
-  const lista = listaDatos(datos);
-  const { valores } = leerGuiados(rubro, lista);
-  // Lo que está escribiendo en los campos de números (un año a medio escribir todavía no es válido y no se guarda).
-  const [crudo, setCrudo] = useState<Record<string, string>>({});
-  const poner = (id: string, valor: string) => onCambio(escribirGuiado(rubro, lista, id, valor).join(", "));
-  return (
-    <fieldset className="guiados">
-      <legend>Lo que más preguntan <span className="opc">(opcional, pero ayuda mucho)</span></legend>
-      <div className="guiados-campos">
-        {CAMPOS_GUIADOS[rubro].map((c) => {
-          const id = `g-${c.id}`;
-          if (c.tipo === "si") return (
-            <label key={c.id} className="check guiado-si"><input type="checkbox" checked={valores[c.id] === "si"} onChange={(e) => poner(c.id, e.target.checked ? "si" : "")} /> {c.etiqueta}</label>
-          );
-          return (
-            <div key={c.id}>
-              <label className="lbl" htmlFor={id}>{c.etiqueta}</label>
-              {c.tipo === "opciones" ? (
-                <select id={id} value={valores[c.id] ?? ""} onChange={(e) => poner(c.id, e.target.value)}>
-                  <option value="">—</option>
-                  {c.opciones?.map((o) => <option key={o} value={o}>{o}{c.id === "dorm" && o === "5" ? " o más" : ""}</option>)}
-                </select>
-              ) : (
-                <input id={id} type="text" inputMode="numeric" maxLength={9} autoComplete="off" placeholder={c.placeholder} value={crudo[c.id] ?? valores[c.id] ?? ""}
-                  onChange={(e) => { const t = soloDigitos(e.target.value); setCrudo({ ...crudo, [c.id]: t }); poner(c.id, t); }}
-                  onBlur={() => setCrudo(Object.fromEntries(Object.entries(crudo).filter(([k]) => k !== c.id)))} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </fieldset>
   );
 }

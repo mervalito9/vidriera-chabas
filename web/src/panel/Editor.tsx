@@ -4,7 +4,7 @@ import { OTRO_PUEBLO, PUEBLOS } from "../../../shared/config.ts";
 import { fmtFecha, soloDigitos } from "../../../shared/texto.ts";
 import type { AvisoAdmin, AvisoPublico, ErrorCampo, NuevoAviso, RubroId } from "../../../shared/tipos.ts";
 import { ErrorApi, admin } from "../api.ts";
-import { FormAviso, valoresIniciales, type ValoresForm } from "../components/FormAviso.tsx";
+import { FormAviso, valoresIniciales, type ValoresForm } from "../components/form/FormAviso.tsx";
 import { Tarjeta } from "../components/Tarjeta.tsx";
 import { ir } from "../router.ts";
 import { CargarVarios } from "./CargarVarios.tsx";

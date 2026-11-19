@@ -4,7 +4,7 @@ import { claveFoto, fichaAAviso, leerFichas, MAX_FOTOS_AVISO, type FichaLista } 
 import type { NuevoAviso } from "../../../shared/tipos.ts";
 import { validarAviso } from "../../../shared/validar.ts";
 import { ErrorApi, admin } from "../api.ts";
-import { FormAviso, type ValoresForm } from "../components/FormAviso.tsx";
+import { FormAviso, type ValoresForm } from "../components/form/FormAviso.tsx";
 import { achicarFoto } from "../fotos.ts";
 import { precioTexto } from "../formato.ts";
 import { abrirZip, type EntradaZip } from "./zipleer.ts";
