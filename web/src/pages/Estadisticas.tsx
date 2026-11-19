@@ -8,7 +8,7 @@ import { fmtNum } from "../../../shared/texto.ts";
 
 const PERIODOS = [7, 30, 90] as const;
 const ESTADOS: Record<string, string> = { publicado: "Publicados", pendiente: "Pendientes", vendido: "Vendidos", rechazado: "Rechazados" };
-const diaCorto = (f: string) => { const [, m, d] = f.split("-"); return `${Number(d)}/${Number(m)}`; };
+export const diaCorto = (f: string) => { const [, m, d] = f.split("-"); return `${Number(d)}/${Number(m)}`; };
 
 /** Tablero del panel: cuánta gente entra, cuántos contactos hay, qué avisos rinden y qué busca la gente. */
 export function Estadisticas({ pendientes, irPendientes }: { pendientes: number; irPendientes: () => void }) {
@@ -104,7 +104,7 @@ function Numero({ titulo, ayuda, valor, antes, fuerte }: { titulo: string; ayuda
 }
 
 /** Barras por día, una sola serie (sin doble eje). Al pasar el mouse o tocar, muestra el día y el valor. */
-function Barras({ titulo, serie, color }: { titulo: string; serie: { x: string; y: number }[]; color: string }) {
+export function Barras({ titulo, serie, color, etiqueta = diaCorto, formato = (n: number) => fmtNum(n) }: { titulo: string; serie: { x: string; y: number }[]; color: string; etiqueta?: (x: string) => string; formato?: (n: number) => string }) {
   const [sel, setSel] = useState<number | null>(null);
   const max = Math.max(1, ...serie.map((s) => s.y));
   const W = 600, H = 160, n = serie.length, paso = W / n, ancho = Math.max(2, paso - 2);
@@ -113,10 +113,10 @@ function Barras({ titulo, serie, color }: { titulo: string; serie: { x: string; 
   const v = sel !== null ? serie[sel] : null;
   return (
     <figure className="estad-barras">
-      <figcaption><b>{titulo}</b> <span className="small">{v ? `${diaCorto(v.x)}: ${v.y}` : `Total: ${fmtNum(total)} · máximo en un día: ${max}`}</span></figcaption>
+      <figcaption><b>{titulo}</b> <span className="small">{v ? `${etiqueta(v.x)}: ${formato(v.y)}` : `Total: ${formato(total)} · máximo: ${formato(max)}`}</span></figcaption>
       <svg viewBox={`0 0 ${W} ${H + 22}`} role="img" aria-label={`${titulo}: total ${total}`} onPointerLeave={() => setSel(null)}>
         <line x1="0" x2={W} y1={H} y2={H} stroke="var(--crema-2)" strokeWidth="1" />
-        <text x="0" y="10" className="estad-eje">{max}</text>
+        <text x="0" y="10" className="estad-eje">{formato(max)}</text>
         {serie.map((s, i) => {
           const h = s.y === 0 ? 0 : Math.max(3, (s.y / max) * (H - 16));
           return (
@@ -127,11 +127,11 @@ function Barras({ titulo, serie, color }: { titulo: string; serie: { x: string; 
           );
         })}
         {marcas.map((i) => serie[i] && (
-          <text key={i} x={i * paso + paso / 2} y={H + 16} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"} className="estad-eje">{diaCorto(serie[i]!.x)}</text>
+          <text key={i} x={i * paso + paso / 2} y={H + 16} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"} className="estad-eje">{etiqueta(serie[i]!.x)}</text>
         ))}
       </svg>
       <details className="small"><summary>Ver como tabla</summary>
-        <table className="estad-tabla"><tbody>{serie.filter((s) => s.y > 0).reverse().map((s) => <tr key={s.x}><td>{diaCorto(s.x)}</td><td>{s.y}</td></tr>)}</tbody></table>
+        <table className="estad-tabla"><tbody>{serie.filter((s) => s.y > 0).reverse().map((s) => <tr key={s.x}><td>{etiqueta(s.x)}</td><td>{formato(s.y)}</td></tr>)}</tbody></table>
       </details>
     </figure>
   );

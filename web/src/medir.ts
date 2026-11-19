@@ -10,9 +10,24 @@ function mandar(cuerpo: Record<string, unknown>): void {
   } catch { /* nada */ }
 }
 
+let paginaActual = "inicio";
+let enAdmin = false;
+function latir(): void {
+  if (enAdmin || document.visibilityState !== "visible") return;
+  try {
+    void fetch("/api/latido", { method: "POST", headers: { "content-type": "application/json", "x-vidriera": "1" }, body: JSON.stringify({ pagina: paginaActual }), keepalive: true }).catch(() => {});
+  } catch { /* nada */ }
+}
+// "En vivo": mientras la pestaña esté visible, avisa cada 30 s. En segundo plano no cuenta.
+window.setInterval(latir, 30_000);
+document.addEventListener("visibilitychange", latir);
+
 /** Cada vez que cambia la página (también la primera). */
 export function medirPagina(nombre: string, param: string): void {
-  if (nombre === "admin") return;
+  enAdmin = nombre === "admin";
+  if (enAdmin) return;
+  paginaActual = param ? `${nombre}--${param}` : nombre;
+  latir();
   const aviso = nombre === "aviso" && /^\d+$/.test(param) ? Number(param) : null;
   mandar({ t: "pv", aviso, de: primera ? de : "", ref: primera ? document.referrer : "" });
   if (primera && de) {

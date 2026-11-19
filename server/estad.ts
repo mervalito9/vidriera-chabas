@@ -53,6 +53,9 @@ function sal(fecha: string): string {
   return s;
 }
 
+/** Código anónimo de quien pide, válido solo por hoy. */
+export const idVisitante = (req: IncomingMessage): string => visitante(req, hoy());
+
 function visitante(req: IncomingMessage, fecha: string): string {
   return createHash("sha256").update(`${sal(fecha)}|${ipDe(req)}|${req.headers["user-agent"] ?? ""}`).digest("hex").slice(0, 20);
 }

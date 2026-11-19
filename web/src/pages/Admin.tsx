@@ -8,14 +8,15 @@ import { FormAviso, valoresIniciales, type ValoresForm } from "../components/For
 import { Cargando } from "../components/Tarjeta.tsx";
 import { CargarVarios } from "./Lote.tsx";
 import { Estadisticas } from "./Estadisticas.tsx";
+import { Actividad } from "./Actividad.tsx";
 import { fotoSegura, precioTexto } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { tarjetaRedes, textoRedes } from "../redes.ts";
 import { ir } from "../router.ts";
 
-type Pestana = Estado | "busquedas" | "cargar" | "lote" | "estad";
+type Pestana = Estado | "busquedas" | "cargar" | "lote" | "estad" | "actividad";
 const PESTANAS: [Pestana, string][] = [
-  ["pendiente", "Pendientes"], ["publicado", "Publicados"], ["estad", "Estadísticas"], ["vendido", "Vendidos"], ["rechazado", "Rechazados"], ["busquedas", "Búsquedas"], ["cargar", "Cargar aviso"], ["lote", "Cargar varios"],
+  ["pendiente", "Pendientes"], ["publicado", "Publicados"], ["estad", "Estadísticas"], ["actividad", "Actividad"], ["vendido", "Vendidos"], ["rechazado", "Rechazados"], ["busquedas", "Búsquedas"], ["cargar", "Cargar aviso"], ["lote", "Cargar varios"],
 ];
 const mensajeError = (e: unknown) => (e instanceof Error ? e.message : "Algo salió mal.");
 
@@ -81,7 +82,7 @@ function Panel({ onSalir }: { onSalir: () => void }) {
       const pend = await admin.avisos("pendiente");
       setPendientes(pend.length);
       if (pestana === "busquedas") setBusquedas(await admin.busquedas());
-      else if (pestana !== "cargar" && pestana !== "lote" && pestana !== "estad") setAvisos(pestana === "pendiente" ? pend : await admin.avisos(pestana));
+      else if (pestana !== "cargar" && pestana !== "lote" && pestana !== "estad" && pestana !== "actividad") setAvisos(pestana === "pendiente" ? pend : await admin.avisos(pestana));
     } catch (e) {
       if (e instanceof ErrorApi && e.status === 401) onSalir();
       else setError(mensajeError(e));
@@ -121,7 +122,9 @@ function Panel({ onSalir }: { onSalir: () => void }) {
         ))}
       </nav>
       {error && <p className="form-err" role="alert">{error}</p>}
-      {pestana === "estad" ? (
+      {pestana === "actividad" ? (
+        <Actividad />
+      ) : pestana === "estad" ? (
         <Estadisticas pendientes={pendientes} irPendientes={() => setPestana("pendiente")} />
       ) : pestana === "lote" ? (
         <CargarVarios onListo={() => setPestana("pendiente")} />

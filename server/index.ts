@@ -15,6 +15,7 @@ import { FOTOS_DIR } from "./db.ts";
 import { ErrorHttp, cabecerasSeguridad, crearLimitador, exigirMismoOrigen, ipDe, json, leerJson } from "./http.ts";
 import { claveCorrecta, cerrarSesion, esAdmin, exigirAdmin, iniciarSesion } from "./auth.ts";
 import * as estad from "./estad.ts";
+import * as actividad from "./actividad.ts";
 import { guardarFotos, borrarFotos } from "./imagenes.ts";
 import { armarZip, escribirZip } from "./zip.ts";
 import { sincronizarEjemplos } from "./ejemplos.ts";
@@ -31,6 +32,7 @@ const limitePublicar = crearLimitador(6, 60 * 60_000);
 const limiteBusqueda = crearLimitador(10, 60 * 60_000);
 const limiteLogin = crearLimitador(8, 15 * 60_000);
 const limiteMedir = crearLimitador(400, 10 * 60_000);
+const limiteLatido = crearLimitador(120, 10 * 60_000);
 
 /** Topes para que nadie pueda llenar el disco o la memoria mandando avisos falsos. */
 const MAX_PENDIENTES = 100;
@@ -166,6 +168,19 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
     return json(res, 201, { id: datos.crearBusqueda(r.valor) });
   }
 
+  // "En vivo": cada página abierta avisa cada 30 s que sigue ahí.
+  if (recurso === "latido" && metodo === "POST" && !a1) {
+    try {
+      limiteLatido(ip);
+      if (!esAdmin(req)) {
+        const b = (await leerJson(req, 1_000)) as { pagina?: unknown };
+        actividad.latido(req, typeof b.pagina === "string" ? b.pagina : "inicio");
+      }
+    } catch { /* nunca falla para el visitante */ }
+    res.writeHead(204);
+    return void res.end();
+  }
+
   // Medición propia (sin cookies): páginas vistas y búsquedas. Nunca falla para el visitante.
   if (recurso === "m" && metodo === "POST" && !a1) {
     try {
@@ -194,6 +209,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
       const cuerpo = (await leerJson(req, MAX_JSON)) as { clave?: unknown };
       if (typeof cuerpo.clave !== "string" || !claveCorrecta(cuerpo.clave.slice(0, 200))) {
         console.warn(new Date().toISOString(), "PANEL: contraseña incorrecta desde", ip);
+        actividad.contarLoginMal();
         throw new ErrorHttp(401, "Contraseña incorrecta.");
       }
       console.log(new Date().toISOString(), "PANEL: entrada correcta desde", ip);
@@ -213,6 +229,11 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
       }
     }
     exigirAdmin(req);
+    if (a1 === "actividad" && !a2 && metodo === "GET") {
+      exigirAdmin(req);
+      const p = url.searchParams.get("periodo");
+      return json(res, 200, actividad.resumen(p === "7d" || p === "30d" ? p : "24h"));
+    }
     if (a1 === "estadisticas" && !a2 && metodo === "GET") {
       exigirAdmin(req);
       const dias = [7, 30, 90].includes(Number(url.searchParams.get("dias"))) ? Number(url.searchParams.get("dias")) : 30;
@@ -337,6 +358,7 @@ async function api(req: IncomingMessage, res: ServerResponse, url: URL): Promise
 const servidor = createServer(async (req, res) => {
   cabecerasSeguridad(res);
   const url = new URL(req.url ?? "/", "http://localhost");
+  actividad.medirPedido(req, res, url.pathname);
   try {
     if (url.pathname.startsWith("/api/")) return await api(req, res, url);
     if (req.method !== "GET" && req.method !== "HEAD") throw new ErrorHttp(405, "Método no permitido.");
@@ -350,9 +372,11 @@ const servidor = createServer(async (req, res) => {
     if (url.pathname === "/" || url.pathname === "/index.html") {
       if (servirArchivo(res, WEB_DIR, "/index.html", "no-cache")) return;
     } else if (servirArchivo(res, WEB_DIR, url.pathname, url.pathname.startsWith("/assets/") ? "public, max-age=86400" : "no-cache")) return;
+    (res as typeof res & { mensajeError?: string }).mensajeError = "No existe esa dirección";
     res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
     res.end(existsSync(join(WEB_DIR, "404.html")) ? readFileSync(join(WEB_DIR, "404.html")) : "No encontrado");
   } catch (err) {
+    (res as typeof res & { mensajeError?: string }).mensajeError = err instanceof Error ? err.message : String(err);
     if (err instanceof ErrorHttp) return json(res, err.status, { error: err.message, campos: err.campos });
     console.error(new Date().toISOString(), req.method, url.pathname, err);
     if (!res.headersSent) json(res, 500, { error: "Algo salió mal. Probá de nuevo en un rato." });
