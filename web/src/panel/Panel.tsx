@@ -1,5 +1,6 @@
 // Armazón del panel: menú al costado en la compu, barra abajo en el celular.
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { clientesDe } from "../components/form/Cliente.tsx";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AvisoAdmin, Busqueda } from "../../../shared/tipos.ts";
 import { ErrorApi, admin } from "../api.ts";
 import { Cargando } from "../components/Tarjeta.tsx";
@@ -50,6 +51,8 @@ export function Panel({ param, onSalir }: { param: string; onSalir: () => void }
     try { await fn(); await recargar(); } catch (e) { fallo(e); }
   }, [recargar, fallo]);
 
+  // Clientes guardados: salen de los avisos ya cargados (se eligen de una lista al cargar uno nuevo).
+  const clientes = useMemo(() => clientesDe(avisos ?? []), [avisos]);
   const pendientes = avisos?.filter((a) => a.estado === "pendiente").length ?? 0;
   const nuevas = busquedas?.filter((b) => esNueva(b.creadoEn)).length ?? 0;
   const salir = () => void admin.salir().finally(onSalir);
@@ -91,13 +94,13 @@ export function Panel({ param, onSalir }: { param: string; onSalir: () => void }
       <div className="pn-cont">
         {error && <p className="form-err" role="alert">{error}</p>}
         {editarId ? (
-          !avisos ? <Cargando /> : aviso ? <Editor key={aviso.id} a={aviso} accion={accion} onListo={() => { void recargar(); navegar(ir("admin", "avisos")); }} /> : <p>Ese aviso ya no existe. <a href={ir("admin", "avisos")}>Volver a avisos</a></p>
+          !avisos ? <Cargando /> : aviso ? <Editor key={aviso.id} a={aviso} accion={accion} clientes={clientes} onListo={() => { void recargar(); navegar(ir("admin", "avisos")); }} /> : <p>Ese aviso ya no existe. <a href={ir("admin", "avisos")}>Volver a avisos</a></p>
         ) : seccion === "inicio" ? (
           <Inicio avisos={avisos} busquedas={busquedas} accion={accion} />
         ) : seccion === "avisos" ? (
           avisos ? <Avisos avisos={avisos} accion={accion} /> : <Cargando />
         ) : seccion === "cargar" || seccion === "varios" ? (
-          <CargarSeccion varios={seccion === "varios"} onListo={() => { void recargar(); navegar(ir("admin", "avisos")); }} />
+          <CargarSeccion varios={seccion === "varios"} clientes={clientes} onListo={() => { void recargar(); navegar(ir("admin", "avisos")); }} />
         ) : seccion === "busquedas" ? (
           <Busquedas busquedas={busquedas} accion={accion} />
         ) : seccion === "estad" ? (

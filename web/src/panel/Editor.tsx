@@ -1,4 +1,5 @@
 // Editar un aviso y cargar avisos nuevos (de a uno o varios con el .zip), con vista previa en vivo.
+import { textoPublica, type Cliente } from "../components/form/Cliente.tsx";
 import { CONDICIONES_VACIAS, limpiarCondiciones } from "../../../shared/alquiler.ts";
 import { useRef, useState } from "react";
 import { OTRO_PUEBLO, PUEBLOS } from "../../../shared/config.ts";
@@ -13,7 +14,7 @@ import { Titulo, mensajeError, type Accion } from "./comunes.tsx";
 
 export const valoresDe = (a: AvisoAdmin): ValoresForm => ({
   rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio === null ? "" : String(a.precio), moneda: a.moneda,
-  permuta: a.permuta, financia: a.financia, descripcion: a.descripcion, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, zona: a.zona, datos: a.datos.join(", "), anunciante: a.anunciante,
+  permuta: a.permuta, financia: a.financia, descripcion: a.descripcion, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, zona: a.zona, datos: a.datos.join(", "), anunciante: a.anunciante, quien: a.quien || (a.anunciante ? "inmobiliaria" : "dueno"),
   condiciones: a.condiciones ?? CONDICIONES_VACIAS, lat: a.lat, lng: a.lng,
   pueblo: PUEBLOS.includes(a.pueblo) ? a.pueblo : OTRO_PUEBLO, puebloOtro: PUEBLOS.includes(a.pueblo) ? "" : a.pueblo,
 });
@@ -26,7 +27,7 @@ export function vistaPrevia(v: ValoresForm, id = 0): AvisoPublico {
     id, rubro: (v.rubro || "inmuebles") as RubroId, tipo: v.tipo || "Tipo", operacion: v.operacion || "venta", titulo: v.titulo || "Título del aviso",
     precio, precioAnterior: null, moneda: v.moneda, pueblo, zona: v.zona, descripcion: v.descripcion,
     datos: v.datos.split(",").map((x) => x.trim()).filter(Boolean), permuta: v.permuta, financia: v.financia, fotos: v.fotos,
-    anunciante: v.anunciante, condiciones: v.operacion === "alquiler" ? limpiarCondiciones(v.condiciones) : null, lat: v.lat, lng: v.lng, ejemplo: false, reservado: false, destacado: false, publicadoEn: new Date().toISOString(), venceEn: new Date().toISOString(),
+    anunciante: v.anunciante, quien: v.quien, publica: textoPublica(v), condiciones: v.operacion === "alquiler" ? limpiarCondiciones(v.condiciones) : null, lat: v.lat, lng: v.lng, ejemplo: false, reservado: false, destacado: false, publicadoEn: new Date().toISOString(), venceEn: new Date().toISOString(),
   } as AvisoPublico;
 }
 
@@ -49,7 +50,7 @@ export function Revision({ v }: { v: ValoresForm }) {
   );
 }
 
-export function Editor({ a, accion, onListo }: { a: AvisoAdmin; accion: Accion; onListo: () => void }) {
+export function Editor({ a, accion, onListo, clientes }: { a: AvisoAdmin; accion: Accion; onListo: () => void; clientes: Cliente[] }) {
   const [v, setV] = useState<ValoresForm>(() => valoresDe(a));
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
@@ -78,6 +79,7 @@ export function Editor({ a, accion, onListo }: { a: AvisoAdmin; accion: Accion; 
             onCambio={setV}
             exigirFotos={false}
             avanzado
+            clientes={clientes}
             enviando={enviando}
             erroresServidor={errores}
             textoBoton={a.estado === "pendiente" ? "Guardar sin publicar" : "Guardar cambios"}
@@ -108,7 +110,7 @@ export function Editor({ a, accion, onListo }: { a: AvisoAdmin; accion: Accion; 
   );
 }
 
-export function CargarSeccion({ varios, onListo }: { varios: boolean; onListo: () => void }) {
+export function CargarSeccion({ varios, onListo, clientes }: { varios: boolean; onListo: () => void; clientes: Cliente[] }) {
   return (
     <>
       <Titulo t="Cargar avisos" />
@@ -116,12 +118,12 @@ export function CargarSeccion({ varios, onListo }: { varios: boolean; onListo: (
         <a role="tab" aria-selected={!varios} href={ir("admin", "cargar")}>De a uno</a>
         <a role="tab" aria-selected={varios} href={ir("admin", "varios")}>Varios juntos (.zip)</a>
       </div>
-      {varios ? <div className="pn-caja"><CargarVarios onListo={onListo} /></div> : <CargarUno onListo={onListo} />}
+      {varios ? <div className="pn-caja"><CargarVarios onListo={onListo} /></div> : <CargarUno onListo={onListo} clientes={clientes} />}
     </>
   );
 }
 
-export function CargarUno({ onListo }: { onListo: () => void }) {
+export function CargarUno({ onListo, clientes }: { onListo: () => void; clientes: Cliente[] }) {
   const [v, setV] = useState<ValoresForm>(() => valoresIniciales(""));
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
@@ -134,6 +136,7 @@ export function CargarUno({ onListo }: { onListo: () => void }) {
           onCambio={setV}
           exigirFotos={false}
           avanzado
+          clientes={clientes}
           enviando={enviando}
           erroresServidor={errores}
           textoBoton="Publicar aviso"

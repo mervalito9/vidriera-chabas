@@ -65,7 +65,7 @@ export const rutasPublicas: Rutas = async ({ req, res, url, metodo, ip, recurso,
       if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
       const archivos = guardarFotos(r.valor.fotos);
       // "Publicado por" lo pone solo el panel: un vecino no puede decir que es una inmobiliaria.
-      const id = datos.crearAviso({ ...r.valor, anunciante: "" }, archivos, { estado: "pendiente" });
+      const id = datos.crearAviso({ ...r.valor, anunciante: "", quien: "dueno" }, archivos, { estado: "pendiente" });
       json(res, 201, { id });
       return true;
     } finally {

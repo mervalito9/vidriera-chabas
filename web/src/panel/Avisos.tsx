@@ -163,7 +163,7 @@ function BarraSeleccion({ elegidos, vista, enLote, limpiar }: { elegidos: AvisoA
 /** Un aviso del panel, como lo pide el servidor para guardarlo (para cambios en grupo). */
 const aNuevo = (a: AvisoAdmin): NuevoAviso => ({
   rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio, moneda: a.moneda,
-  pueblo: a.pueblo, anunciante: a.anunciante, zona: a.zona, descripcion: a.descripcion, datos: a.datos,
+  pueblo: a.pueblo, anunciante: a.anunciante, quien: a.quien, zona: a.zona, descripcion: a.descripcion, datos: a.datos,
   permuta: a.permuta, financia: a.financia, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, condiciones: a.condiciones, lat: a.lat, lng: a.lng,
 });
 

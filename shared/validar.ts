@@ -53,6 +53,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
   const condiciones = operacion === "alquiler" ? limpiarCondiciones(e.condiciones) : null;
   const { lat, lng } = ubicacion(e.lat, e.lng);
+  const quien = e.quien === "dueno" || e.quien === "inmobiliaria" || e.quien === "agencia" ? e.quien : "";
   const fotos = (Array.isArray(e.fotos) ? e.fotos : []).filter((f): f is string => typeof f === "string").slice(0, LIMITES.fotos);
 
   if (!rubro) errores.push({ campo: "rubro", msg: "Elegí qué querés publicar." });
@@ -67,7 +68,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, quien, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng },
   };
 }
 

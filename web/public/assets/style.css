@@ -190,9 +190,9 @@ details.mas-filtros[open] > summary::after { content: "–"; }
 /* ---------- aviso ---------- */
 .aviso-grid { display: grid; gap: 22px; margin-top: 6px; }
 .foto-main { position: relative; border-radius: 22px; overflow: hidden; box-shadow: var(--sombra); aspect-ratio: 4 / 3; background: #1d1b16; }
-.foto-main .foto-fondo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(24px) brightness(.55); transform: scale(1.15); }
 .foto-abrir { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: zoom-in; display: block; width: 100%; height: 100%; }
-.foto-abrir img { width: 100%; height: 100%; object-fit: contain; }
+/* En la ficha la foto llena el cuadro (recortada, como en la tarjeta); entera se ve tocándola, en el visor. */
+.foto-abrir img { width: 100%; height: 100%; object-fit: cover; }
 .foto-lupa { position: absolute; right: 12px; bottom: 12px; background: rgba(23,21,15,.7); color: #fff; font: 600 .82rem var(--sans); padding: 6px 10px; border-radius: 999px; pointer-events: none; }
 .foto-num { position: absolute; left: 12px; bottom: 12px; background: rgba(23,21,15,.7); color: #fff; font: 700 .82rem var(--sans); padding: 6px 10px; border-radius: 999px; pointer-events: none; }
 .foto-flecha { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(251,248,241,.9); color: var(--tinta); font-size: 1.8rem; line-height: 1; cursor: pointer; box-shadow: var(--sombra); }
@@ -807,4 +807,12 @@ html { -webkit-tap-highlight-color: transparent; }
 .ubicacion { margin: 18px 0; display: grid; gap: 8px; }
 .ubicacion h2 { font-size: 1.15rem; margin: 0; }
 .ubicacion .mapa { height: 260px; }
+
+/* ---------- quién publica (debajo del botón de WhatsApp) ---------- */
+.publica { display: flex; align-items: center; gap: 12px; margin: 14px 0 4px; padding: 12px 14px; border-radius: 16px; background: var(--papel); border: 1px solid rgba(23,21,15,.08); }
+.publica-ini { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--oliva, #2F3A2A); color: var(--crema); font-weight: 800; font-size: 1.1rem; }
+.publica > span:last-child { display: grid; color: var(--tinta-2); }
+.publica b { color: var(--tinta); font-size: 1.05rem; }
+.publica small { font-size: .85rem; color: var(--tinta-2); }
+.cliente-elegir { margin-bottom: 14px; }
 

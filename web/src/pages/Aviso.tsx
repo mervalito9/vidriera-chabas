@@ -68,11 +68,10 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           <div className="foto-main">
             {fotos[foto] ? (
               <>
-                <img className="foto-fondo" src={fotos[foto]} alt="" aria-hidden="true" />
                 <button type="button" className="foto-abrir" aria-label="Ver la foto en grande" onClick={() => setGrande(true)}>
                   <img src={fotos[foto]} alt={`Foto ${foto + 1} de ${fotos.length}: ${a.titulo}`} />
                 </button>
-                <span className="foto-lupa" aria-hidden="true">Tocá para agrandar</span>
+                <span className="foto-lupa" aria-hidden="true">Tocá para verla entera</span>
                 {fotos.length > 1 && <>
                   <button type="button" className="foto-flecha izq" aria-label="Foto anterior" onClick={() => setFoto((foto - 1 + fotos.length) % fotos.length)}>‹</button>
                   <button type="button" className="foto-flecha der" aria-label="Foto siguiente" onClick={() => setFoto((foto + 1) % fotos.length)}>›</button>
@@ -95,7 +94,6 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
         </div>
         <div className="aviso-info">
           <p className="meta"><span className="lugar">{a.pueblo}</span> · {meta}</p>
-          {a.anunciante && <p className="small publica">Publica: <b>{a.anunciante}</b></p>}
           <h1>{a.titulo}</h1>
           {a.reservado && <p className="reservado"><b>Reservado.</b> El dueño ya lo tiene señado. Si querés quedar por si se cae, escribile igual.</p>}
           <p className="price big">
@@ -107,6 +105,12 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
             <p className="baja">Bajó de precio: antes {a.moneda === "ARS" ? "$" : "USD"} {fmtNum(a.precioAnterior)}</p>
           )}
           <Contacto a={a} c={contacto} refBoton={refBoton} />
+          {a.publica && (
+            <p className="publica">
+              <span className="publica-ini" aria-hidden="true">{a.publica.charAt(0).toUpperCase()}</span>
+              <span>Publica <b>{a.publica}</b><small>{QUIEN_TEXTO[a.quien]}</small></span>
+            </p>
+          )}
           <ul className="datos">
             {a.datos.map((d) => <li key={d}>{d}</li>)}
             {a.permuta && <li className="ok">Acepta permuta</li>}
@@ -138,6 +142,8 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
 
 /** El teléfono del dueño lo da el backend recién cuando tocan el botón. Lo usan el botón grande y la barra fija del celular. */
 /** Garantía, depósito, contrato… lo que más pregunta quien quiere alquilar. */
+const QUIEN_TEXTO: Record<AvisoPublico["quien"], string> = { dueno: "Dueño directo", inmobiliaria: "Inmobiliaria", agencia: "Agencia", "": "" };
+
 function Condiciones({ a }: { a: AvisoPublico }) {
   const renglones = a.condiciones ? renglonesCondiciones(a.condiciones) : [];
   return (
@@ -146,7 +152,7 @@ function Condiciones({ a }: { a: AvisoPublico }) {
       {renglones.length ? (
         <dl>{renglones.map(([que, como]) => <div key={que}><dt>{que}</dt><dd>{como}</dd></div>)}</dl>
       ) : (
-        <p className="small">{a.anunciante ? "No cargaron" : "El dueño no cargó"} las condiciones (garantía, depósito, contrato). Preguntá por WhatsApp.</p>
+        <p className="small">{a.quien === "dueno" || !a.anunciante ? "El dueño no cargó" : "No cargaron"} las condiciones (garantía, depósito, contrato). Preguntá por WhatsApp.</p>
       )}
     </section>
   );
@@ -173,12 +179,15 @@ function useContacto(a: AvisoPublico) {
 }
 type EstadoContacto = ReturnType<typeof useContacto>;
 
-function BotonWA({ c, corto }: { c: EstadoContacto; corto?: boolean }) {
+/** "con el dueño", "con la agencia"… según quién publica. */
+const conQuien = (q: AvisoPublico["quien"]): string => (q === "agencia" ? "con la agencia" : q === "inmobiliaria" ? "con la inmobiliaria" : q === "dueno" ? "con el dueño" : "");
+
+function BotonWA({ c, corto, quien }: { c: EstadoContacto; corto?: boolean; quien: AvisoPublico["quien"] }) {
   return c.estado === "listo" ? (
-    <a className="btn btn-wa" href={c.url} target="_blank" rel="noopener noreferrer">{corto ? "Abrir" : "Abrir WhatsApp con el dueño"}</a>
+    <a className="btn btn-wa" href={c.url} target="_blank" rel="noopener noreferrer">{corto ? "Abrir" : `Abrir WhatsApp ${conQuien(quien)}`.trim()}</a>
   ) : (
     <button type="button" className="btn btn-wa" onClick={() => void c.pedir()} disabled={c.estado === "pidiendo"}>
-      {c.estado === "pidiendo" ? "Un segundo…" : corto ? "WhatsApp" : "Hablar por WhatsApp con el dueño"}
+      {c.estado === "pidiendo" ? "Un segundo…" : corto ? "WhatsApp" : `Hablar por WhatsApp ${conQuien(quien)}`.trim()}
     </button>
   );
 }
@@ -193,7 +202,7 @@ function Contacto({ a, c, refBoton }: { a: AvisoPublico; c: EstadoContacto; refB
     );
   return (
     <div className="contacto" ref={refBoton}>
-      <BotonWA c={c} />
+      <BotonWA c={c} quien={a.quien} />
       {c.error && <p className="err" role="alert">{c.error}</p>}
       <p className="small">Hablás directo con quien publicó. Vidriera Chabás no cobra comisión ni participa de la operación.</p>
     </div>
@@ -214,7 +223,7 @@ function BarraContacto({ a, c, refBoton }: { a: AvisoPublico; c: EstadoContacto;
   return (
     <div className={`barra-wa${visible ? " visible" : ""}`} aria-hidden={!visible} inert={!visible}>
       <span className="barra-wa-precio"><b>{precioTexto(a)}</b>{porMes(a) && <small> por mes</small>}</span>
-      <BotonWA c={c} corto />
+      <BotonWA c={c} quien={a.quien} corto />
     </div>
   );
 }

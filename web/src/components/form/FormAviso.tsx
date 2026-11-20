@@ -6,6 +6,7 @@ import { validarAviso } from "../../../../shared/validar.ts";
 import { IconoRubro } from "../Iconos.tsx";
 import { MAPA_ACTIVO } from "../../mapa/activo.ts";
 import { MarcarUbicacion } from "../../mapa/MarcarUbicacion.tsx";
+import { ElegirCliente, QUIENES, textoPublica, type Cliente } from "./Cliente.tsx";
 import { CondicionesAlquiler } from "./CondicionesAlquiler.tsx";
 import { DatosGuiados } from "./DatosGuiados.tsx";
 import { ElegirFotos } from "./ElegirFotos.tsx";
@@ -26,11 +27,13 @@ interface Props {
   erroresServidor: ErrorCampo[];
   textoBoton: string;
   pie?: ReactNode;
-  /** En el panel: muestra zona, datos libres y "Publicado por", con textos para Felipe en vez de para el vecino */
+  /** En el panel: muestra zona, datos libres y el cliente, con textos para Felipe en vez de para el vecino */
   avanzado?: boolean;
+  /** En el panel: los clientes que ya cargó, para elegirlos de una lista */
+  clientes?: Cliente[];
 }
 
-export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviando, erroresServidor, textoBoton, pie, avanzado }: Props) {
+export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviando, erroresServidor, textoBoton, pie, avanzado, clientes = [] }: Props) {
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
   const [procesando, setProcesando] = useState(false);
   const todos = [...errores, ...erroresServidor];
@@ -167,18 +170,25 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
             <label className="lbl" htmlFor="f-datos">Otros datos destacados <span className="opc">(separados por coma)</span></label>
             <input id="f-datos" type="text" maxLength={200} placeholder="Ej: 2 dormitorios, cochera, patio" autoComplete="off" value={v.datos} onChange={(e) => set("datos", e.target.value)} />
           </div>
-          <div>
-            <label className="lbl" htmlFor="f-anunciante">Publicado por <span className="opc">(se ve en el aviso; opcional)</span></label>
-            <input id="f-anunciante" type="text" maxLength={60} placeholder="Ej: Dueño directo, Inmobiliaria Pérez" autoComplete="off" value={v.anunciante} onChange={(e) => set("anunciante", e.target.value)} />
-          </div>
         </div>
       )}
 
       <fieldset>
-        <legend>{avanzado ? "4. Contacto del vendedor" : "4. Tus datos"}</legend>
+        <legend>{avanzado ? "4. Cliente: quién publica" : "4. Tus datos"}</legend>
+        {avanzado && (
+          <>
+            <ElegirCliente clientes={clientes} onElegir={(c) => onCambio({ ...v, nombre: c.nombre, telefono: c.telefono, anunciante: c.anunciante, quien: c.quien || "dueno" })} />
+            <span className="lbl" id="quienL">¿Quién es?</span>
+            <div className="seg" role="radiogroup" aria-labelledby="quienL">
+              {QUIENES.map(([q, t]) => (
+                <label key={q}><input type="radio" name="quien" checked={v.quien === q} onChange={() => set("quien", q)} /><span>{t}</span></label>
+              ))}
+            </div>
+          </>
+        )}
         <div className="dos-col">
           <div>
-            <label className="lbl" htmlFor="f-nombre">{avanzado ? "Nombre" : "Tu nombre"}</label>
+            <label className="lbl" htmlFor="f-nombre">{avanzado ? (v.quien === "dueno" ? "Nombre del dueño" : "Nombre de quien atiende") : "Tu nombre"}</label>
             <input id="f-nombre" type="text" maxLength={LIMITES.nombre} autoComplete="given-name" value={v.nombre} aria-invalid={!!err("nombre") || undefined} onChange={(e) => set("nombre", e.target.value)} />
             {err("nombre") && <p className="err">{err("nombre")}</p>}
           </div>
@@ -189,7 +199,14 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
             {err("telefono") && <p className="err">{err("telefono")}</p>}
           </div>
         </div>
-        {!avanzado && <p className="small">Tu número no se muestra en la página: lo usamos para que los interesados te escriban cuando tocan el botón.</p>}
+        {avanzado && v.quien && v.quien !== "dueno" && (
+          <div>
+            <label className="lbl" htmlFor="f-anunciante">Nombre {v.quien === "agencia" ? "de la agencia" : "de la inmobiliaria"}</label>
+            <input id="f-anunciante" type="text" maxLength={60} placeholder={v.quien === "agencia" ? "Ej: Agencia Di Giovanni" : "Ej: Inmobiliaria Pérez"} autoComplete="off" value={v.anunciante} onChange={(e) => set("anunciante", e.target.value)} />
+          </div>
+        )}
+        {avanzado && textoPublica(v) && <p className="small">En el aviso se va a ver: <b>Publica: {textoPublica(v)}</b>{v.quien === "dueno" ? " (dueño)" : ""}</p>}
+        {!avanzado && <p className="small">En el aviso se ve tu nombre (solo el primero). Tu número no se muestra: lo usamos para que los interesados te escriban cuando tocan el botón.</p>}
       </fieldset>
 
       {todos.length > 0 && <p className="form-err" role="alert">{todos.length === 1 ? "Falta completar un dato (está marcado en rojo)." : `Faltan completar ${todos.length} datos (están marcados en rojo).`}</p>}

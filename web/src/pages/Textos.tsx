@@ -56,8 +56,8 @@ export function Privacidad() {
       <p>Para publicar: tu nombre, tu WhatsApp, los datos del aviso y las fotos. Para "Avisame cuando aparezca": tu nombre, lo que buscás y tu WhatsApp. Se guardan en el servidor de Vidriera Chabás.</p>
       <h2>Para qué</h2>
       <p>Para publicar tu aviso y que los interesados te puedan escribir, o para avisarte cuando aparezca lo que buscás. Además guardamos los cambios de precio de cada aviso para armar un historial de precios de la zona (sin datos personales). No vendemos ni compartimos tus datos.</p>
-      <h2>Tu número en el aviso</h2>
-      <p>Tu WhatsApp no aparece escrito en la página: el servidor lo entrega recién cuando alguien toca "Hablar por WhatsApp" en tu aviso.</p>
+      <h2>Qué se ve en tu aviso</h2>
+      <p>Se ve tu primer nombre, como «Publica: …», para que quien te escriba sepa con quién habla. Tu WhatsApp no aparece escrito en la página: el servidor lo entrega recién cuando alguien toca "Hablar por WhatsApp" en tu aviso.</p>
       <h2>Cookies y estadísticas</h2>
       <p>El sitio no usa cookies para visitantes, ni servicios de analítica ni publicidad de terceros. La única cookie es la del panel de administración.</p>
       <p>Para saber cuánta gente usa el sitio contamos, de forma propia y anónima, páginas vistas, contactos por WhatsApp, desde qué sitio se llegó y las palabras buscadas. Para no contar dos veces a la misma persona en un día usamos un código que se arma con la dirección IP y el navegador y una clave que cambia todos los días y se borra: no guardamos la IP y no se puede reconocer a nadie de un día para otro. De cada día solo quedan totales. También contamos, sin guardar IPs, los pedidos que recibe el servidor, sus errores y cuántas personas tienen el sitio abierto en este momento.</p>

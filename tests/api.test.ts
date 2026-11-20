@@ -300,8 +300,7 @@ test("listado: ordenar por precio mezcla dólares y pesos con el dólar de refer
 });
 
 test("alquiler: las condiciones se guardan, se editan y no quedan en una venta", async () => {
-  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
-  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const cookie = await sesionAdmin();
   const base = { rubro: "inmuebles", tipo: "Casa", titulo: "Casa en alquiler con patio", precio: "450000", moneda: "ARS", pueblo: "Chabás", nombre: "Ana", telefono: "3464401234", fotos: [] };
   const condiciones = { garantias: ["caucion"], deposito: 1, duracion: 24, mascotas: "si", expensas: 0 };
   const creado = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: { ...H, cookie }, body: JSON.stringify({ ...base, operacion: "alquiler", condiciones }) })).json();
@@ -314,3 +313,23 @@ test("alquiler: las condiciones se guardan, se editan y no quedan en una venta",
   const venta = await (await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, { method: "PUT", headers: { ...H, cookie }, body: JSON.stringify({ ...base, operacion: "venta", condiciones }) })).json();
   assert.equal(venta.condiciones, null, "una venta no lleva condiciones de alquiler");
 });
+
+test("quién publica: el dueño se ve por su primer nombre y un negocio por su nombre", async () => {
+  const cookie = await sesionAdmin();
+  const base = { rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Fiat Palio 2015", precio: "9000000", moneda: "ARS", pueblo: "Chabás", telefono: "3464401234", fotos: [] };
+  const negocio = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: { ...H, cookie }, body: JSON.stringify({ ...base, nombre: "Carlos", quien: "agencia", anunciante: "Agencia Di Giovanni" }) })).json();
+  const pub = await (await fetch(`${URL_BASE}/api/avisos/${negocio.id}`)).json();
+  assert.equal(pub.publica, "Agencia Di Giovanni");
+  assert.equal(pub.quien, "agencia");
+  assert.equal(pub.nombre, undefined, "el nombre completo del contacto no viaja a la página pública");
+  const dueno = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: { ...H, cookie }, body: JSON.stringify({ ...base, nombre: "María José Pérez", quien: "dueno", anunciante: "" }) })).json();
+  assert.equal((await (await fetch(`${URL_BASE}/api/avisos/${dueno.id}`)).json()).publica, "María");
+});
+
+/** Una sola entrada al panel para las pruebas de abajo (el servidor limita los intentos de login). */
+let sesion: Promise<string> | null = null;
+function sesionAdmin(): Promise<string> {
+  sesion ??= fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) })
+    .then((r) => (r.headers.get("set-cookie") ?? "").split(";")[0] ?? "");
+  return sesion;
+}

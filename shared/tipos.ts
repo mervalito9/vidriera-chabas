@@ -5,6 +5,8 @@ import type { CondicionesAlquiler } from "./alquiler.ts";
 export type RubroId = "inmuebles" | "vehiculos" | "agro";
 export type Operacion = "venta" | "alquiler";
 export type Moneda = "USD" | "ARS";
+/** Quién publica: el dueño, o un negocio que lo ofrece. "" = no se sabe (avisos viejos). */
+export type Quien = "dueno" | "inmobiliaria" | "agencia" | "";
 export type Estado = "pendiente" | "publicado" | "rechazado" | "vendido";
 
 /** Lo que ve cualquier visitante. Nunca incluye el teléfono ni el nombre del dueño. */
@@ -25,6 +27,10 @@ export interface AvisoPublico {
   fotos: string[];
   /** Quién publica, tal como se muestra en el aviso (ej. "Inmobiliaria Pérez"). Vacío = no se muestra. */
   anunciante: string;
+  /** Si es el dueño o un negocio */
+  quien: Quien;
+  /** Nombre que se muestra como "Publica: …" (el negocio, o el nombre del dueño). Vacío = no se muestra. */
+  publica: string;
   ejemplo: boolean;
   /** El dueño lo tiene señado: sigue visible, marcado "Reservado". */
   reservado: boolean;
@@ -74,8 +80,10 @@ export interface NuevoAviso {
   moneda: Moneda;
   /** Dónde está lo que se publica (lo elige quien publica). Uno de PUEBLOS o el que escribió en "Otro". */
   pueblo: string;
-  /** Quién publica (lo pone el panel; el formulario público lo deja vacío). */
+  /** Nombre del negocio que publica (lo pone el panel; el formulario público lo deja vacío). */
   anunciante: string;
+  /** Dueño, inmobiliaria o agencia (el formulario público siempre es "dueno"). */
+  quien: Quien;
   zona: string;
   descripcion: string;
   datos: string[];
