@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
 import type { AvisoAdmin, AvisoPublico, Busqueda, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, RubroId } from "../shared/tipos.ts";
 import { slug } from "../shared/texto.ts";
-import { DOLAR_REFERENCIA } from "./config.ts";
+import { dolar } from "./dolar.ts";
 
 export const DATA_DIR = process.env.DATA_DIR ?? join(process.cwd(), "datos");
 export const FOTOS_DIR = join(DATA_DIR, "fotos");
@@ -181,11 +181,12 @@ export function listarPublicos(filtros: Filtros, limite: number, desde: number):
   if (filtros.permuta) where.push("permuta = 1");
   if (filtros.financia) where.push("financia = 1");
   // Precio llevado a pesos, para comparar avisos en dólares con avisos en pesos.
-  const enPesos = `(CASE WHEN moneda = 'USD' THEN precio * ${DOLAR_REFERENCIA} ELSE precio END)`;
+  const usd = dolar();
+  const enPesos = `(CASE WHEN moneda = 'USD' THEN precio * ${usd} ELSE precio END)`;
   const max = Number(filtros.max);
   if (filtros.max && Number.isFinite(max) && max > 0) {
     where.push(`precio IS NOT NULL AND ${enPesos} <= ?`);
-    args.push(filtros.moneda === "USD" ? max * DOLAR_REFERENCIA : max);
+    args.push(filtros.moneda === "USD" ? max * usd : max);
   }
   const orden =
     filtros.orden === "barato" ? `precio IS NULL, ${enPesos} ASC`
@@ -208,7 +209,7 @@ export function listarPublicos(filtros: Filtros, limite: number, desde: number):
       if (r in RUBROS) conteo[r] = num(f.n);
     }
   }
-  return { avisos: filas.slice(desde, desde + limite).map(aPublico), total: filas.length, soloEjemplos: !reales, conteo, dolar: DOLAR_REFERENCIA };
+  return { avisos: filas.slice(desde, desde + limite).map(aPublico), total: filas.length, soloEjemplos: !reales, conteo, dolar: usd };
 }
 
 /** Un aviso publicado y vigente, como lo ve un visitante (sin teléfono). Las visitas se cuentan aparte (estad.ts). */

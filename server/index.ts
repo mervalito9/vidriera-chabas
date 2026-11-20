@@ -8,9 +8,11 @@
 //   rutas/admin      panel                                          (/api/admin/…)
 //   estaticos.ts     web, fotos, /a/:id para compartir, 404
 //   db.ts            SQLite · estad.ts y actividad.ts: mediciones · auth.ts: sesión del panel
+//   dolar.ts         dólar de referencia para comparar precios en USD y en $
 import { createServer } from "node:http";
 import * as actividad from "./actividad.ts";
 import { PUERTO, WEB_DIR } from "./config.ts";
+import { seguirDolar } from "./dolar.ts";
 import { sincronizarEjemplos } from "./ejemplos.ts";
 import { servirSitio } from "./estaticos.ts";
 import { ErrorHttp, cabecerasSeguridad, exigirMismoOrigen, ipDe, json } from "./http.ts";
@@ -56,5 +58,6 @@ try {
 servidor.listen(PUERTO, () => {
   console.log(`Vidriera Chabás escuchando en http://localhost:${PUERTO}  (web: ${WEB_DIR})`);
   if (!process.env.ADMIN_PASSWORD_HASH) console.warn("Ojo: falta ADMIN_PASSWORD_HASH, el panel no va a dejar entrar. Generalo con: npm run clave");
+  seguirDolar();
   iniciarBot();
 });

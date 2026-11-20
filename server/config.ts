@@ -9,9 +9,8 @@ export const SITE_URL = (process.env.SITE_URL ?? "").replace(/\/$/, "");
 /** NOINDEX=0 recién al lanzar: mientras tanto, Google no indexa el sitio. */
 export const INDEXAR = process.env.NOINDEX === "0";
 
-/** Pesos por dólar, solo para ordenar y filtrar por precio mezclando avisos en USD y en $.
- * No hace falta que sea exacto: alcanza con que esté cerca (se actualiza con la variable DOLAR_REFERENCIA). */
-export const DOLAR_REFERENCIA = Math.round(Number(process.env.DOLAR_REFERENCIA) || 1550);
+/** Pesos por dólar fijos, si se quieren poner a mano (variable DOLAR_REFERENCIA). Sin ella, se usa la cotización oficial (dolar.ts). */
+export const DOLAR_FIJO = Math.round(Number(process.env.DOLAR_REFERENCIA)) || 0;
 
 /** Tamaños máximos de lo que se recibe. */
 export const MAX_JSON = 1_000_000;

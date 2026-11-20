@@ -83,6 +83,8 @@ Otros comandos: `npm test` (pruebas del backend), `npm run typecheck` (revisa lo
 
 - **WhatsApp del sitio**: `WA_NUMERO` en `shared/config.ts` (después, `npm run build`).
 - **Pueblos "Próximamente"**, **rubros** y **atajos**: también en `shared/config.ts`.
+- **Dólar para comparar precios** (ordenar y "precio hasta" con avisos en USD y en $): se toma solo el oficial de dolarapi.com cada 6 horas. Para fijarlo a mano: `DOLAR_REFERENCIA=1550`.
+- **Tamaño del disco** que muestra Actividad: `VOLUMEN_MB` (por defecto 500).
 - **Lanzar** (aparecer en Google): `NOINDEX=0` en `.env` y sacar `noindex` de `web/index.html`.
 
 ## Seguridad (resumen)

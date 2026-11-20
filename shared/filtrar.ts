@@ -3,7 +3,7 @@ import { OTRO_PUEBLO, PUEBLOS } from "./config.ts";
 import type { AvisoPublico, Filtros } from "./tipos.ts";
 import { slug } from "./texto.ts";
 
-/** Pesos por dólar que usa la vista previa (el servidor usa DOLAR_REFERENCIA). */
+/** Pesos por dólar que usa la vista previa (el servidor usa el oficial del día, ver server/dolar.ts). */
 export const DOLAR_VISTA_PREVIA = 1550;
 
 /** Precio llevado a pesos, para comparar avisos en USD con avisos en $. null si es "a consultar". */

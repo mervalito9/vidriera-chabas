@@ -670,3 +670,12 @@ input[type=file]:focus-visible + * , .foto-add:focus-within { outline: 3px solid
   .filtros { padding: 12px 14px; gap: 10px; }
 }
 .pagina-404 { padding-block: 48px 72px; }
+
+/* Portada: firma de Felipe en una línea (la carta completa está en "Cómo funciona") */
+.firma-sitio { margin-top: 36px; display: grid; gap: 12px; justify-items: start; }
+.firma-sitio p { margin: 0; color: var(--tinta-2); max-width: 60ch; }
+.firma-sitio b { color: var(--tinta); }
+.firma-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+/* En el celular, el celular animado de "Así funciona" ocupa una pantalla entera y no agrega: se esconde */
+@media (max-width: 699px) { .vender .phone { display: none; } }
+
