@@ -383,3 +383,27 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .pn-btn:active, .pn-chip:active, .pn-seg button:active, .pn-puntos:active, .pn-estrella:active, .pn-linkbtn:active { transform: scale(.97); transition-duration: .1s; transition-delay: .04s; }
 .pn-menu a:active, .pn-tarea:active, .pn-pop a:active, .pn-lista-mas a:active { transform: scale(.985); transition-duration: .12s; transition-delay: .07s; }
 @media (prefers-reduced-motion: reduce) { .pn-btn:active, .pn-chip:active, .pn-menu a:active, .pn-tarea:active { transform: none; } }
+
+/* ---------- Para redes: historia y posteo ---------- */
+.pn-redes { width: min(720px, 94vw); max-height: 92dvh; padding: 0; border: 0; border-radius: 22px; background: var(--crema); color: var(--tinta); box-shadow: 0 20px 60px rgba(23,21,15,.3); }
+.pn-redes::backdrop { background: rgba(23,21,15,.5); }
+.pn-redes[open] { animation: pn-redes-entra .22s cubic-bezier(.2,.8,.2,1); }
+@keyframes pn-redes-entra { from { opacity: 0; transform: translateY(16px); } }
+.pn-redes-in { padding: 20px; display: grid; gap: 16px; }
+.pn-redes-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pn-redes-cab h2 { margin: 0; font-size: 1.3rem; }
+.pn-redes-cab p { margin: 2px 0 0; }
+.pn-redes-x { flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--papel); font-size: 1.7rem; line-height: 1; cursor: pointer; color: var(--tinta); }
+.pn-redes-motivo { margin: 0; padding: 12px 14px; border-radius: 12px; background: #F6E3DA; color: #7A2E14; font-weight: 600; }
+.pn-redes-previas { display: grid; grid-template-columns: 9fr 12fr; gap: 14px; align-items: end; }
+.pn-redes-previa { margin: 0; display: grid; gap: 6px; }
+.pn-redes-previa img, .pn-redes-hueco { width: 100%; border-radius: 10px; box-shadow: 0 2px 10px rgba(23,21,15,.15); background: var(--papel); }
+.pn-redes-previa.historia img, .pn-redes-previa.historia .pn-redes-hueco { aspect-ratio: 9 / 16; }
+.pn-redes-previa.posteo img, .pn-redes-previa.posteo .pn-redes-hueco { aspect-ratio: 3 / 4; }
+.pn-redes-hueco { display: grid; place-items: center; color: var(--tinta-2); font-weight: 600; }
+.pn-redes-previa figcaption { font-size: .85rem; color: var(--tinta-2); text-align: center; }
+.pn-redes-botones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pn-redes-botones .pn-btn { width: 100%; justify-content: center; min-height: 48px; }
+.pn-redes-ayuda { margin: 0; font-size: .88rem; }
+.pn-redes .pn-toast { position: static; transform: none; margin: 0; justify-self: center; white-space: normal; text-align: center; font-size: 14px; }
+@media (max-width: 520px) { .pn-redes-botones { grid-template-columns: 1fr; } .pn-redes-in { padding: 16px; } }

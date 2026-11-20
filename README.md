@@ -59,7 +59,7 @@ ADMIN_PASSWORD_HASH='scrypt:...' npm start
 
 Abrí http://localhost:3000 · El panel está en http://localhost:3000/#admin
 
-Otros comandos: `npm test` (pruebas del backend), `npm run typecheck` (revisa los tipos), `npm run dev` (rearma la web y reinicia el servidor solo al guardar).
+Otros comandos: `npm test` (pruebas del backend; la de las imágenes para redes corre si hay Chrome y playwright-core: `PLAYWRIGHT_CORE=… CHROME=… npm test`), `npm run typecheck` (revisa los tipos), `npm run dev` (rearma la web y reinicia el servidor solo al guardar).
 
 ## Publicarlo en internet (servidor propio, unos US$5–6 por mes)
 

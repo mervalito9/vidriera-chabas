@@ -7,8 +7,8 @@ import { formatearTelefono, linkWA } from "../../../shared/whatsapp.ts";
 import { admin } from "../api.ts";
 import { fotoSegura, precioTexto } from "../formato.ts";
 import { ir } from "../router.ts";
-import { Confirmar, I, Ico, Titulo, diasHasta, mensajeError, type Accion } from "./comunes.tsx";
-import { tarjetaRedes, textoRedes } from "./redes.ts";
+import { Confirmar, I, Ico, Titulo, diasHasta, type Accion } from "./comunes.tsx";
+import { RedesDialogo } from "./Redes.tsx";
 
 export type Vista = "publicado" | "reservado" | "vendido" | "rechazado";
 export type Orden = "nuevos" | "contactos" | "vence";
@@ -199,6 +199,7 @@ export function MenuAviso({ a, abierto, onAbrir, accion }: { a: AvisoAdmin; abie
   const caja = useRef<HTMLDivElement>(null);
   const [aviso, setAviso] = useState("");
   const [borrar, setBorrar] = useState(false);
+  const [redes, setRedes] = useState(false);
   useEffect(() => {
     if (!abierto) { setBorrar(false); return; }
     const fuera = (e: PointerEvent) => { if (caja.current && !caja.current.contains(e.target as Node)) onAbrir(false); };
@@ -209,23 +210,6 @@ export function MenuAviso({ a, abierto, onAbrir, accion }: { a: AvisoAdmin; abie
   }, [abierto, onAbrir]);
   const hacer = (c: Record<string, unknown>) => { onAbrir(false); void accion(() => admin.cambiar(a.id, c)); };
   const avisar = (t: string) => { setAviso(t); window.setTimeout(() => setAviso(""), 3500); };
-  const redes = async () => {
-    onAbrir(false);
-    avisar("Armando la imagen…");
-    try {
-      const blob = await tarjetaRedes(a);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `vidriera-aviso-${a.id}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 5000);
-      const ok = await navigator.clipboard?.writeText(textoRedes(a, `${location.origin}/a/${a.id}?de=redes`)).then(() => true, () => false);
-      avisar(ok ? "Imagen bajada y texto copiado" : "Imagen bajada");
-    } catch (e) { avisar(mensajeError(e)); }
-  };
   const copiarLink = async () => {
     onAbrir(false);
     const ok = await navigator.clipboard?.writeText(`${location.origin}/a/${a.id}?de=wa`).then(() => true, () => false);
@@ -236,6 +220,7 @@ export function MenuAviso({ a, abierto, onAbrir, accion }: { a: AvisoAdmin; abie
     <div className="pn-menu-av" ref={caja}>
       <button type="button" className="pn-puntos" aria-label={`Más acciones de ${a.titulo}`} aria-expanded={abierto} aria-haspopup="menu" onClick={() => onAbrir(!abierto)}><Ico d={I.puntos} size={20} /></button>
       {aviso && <span className="pn-toast" role="status">{aviso}</span>}
+      {redes && <RedesDialogo a={a} onCerrar={() => setRedes(false)} />}
       {abierto && (
         <div className="pn-pop" role="menu" aria-label={`Acciones de ${a.titulo}`}>
           <p className="pn-pop-titulo">{a.titulo}</p>
@@ -245,7 +230,7 @@ export function MenuAviso({ a, abierto, onAbrir, accion }: { a: AvisoAdmin; abie
           {pub && <button role="menuitem" type="button" onClick={() => hacer({ estado: "vendido" })}>Marcar vendido</button>}
           {pub && <button role="menuitem" type="button" onClick={() => hacer({ renovar: true })}>Renovar 90 días</button>}
           {!pub && a.estado !== "pendiente" && <button role="menuitem" type="button" onClick={() => hacer({ estado: "publicado" })}>Volver a publicar</button>}
-          {pub && <button role="menuitem" type="button" onClick={() => void redes()}>Tarjeta para redes</button>}
+          <button role="menuitem" type="button" onClick={() => { onAbrir(false); setRedes(true); }}>Para redes (historia y posteo)</button>
           {pub && <button role="menuitem" type="button" onClick={() => void copiarLink()}>Copiar link del aviso</button>}
           {a.fotos.length > 0 && <a role="menuitem" href={`api/admin/avisos/${a.id}/fotos.zip`} download={`aviso-${a.id}-fotos.zip`} onClick={() => onAbrir(false)}>Bajar fotos ({a.fotos.length})</a>}
           {a.telefono && <a role="menuitem" target="_blank" rel="noopener noreferrer" href={linkWA(a.telefono, `Hola ${a.nombre}! Te escribo de Vidriera Chabás por tu aviso «${a.titulo}».`)}>Escribirle al vendedor</a>}
