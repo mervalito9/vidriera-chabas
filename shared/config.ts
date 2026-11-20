@@ -61,6 +61,17 @@ export const RUBRO_IDS = Object.keys(RUBROS) as RubroId[];
  */
 export const PUEBLOS: readonly string[] = ["Chabás", "Casilda", "Firmat", "Sanford", "Villada"];
 
+/** Centro de cada pueblo (lat, lng), para el mapa. */
+export const COORDENADAS: Readonly<Record<string, readonly [number, number]>> = {
+  Chabás: [-33.2457, -61.358],
+  Casilda: [-33.0442, -61.1681],
+  Firmat: [-33.4555, -61.4883],
+  Sanford: [-33.147, -61.277],
+  Villada: [-33.3487, -61.4459],
+};
+/** Dónde arranca el mapa cuando no hay un pueblo elegido: entre los cinco, para ver toda la zona. */
+export const CENTRO_ZONA: readonly [number, number] = [-33.25, -61.33];
+
 /** Valor del filtro para "Otro": avisos de pueblos que no están en PUEBLOS. */
 export const OTRO_PUEBLO = "otro";
 

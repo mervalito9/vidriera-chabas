@@ -91,6 +91,8 @@ for (const [col, def] of [
   ["destacado", "INTEGER NOT NULL DEFAULT 0"],
   ["anunciante", "TEXT NOT NULL DEFAULT ''"],
   ["condiciones", "TEXT NOT NULL DEFAULT ''"],
+  ["lat", "REAL"],
+  ["lng", "REAL"],
   ["usuario_id", "INTEGER REFERENCES usuarios(id) ON DELETE SET NULL"],
 ] as const) {
   const hay = (db.prepare("PRAGMA table_info(avisos)").all() as { name: string }[]).some((c) => c.name === col);
@@ -161,6 +163,8 @@ function aPublico(f: Fila): AvisoPublico {
     venceEn: vence,
     precioAnterior: precioAnterior(id, precio),
     condiciones: f.operacion === "alquiler" ? leerCondiciones(str(f.condiciones)) : null,
+    lat: f.lat === null || f.lat === undefined ? null : Number(f.lat),
+    lng: f.lng === null || f.lng === undefined ? null : Number(f.lng),
   };
 }
 
@@ -242,13 +246,13 @@ export function crearAviso(a: NuevoAviso, archivos: string[], opciones: { estado
   db.exec("BEGIN");
   try {
     const r = db
-      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en, condiciones)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en, condiciones, lat, lng)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(
         opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos),
         a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, opciones.ejemplo ? 1 : 0,
         opciones.estado === "publicado" ? (opciones.publicadoEn ?? new Date().toISOString()) : null,
-        a.condiciones ? JSON.stringify(a.condiciones) : "",
+        a.condiciones ? JSON.stringify(a.condiciones) : "", a.lat, a.lng,
       );
     const id = Number(r.lastInsertRowid);
     archivos.forEach((archivo, i) => db.prepare("INSERT INTO fotos (aviso_id, archivo, orden) VALUES (?,?,?)").run(id, archivo, i));
@@ -336,8 +340,8 @@ export function editarAviso(id: number, a: NuevoAviso, archivosFinal: string[]):
   try {
     db.prepare(
       `UPDATE avisos SET rubro = ?, tipo = ?, operacion = ?, titulo = ?, precio = ?, moneda = ?, pueblo = ?, anunciante = ?, zona = ?, descripcion = ?, datos = ?,
-         permuta = ?, financia = ?, nombre = ?, telefono = ?, condiciones = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
-    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, a.condiciones ? JSON.stringify(a.condiciones) : "", id);
+         permuta = ?, financia = ?, nombre = ?, telefono = ?, condiciones = ?, lat = ?, lng = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
+    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, a.condiciones ? JSON.stringify(a.condiciones) : "", a.lat, a.lng, id);
     if (a.precio !== actual.precio || a.moneda !== actual.moneda) {
       db.prepare("INSERT INTO precios (aviso_id, precio, moneda) VALUES (?,?,?)").run(id, a.precio, a.moneda);
     }

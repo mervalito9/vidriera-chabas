@@ -16,7 +16,7 @@ export const CSP = [
   "default-src 'none'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://tile.openstreetmap.org",
   "font-src 'self'",
   "connect-src 'self'",
   "manifest-src 'self'",

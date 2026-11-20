@@ -38,6 +38,9 @@ export interface AvisoPublico {
   precioAnterior: number | null;
   /** Solo alquileres: garantía, depósito, contrato, mascotas… (null si no completó nada o es venta) */
   condiciones: CondicionesAlquiler | null;
+  /** Ubicación exacta en el mapa (opcional) */
+  lat: number | null;
+  lng: number | null;
 }
 
 /** Lo que ve el administrador en el panel. */
@@ -84,6 +87,9 @@ export interface NuevoAviso {
   fotos: string[];
   /** Solo alquileres (ver shared/alquiler.ts) */
   condiciones: CondicionesAlquiler | null;
+  /** Ubicación exacta en el mapa (opcional) */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface NuevaBusqueda {

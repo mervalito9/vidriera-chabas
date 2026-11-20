@@ -774,3 +774,37 @@ html { -webkit-tap-highlight-color: transparent; }
 .prose .faq summary { font-size: 1.05rem; }
 
 .top .menu .menu-publicar { display: flex; }
+
+/* ---------- mapa (en prueba: solo con ?mapa=1) ---------- */
+.mapa { position: relative; overflow: hidden; height: 420px; border-radius: var(--r); background: #E8E4DA; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; isolation: isolate; }
+.mapa:active { cursor: grabbing; }
+.mapa-tile { position: absolute; left: 0; top: 0; width: 256px; height: 256px; max-width: none; pointer-events: none; }
+/* El punto se ubica con su borde de abajo al centro sobre la coordenada (translate -50%, -100%). */
+.mapa-punto { position: absolute; left: 0; top: 0; z-index: 2; padding: 0; border: 0; background: none; cursor: pointer; }
+.mapa-punto:not(.con-texto) { width: 30px; height: 40px; }
+.mapa-punto:not(.con-texto)::before { content: ""; position: absolute; left: 2px; top: 1px; width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--terra); border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); }
+.mapa-punto.con-texto { padding-bottom: 7px; }
+.mapa-punto.con-texto span { position: relative; display: block; white-space: nowrap; padding: 7px 10px; border-radius: 999px; background: #fff; color: var(--tinta); font: 800 .9rem/1 var(--sans); box-shadow: 0 2px 8px rgba(0,0,0,.25); border: 2px solid var(--tinta); }
+.mapa-punto.con-texto span::after { content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px; border: 6px solid transparent; border-top-color: var(--tinta); border-bottom: 0; }
+.mapa-punto.elegido { z-index: 3; }
+.mapa-punto.elegido span { background: var(--tinta); color: var(--crema); }
+.mapa-zoom { position: absolute; right: 10px; top: 10px; z-index: 4; display: grid; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.mapa-zoom button { width: 44px; height: 44px; border: 0; background: #fff; font: 700 1.4rem/1 var(--sans); color: var(--tinta); cursor: pointer; }
+.mapa-zoom button + button { border-top: 1px solid rgba(23,21,15,.12); }
+.mapa-zoom button:disabled { color: #B9B1A0; }
+.mapa-credito { position: absolute; right: 0; bottom: 0; z-index: 4; padding: 2px 6px; background: rgba(255,255,255,.85); color: #333; font-size: 12px; border-top-left-radius: 6px; }
+.mapa-listado { display: grid; gap: 12px; }
+.mapa-listado .mapa { height: min(62vh, 560px); }
+.mapa-elegido .card { max-width: 420px; }
+.mapa-nota { margin: 0; }
+.vista-sel { display: inline-flex; border: 1.5px solid var(--tinta); border-radius: 999px; overflow: hidden; }
+.vista-sel button { min-height: 40px; padding: 0 16px; border: 0; background: transparent; font: 700 .95rem/1 var(--sans); color: var(--tinta); cursor: pointer; }
+.vista-sel button[aria-pressed="true"] { background: var(--tinta); color: var(--crema); }
+.res-bar { flex-wrap: wrap; gap: 10px; }
+.marcar-ubicacion { border: 0; padding: 0; margin: 0; }
+.marcar-ubicacion .mapa { height: 320px; margin-top: 8px; cursor: crosshair; }
+.marcar-pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
+.ubicacion { margin: 18px 0; display: grid; gap: 8px; }
+.ubicacion h2 { font-size: 1.15rem; margin: 0; }
+.ubicacion .mapa { height: 260px; }
+

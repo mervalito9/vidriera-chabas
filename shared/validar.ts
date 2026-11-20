@@ -23,6 +23,14 @@ export interface Resultado<T> {
 }
 
 /** Valida y limpia un aviso nuevo. Devuelve el valor normalizado y la lista de errores. */
+/** Un punto dentro de Argentina (con margen), con 6 decimales (~10 cm). Si no, sin ubicación. */
+export function ubicacion(lat: unknown, lng: unknown): { lat: number | null; lng: number | null } {
+  const a = Number(lat), o = Number(lng);
+  if (lat === null || lng === null || lat === undefined || lng === undefined || !Number.isFinite(a) || !Number.isFinite(o)) return { lat: null, lng: null };
+  if (a < -56 || a > -21 || o < -74 || o > -53) return { lat: null, lng: null };
+  return { lat: Math.round(a * 1e6) / 1e6, lng: Math.round(o * 1e6) / 1e6 };
+}
+
 export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean }): Resultado<NuevoAviso> {
   const e = esObjeto(entrada) ? entrada : {};
   const errores: ErrorCampo[] = [];
@@ -44,6 +52,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const nombre = recortar(e.nombre, LIMITES.nombre);
   const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
   const condiciones = operacion === "alquiler" ? limpiarCondiciones(e.condiciones) : null;
+  const { lat, lng } = ubicacion(e.lat, e.lng);
   const fotos = (Array.isArray(e.fotos) ? e.fotos : []).filter((f): f is string => typeof f === "string").slice(0, LIMITES.fotos);
 
   if (!rubro) errores.push({ campo: "rubro", msg: "Elegí qué querés publicar." });
@@ -58,7 +67,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng },
   };
 }
 

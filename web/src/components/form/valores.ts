@@ -27,10 +27,13 @@ export interface ValoresForm {
   anunciante: string;
   /** Solo alquileres: garantía, depósito, contrato… */
   condiciones: CondicionesAlquiler;
+  /** Ubicación exacta (se marca tocando el mapa) */
+  lat: number | null;
+  lng: number | null;
 }
 
 export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
-  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "", condiciones: CONDICIONES_VACIAS,
+  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "", condiciones: CONDICIONES_VACIAS, lat: null, lng: null,
 });
 
 /** Moneda que se usa en la zona para cada cosa (casas en venta y maquinaria en dólares; autos y alquileres en pesos).
@@ -60,6 +63,7 @@ export function mensajeWhatsApp(v: ValoresForm): string {
   if (v.permuta) L.push("Acepta permuta: Sí");
   if (v.financia) L.push("Financia: Sí");
   const cond = v.operacion === "alquiler" ? limpiarCondiciones(v.condiciones) : null;
+  if (v.lat !== null && v.lng !== null) L.push(`Ubicación: https://www.google.com/maps?q=${v.lat},${v.lng}`);
   if (cond) L.push("Condiciones:", ...renglonesCondiciones(cond).map(([q, c]) => `- ${q}: ${c}`));
   L.push(`Descripción: ${v.descripcion.trim() || "-"}`, `Nombre: ${v.nombre.trim() || "-"}`, `WhatsApp para que me contacten: ${soloDigitos(v.telefono) || "-"}`, "", "Ahora te mando las fotos por acá.");
   return L.join("\n");

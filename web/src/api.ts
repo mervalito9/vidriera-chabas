@@ -60,7 +60,7 @@ function avisosDemo(): AvisoPublico[] {
       pueblo: e.pueblo, zona: e.zona ?? "", descripcion: e.descripcion ?? "", datos: e.datos ?? [], permuta: !!e.permuta, financia: !!e.financia,
       fotos: [`assets/img/${e.foto}`], anunciante: "", ejemplo: true, reservado: false, destacado: false, publicadoEn: publicado.toISOString(),
       venceEn: new Date(publicado.getTime() + DIAS_VIGENCIA * 864e5).toISOString(), precioAnterior: null,
-      condiciones: e.condiciones ?? null,
+      condiciones: e.condiciones ?? null, lat: e.lat ?? null, lng: e.lng ?? null,
     };
   }).sort((a, b) => b.publicadoEn.localeCompare(a.publicadoEn));
   return demo;

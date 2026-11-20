@@ -1,3 +1,5 @@
+import { MAPA_ACTIVO } from "../mapa/activo.ts";
+import { MapaListado } from "../mapa/MapaListado.tsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ATAJOS, OTRO_PUEBLO, POR_PAGINA, PUEBLOS, RUBROS, lugarDe } from "../../../shared/config.ts";
 import { fmtNum, plural, slug } from "../../../shared/texto.ts";
@@ -14,6 +16,8 @@ const PESTANAS = [["buscar", "Todo"], ["inmuebles", "Inmuebles"], ["vehiculos", 
 
 /** El pueblo elegido se mantiene al pasar de un rubro a otro (Inmuebles → Vehículos) mientras la página esté abierta. */
 let puebloRecordado = "";
+/** Si la última vez eligió ver el mapa, se mantiene al volver. */
+let vistaRecordada: "lista" | "mapa" = "lista";
 let textoInicial = "";
 /** La usa el buscador de la portada: abre el listado con ese texto ya escrito. */
 export function buscarDesdePortada(q: string): void {
@@ -43,6 +47,10 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
 
   const [qEscrito, setQEscrito] = useState(f.q);
   const [limite, setLimite] = useState(POR_PAGINA);
+  // Lista o mapa (el mapa está en prueba: ver mapa/activo.ts). Solo tiene sentido para inmuebles.
+  const conMapa = MAPA_ACTIVO && (rubro === "" || rubro === "inmuebles");
+  const [enMapa, setEnMapa] = useState(() => conMapa && vistaRecordada === "mapa");
+  const verEnMapa = (si: boolean) => { vistaRecordada = si ? "mapa" : "lista"; setEnMapa(si); };
   const [masAbierto, setMasAbierto] = useState(() => window.matchMedia?.("(min-width: 900px)").matches ?? false);
 
   // Si cambia la ruta (otro rubro u otro atajo), se reinician los filtros.
@@ -60,7 +68,8 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
     return () => window.clearTimeout(t);
   }, [qEscrito]);
 
-  const lista = useCarga(() => listarAvisos(f, limite), [JSON.stringify(f), limite]);
+  // En el mapa van todos los que coinciden (hasta 200), no de a una página.
+  const lista = useCarga(() => listarAvisos(f, enMapa ? 200 : limite), [JSON.stringify(f), limite, enMapa]);
   // Mientras carga, se sigue mostrando el último resultado (sin parpadeos al tocar "Ver más").
   const ultimo = useRef<ListaAvisos | null>(null);
   if (lista.estado === "listo") ultimo.current = lista.datos;
@@ -177,6 +186,12 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
           {d?.total !== 0 && (
             <div className="res-bar">
               <strong id="count" aria-live="polite">{d ? plural(d.total, "aviso", "avisos") : ""}</strong>
+              {conMapa && (
+                <div className="vista-sel" role="group" aria-label="Ver como">
+                  <button type="button" aria-pressed={!enMapa} onClick={() => verEnMapa(false)}>Lista</button>
+                  <button type="button" aria-pressed={enMapa} onClick={() => verEnMapa(true)}>Mapa</button>
+                </div>
+              )}
               <a href={ir("busco")}>¿No está? Avisame cuando aparezca</a>
             </div>
           )}
@@ -187,6 +202,8 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
               <Vacio buscando
                 texto={f.pueblo && !(f.q || f.max || f.permuta || f.financia) ? `Todavía no hay ${etiquetaAtajo?.toLowerCase() ?? "avisos de esto"} en ${lugar}.` : hayFiltros ? "No hay avisos con esos filtros." : "Todavía no hay avisos de esto."}
                 extra={f.pueblo ? <button type="button" className="btn btn-line" onClick={() => cambiar("pueblo", "")}>Ver en todos los pueblos</button> : undefined} />
+            ) : enMapa ? (
+              <MapaListado avisos={d.avisos} pueblo={f.pueblo} texto={f.q} />
             ) : (
               <>
                 <div className="grid" id="grid" aria-busy={lista.estado === "cargando"}>{d.avisos.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>

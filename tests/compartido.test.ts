@@ -95,3 +95,12 @@ test("alquiler: las condiciones se limpian y se muestran en palabras", async () 
   assert.match(r["Disponible"] ?? "", /^Desde el 1 de marzo/);
   assert.deepEqual(etiquetasCondiciones(c), ["Acepta caución", "Con mascotas"]);
 });
+
+test("ubicación: solo puntos razonables dentro de Argentina, redondeados", async () => {
+  const { ubicacion } = await import("../shared/validar.ts");
+  assert.deepEqual(ubicacion(-33.2457123456, -61.358), { lat: -33.245712, lng: -61.358 });
+  assert.deepEqual(ubicacion("-33.1", "-61.2"), { lat: -33.1, lng: -61.2 });
+  assert.deepEqual(ubicacion(40.4, -3.7), { lat: null, lng: null }, "Madrid no");
+  assert.deepEqual(ubicacion(null, null), { lat: null, lng: null });
+  assert.deepEqual(ubicacion("abc", -61), { lat: null, lng: null });
+});

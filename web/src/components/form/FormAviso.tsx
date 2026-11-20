@@ -4,6 +4,8 @@ import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../../sh
 import type { ErrorCampo, NuevoAviso } from "../../../../shared/tipos.ts";
 import { validarAviso } from "../../../../shared/validar.ts";
 import { IconoRubro } from "../Iconos.tsx";
+import { MAPA_ACTIVO } from "../../mapa/activo.ts";
+import { MarcarUbicacion } from "../../mapa/MarcarUbicacion.tsx";
 import { CondicionesAlquiler } from "./CondicionesAlquiler.tsx";
 import { DatosGuiados } from "./DatosGuiados.tsx";
 import { ElegirFotos } from "./ElegirFotos.tsx";
@@ -142,6 +144,9 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         <label className="check"><input type="checkbox" checked={v.financia} onChange={(e) => set("financia", e.target.checked)} /> {avanzado ? "Financia" : "Ofrezco financiación"}</label>
       </div>
       {v.rubro && <DatosGuiados key={v.rubro} rubro={v.rubro} datos={v.datos} onCambio={(d) => set("datos", d)} />}
+      {MAPA_ACTIVO && v.rubro === "inmuebles" && (
+        <MarcarUbicacion lat={v.lat} lng={v.lng} pueblo={v.pueblo} onCambio={(lat, lng) => onCambio({ ...v, lat, lng })} />
+      )}
       {v.rubro === "inmuebles" && v.operacion === "alquiler" && (
         <CondicionesAlquiler valor={v.condiciones} esVivienda={!NO_VIVIENDA.includes(v.tipo)} onCambio={(c) => set("condiciones", c)} />
       )}

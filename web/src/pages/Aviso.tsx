@@ -1,3 +1,5 @@
+import { MAPA_ACTIVO } from "../mapa/activo.ts";
+import { Mapa } from "../mapa/Mapa.tsx";
 import { renglonesCondiciones } from "../../../shared/alquiler.ts";
 import { useEffect, useRef, useState, type PointerEvent as PE, type RefObject } from "react";
 import { RUBROS } from "../../../shared/config.ts";
@@ -112,6 +114,13 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           </ul>
           {a.operacion === "alquiler" && <Condiciones a={a} />}
           {a.descripcion && <p className="desc">{a.descripcion}</p>}
+          {MAPA_ACTIVO && a.lat !== null && a.lng !== null && (
+            <section className="ubicacion" aria-labelledby="ubi-t">
+              <h2 id="ubi-t">Ubicación</h2>
+              <Mapa lat={a.lat} lng={a.lng} zoom={15} titulo={`Ubicación de ${a.titulo}`} puntos={[{ id: a.id, lat: a.lat, lng: a.lng }]} />
+              <a className="small" href={`https://www.google.com/maps/search/?api=1&query=${a.lat},${a.lng}`} target="_blank" rel="noopener noreferrer">Abrir en Google Maps para ir</a>
+            </section>
+          )}
           <p className="small">Publicado el {fmtFecha(new Date(a.publicadoEn))}. Se muestra hasta el {fmtFecha(new Date(a.venceEn))}.</p>
           {!a.ejemplo && <Compartir a={a} />}
         </div>
