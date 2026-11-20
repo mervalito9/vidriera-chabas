@@ -141,7 +141,7 @@ export function Inicio() {
             <h2 id="vender">¿Tenés algo para vender o alquilar? <em>Así funciona.</em></h2>
             <ol className="historia">
               <li className="h1"><b>Cargás fotos y datos en 2 minutos.</b><span>Desde el celular. Si te cuesta, mandanos todo por WhatsApp y lo armamos nosotros.</span></li>
-              <li className="h2"><b>Tu aviso aparece en la vidriera.</b><span>Lo revisamos y queda publicado con fotos, precio y un botón para escribirte. Te pasamos el link para compartirlo en tus estados y grupos, y también lo mostramos en las redes de Vidriera.</span></li>
+              <li className="h2"><b>Tu aviso aparece en la vidriera.</b><span>Lo revisamos y queda publicado con fotos, precio y un botón para escribirte. Te pasamos el link para compartirlo.</span></li>
               <li className="h3"><b>Te escriben directo a vos.</b><span>Los interesados te hablan por WhatsApp. Vos arreglás y cerrás, sin comisión.</span></li>
             </ol>
           </div>

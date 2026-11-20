@@ -676,6 +676,4 @@ input[type=file]:focus-visible + * , .foto-add:focus-within { outline: 3px solid
 .firma-sitio p { margin: 0; color: var(--tinta-2); max-width: 60ch; }
 .firma-sitio b { color: var(--tinta); }
 .firma-btns { display: flex; flex-wrap: wrap; gap: 10px; }
-/* En el celular, el celular animado de "Así funciona" ocupa una pantalla entera y no agrega: se esconde */
-@media (max-width: 699px) { .vender .phone { display: none; } }
 
