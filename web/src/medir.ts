@@ -1,10 +1,15 @@
 // Mide páginas vistas y búsquedas para las estadísticas del panel. Sin cookies, sin servicios externos.
 // Si algo falla, no pasa nada: nunca molesta al visitante.
 
+declare const __VISTA_PREVIA__: boolean;
+/** En la vista previa (sin servidor) no hay a quién mandarle nada. */
+const medir = !__VISTA_PREVIA__;
+
 const de = new URLSearchParams(window.location.search).get("de") ?? "";
 let primera = true;
 
 function mandar(cuerpo: Record<string, unknown>): void {
+  if (!medir) return;
   try {
     void fetch("/api/m", { method: "POST", headers: { "content-type": "application/json", "x-vidriera": "1" }, body: JSON.stringify(cuerpo), keepalive: true }).catch(() => {});
   } catch { /* nada */ }
@@ -13,7 +18,7 @@ function mandar(cuerpo: Record<string, unknown>): void {
 let paginaActual = "inicio";
 let enAdmin = false;
 function latir(): void {
-  if (enAdmin || document.visibilityState !== "visible") return;
+  if (!medir || enAdmin || document.visibilityState !== "visible") return;
   try {
     void fetch("/api/latido", { method: "POST", headers: { "content-type": "application/json", "x-vidriera": "1" }, body: JSON.stringify({ pagina: paginaActual }), keepalive: true }).catch(() => {});
   } catch { /* nada */ }
