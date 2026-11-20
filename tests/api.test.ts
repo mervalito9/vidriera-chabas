@@ -298,3 +298,19 @@ test("listado: ordenar por precio mezcla dólares y pesos con el dólar de refer
   const enPesos = r.avisos.filter((a: { precio: number | null }) => a.precio !== null).map((a: { precio: number; moneda: string }) => (a.moneda === "USD" ? a.precio * r.dolar : a.precio));
   assert.deepEqual(enPesos, [...enPesos].sort((x: number, y: number) => x - y));
 });
+
+test("alquiler: las condiciones se guardan, se editan y no quedan en una venta", async () => {
+  const login = await fetch(`${URL_BASE}/api/admin/login`, { method: "POST", headers: H, body: JSON.stringify({ clave: CLAVE }) });
+  const cookie = (login.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  const base = { rubro: "inmuebles", tipo: "Casa", titulo: "Casa en alquiler con patio", precio: "450000", moneda: "ARS", pueblo: "Chabás", nombre: "Ana", telefono: "3464401234", fotos: [] };
+  const condiciones = { garantias: ["caucion"], deposito: 1, duracion: 24, mascotas: "si", expensas: 0 };
+  const creado = await (await fetch(`${URL_BASE}/api/admin/avisos`, { method: "POST", headers: { ...H, cookie }, body: JSON.stringify({ ...base, operacion: "alquiler", condiciones }) })).json();
+  assert.deepEqual(creado.condiciones.garantias, ["caucion"]);
+  assert.equal(creado.condiciones.expensas, 0);
+  const publico = await (await fetch(`${URL_BASE}/api/avisos/${creado.id}`)).json();
+  assert.equal(publico.condiciones.mascotas, "si");
+  const editado = await (await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, { method: "PUT", headers: { ...H, cookie }, body: JSON.stringify({ ...base, operacion: "alquiler", condiciones: { ...condiciones, mascotas: "no" } }) })).json();
+  assert.equal(editado.condiciones.mascotas, "no");
+  const venta = await (await fetch(`${URL_BASE}/api/admin/avisos/${creado.id}`, { method: "PUT", headers: { ...H, cookie }, body: JSON.stringify({ ...base, operacion: "venta", condiciones }) })).json();
+  assert.equal(venta.condiciones, null, "una venta no lleva condiciones de alquiler");
+});

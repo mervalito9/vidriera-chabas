@@ -1,5 +1,6 @@
 // Validación compartida: la web la usa para avisar errores al instante
 // y el backend la usa SIEMPRE antes de guardar (nunca se confía en el navegador).
+import { limpiarCondiciones } from "./alquiler.ts";
 import { RUBROS, LIMITES, PUEBLOS, OTRO_PUEBLO } from "./config.ts";
 import type { ErrorCampo, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
 import { recortar, slug, soloDigitos } from "./texto.ts";
@@ -42,6 +43,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
     .slice(0, 8);
   const nombre = recortar(e.nombre, LIMITES.nombre);
   const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
+  const condiciones = operacion === "alquiler" ? limpiarCondiciones(e.condiciones) : null;
   const fotos = (Array.isArray(e.fotos) ? e.fotos : []).filter((f): f is string => typeof f === "string").slice(0, LIMITES.fotos);
 
   if (!rubro) errores.push({ campo: "rubro", msg: "Elegí qué querés publicar." });
@@ -56,7 +58,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones },
   };
 }
 

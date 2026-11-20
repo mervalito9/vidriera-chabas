@@ -1,3 +1,4 @@
+import { renglonesCondiciones } from "../../../shared/alquiler.ts";
 import { useEffect, useRef, useState, type PointerEvent as PE, type RefObject } from "react";
 import { RUBROS } from "../../../shared/config.ts";
 import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
@@ -99,6 +100,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
             {precioTexto(a)}
             {porMes(a) && <span> por mes</span>}
           </p>
+          {!!a.condiciones?.expensas && <p className="small expensas">+ $ {fmtNum(a.condiciones.expensas)} de expensas por mes</p>}
           {bajo && a.precioAnterior !== null && (
             <p className="baja">Bajó de precio: antes {a.moneda === "ARS" ? "$" : "USD"} {fmtNum(a.precioAnterior)}</p>
           )}
@@ -108,6 +110,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
             {a.permuta && <li className="ok">Acepta permuta</li>}
             {a.financia && <li className="ok">Financia</li>}
           </ul>
+          {a.operacion === "alquiler" && <Condiciones a={a} />}
           {a.descripcion && <p className="desc">{a.descripcion}</p>}
           <p className="small">Publicado el {fmtFecha(new Date(a.publicadoEn))}. Se muestra hasta el {fmtFecha(new Date(a.venceEn))}.</p>
           {!a.ejemplo && <Compartir a={a} />}
@@ -125,6 +128,21 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
 }
 
 /** El teléfono del dueño lo da el backend recién cuando tocan el botón. Lo usan el botón grande y la barra fija del celular. */
+/** Garantía, depósito, contrato… lo que más pregunta quien quiere alquilar. */
+function Condiciones({ a }: { a: AvisoPublico }) {
+  const renglones = a.condiciones ? renglonesCondiciones(a.condiciones) : [];
+  return (
+    <section className="condiciones" aria-labelledby="cond-t">
+      <h2 id="cond-t">Condiciones del alquiler</h2>
+      {renglones.length ? (
+        <dl>{renglones.map(([que, como]) => <div key={que}><dt>{que}</dt><dd>{como}</dd></div>)}</dl>
+      ) : (
+        <p className="small">{a.anunciante ? "No cargaron" : "El dueño no cargó"} las condiciones (garantía, depósito, contrato). Preguntá por WhatsApp.</p>
+      )}
+    </section>
+  );
+}
+
 function useContacto(a: AvisoPublico) {
   const [estado, setEstado] = useState<"" | "pidiendo" | "listo">("");
   const [url, setUrl] = useState("");

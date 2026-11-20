@@ -1,4 +1,5 @@
 // Los datos del formulario de aviso tal como los escribe la persona, y cómo se convierten en un aviso.
+import { CONDICIONES_VACIAS, renglonesCondiciones, limpiarCondiciones, type CondicionesAlquiler } from "../../../../shared/alquiler.ts";
 import { OTRO_PUEBLO, RUBROS } from "../../../../shared/config.ts";
 import { fmtNum, soloDigitos } from "../../../../shared/texto.ts";
 import type { RubroId } from "../../../../shared/tipos.ts";
@@ -24,10 +25,12 @@ export interface ValoresForm {
   datos: string;
   /** Solo el panel: quién publica (se ve en el aviso) */
   anunciante: string;
+  /** Solo alquileres: garantía, depósito, contrato… */
+  condiciones: CondicionesAlquiler;
 }
 
 export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
-  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "",
+  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "", condiciones: CONDICIONES_VACIAS,
 });
 
 /** Moneda que se usa en la zona para cada cosa (casas en venta y maquinaria en dólares; autos y alquileres en pesos).
@@ -56,6 +59,8 @@ export function mensajeWhatsApp(v: ValoresForm): string {
   if (v.datos.trim()) L.push(`Datos: ${listaDatos(v.datos).join(", ")}`);
   if (v.permuta) L.push("Acepta permuta: Sí");
   if (v.financia) L.push("Financia: Sí");
+  const cond = v.operacion === "alquiler" ? limpiarCondiciones(v.condiciones) : null;
+  if (cond) L.push("Condiciones:", ...renglonesCondiciones(cond).map(([q, c]) => `- ${q}: ${c}`));
   L.push(`Descripción: ${v.descripcion.trim() || "-"}`, `Nombre: ${v.nombre.trim() || "-"}`, `WhatsApp para que me contacten: ${soloDigitos(v.telefono) || "-"}`, "", "Ahora te mando las fotos por acá.");
   return L.join("\n");
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { etiquetasCondiciones } from "../../../shared/alquiler.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
 import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
@@ -13,6 +14,7 @@ export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: bo
   const tapa = a.fotos[0] ?? "";
   const foto = previa && /^data:image\/(jpeg|png|webp);base64,/.test(tapa) ? tapa : fotoSegura(tapa);
   const Caja = previa ? "div" : "a";
+  const cond = etiquetasCondiciones(a.condiciones);
   const extras = [a.permuta && "Acepta permuta", a.financia && "Financia"].filter(Boolean).join(" · ");
   return (
     <Caja className="card" {...(previa ? {} : { href: ir("aviso", a.id) })}>
@@ -31,8 +33,11 @@ export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: bo
           {porMes(a) && <span> por mes</span>}
         </p>
         <h3>{a.titulo}</h3>
-        {a.datos.length > 0 && (
-          <ul className="chips-datos">{a.datos.slice(0, 4).map((d) => <li key={d}>{d}</li>)}</ul>
+        {(a.datos.length > 0 || cond.length > 0) && (
+          <ul className="chips-datos">
+            {a.datos.slice(0, 4 - cond.length).map((d) => <li key={d}>{d}</li>)}
+            {cond.map((d) => <li key={d} className="cond">{d}</li>)}
+          </ul>
         )}
         {extras && <p className="perks">{extras}</p>}
         <p className="meta card-pie">

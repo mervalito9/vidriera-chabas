@@ -2,6 +2,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { limpiarCondiciones, type CondicionesAlquiler } from "../shared/alquiler.ts";
 import { DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
 import type { AvisoAdmin, AvisoPublico, Busqueda, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, RubroId } from "../shared/tipos.ts";
 import { slug } from "../shared/texto.ts";
@@ -89,6 +90,7 @@ for (const [col, def] of [
   ["reservado", "INTEGER NOT NULL DEFAULT 0"],
   ["destacado", "INTEGER NOT NULL DEFAULT 0"],
   ["anunciante", "TEXT NOT NULL DEFAULT ''"],
+  ["condiciones", "TEXT NOT NULL DEFAULT ''"],
   ["usuario_id", "INTEGER REFERENCES usuarios(id) ON DELETE SET NULL"],
 ] as const) {
   const hay = (db.prepare("PRAGMA table_info(avisos)").all() as { name: string }[]).some((c) => c.name === col);
@@ -112,6 +114,16 @@ function precioAnterior(id: number, actual: number | null): number | null {
   if (!previo || previo.precio === null || actual === null) return null;
   const p = num(previo.precio);
   return p !== actual ? p : null;
+}
+
+/** Las condiciones de un alquiler se guardan como JSON; si algo no cierra, se ignora. */
+function leerCondiciones(texto: string): CondicionesAlquiler | null {
+  if (!texto) return null;
+  try {
+    return limpiarCondiciones(JSON.parse(texto));
+  } catch {
+    return null;
+  }
 }
 
 function aPublico(f: Fila): AvisoPublico {
@@ -148,6 +160,7 @@ function aPublico(f: Fila): AvisoPublico {
     publicadoEn: publicado,
     venceEn: vence,
     precioAnterior: precioAnterior(id, precio),
+    condiciones: f.operacion === "alquiler" ? leerCondiciones(str(f.condiciones)) : null,
   };
 }
 
@@ -229,12 +242,13 @@ export function crearAviso(a: NuevoAviso, archivos: string[], opciones: { estado
   db.exec("BEGIN");
   try {
     const r = db
-      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en, condiciones)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(
         opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos),
         a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, opciones.ejemplo ? 1 : 0,
         opciones.estado === "publicado" ? (opciones.publicadoEn ?? new Date().toISOString()) : null,
+        a.condiciones ? JSON.stringify(a.condiciones) : "",
       );
     const id = Number(r.lastInsertRowid);
     archivos.forEach((archivo, i) => db.prepare("INSERT INTO fotos (aviso_id, archivo, orden) VALUES (?,?,?)").run(id, archivo, i));
@@ -322,8 +336,8 @@ export function editarAviso(id: number, a: NuevoAviso, archivosFinal: string[]):
   try {
     db.prepare(
       `UPDATE avisos SET rubro = ?, tipo = ?, operacion = ?, titulo = ?, precio = ?, moneda = ?, pueblo = ?, anunciante = ?, zona = ?, descripcion = ?, datos = ?,
-         permuta = ?, financia = ?, nombre = ?, telefono = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
-    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, id);
+         permuta = ?, financia = ?, nombre = ?, telefono = ?, condiciones = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
+    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, a.condiciones ? JSON.stringify(a.condiciones) : "", id);
     if (a.precio !== actual.precio || a.moneda !== actual.moneda) {
       db.prepare("INSERT INTO precios (aviso_id, precio, moneda) VALUES (?,?,?)").run(id, a.precio, a.moneda);
     }

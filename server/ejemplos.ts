@@ -21,7 +21,7 @@ export function sincronizarEjemplos(): number {
     const origen = join(IMG, e.foto);
     if (existsSync(origen)) copyFileSync(origen, join(FOTOS_DIR, e.foto));
     const { foto, dias, ...resto } = e;
-    const aviso: NuevoAviso = { zona: "", datos: [], permuta: false, financia: false, descripcion: "", anunciante: "", ...resto, nombre: "", telefono: "", fotos: [] };
+    const aviso: NuevoAviso = { zona: "", datos: [], permuta: false, financia: false, descripcion: "", anunciante: "", condiciones: null, ...resto, nombre: "", telefono: "", fotos: [] };
     crearAviso(aviso, [foto], { estado: "publicado", ejemplo: true, publicadoEn: new Date(Date.now() - dias * 864e5).toISOString() });
   }
   return EJEMPLOS.length;

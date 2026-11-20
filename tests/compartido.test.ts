@@ -70,3 +70,28 @@ test("precios: dólares y pesos se comparan juntos al ordenar y filtrar", async 
   assert.deepEqual(ids(filtrarAvisos(avisos, { ...f, orden: "caro" }, 1000)), [4, 1, 2, 3]);
   assert.deepEqual(ids(filtrarAvisos(avisos, { ...f, orden: "", max: "35000" }, 1000)), [1, 2], "hasta USD 35.000 incluye el auto de $7,5 millones");
 });
+
+test("alquiler: las condiciones se limpian y se muestran en palabras", async () => {
+  const { limpiarCondiciones, renglonesCondiciones, etiquetasCondiciones } = await import("../shared/alquiler.ts");
+  assert.equal(limpiarCondiciones({}), null, "sin nada completo no se guarda");
+  assert.equal(limpiarCondiciones("cualquier cosa"), null);
+  const c = limpiarCondiciones({
+    garantias: ["caucion", "inventada", "propietaria"], deposito: "1", adelantado: true, duracion: 24, ajuste: 5, indice: "IPC",
+    mascotas: "si", amoblado: "talvez", disponible: "2027-03-01", expensas: 45000, paga: ["luz", "agua", "nafta"], requisitos: "  ingresos   comprobables ",
+  });
+  assert.ok(c);
+  assert.deepEqual(c.garantias, ["propietaria", "caucion"]);
+  assert.equal(c.ajuste, null, "cada 5 meses no es una opción");
+  assert.equal(c.amoblado, null);
+  assert.deepEqual(c.paga, ["luz", "agua"]);
+  assert.equal(c.requisitos, "ingresos comprobables");
+  const r = Object.fromEntries(renglonesCondiciones(c));
+  assert.equal(r["Garantía"], "Garantía propietaria o Seguro de caución");
+  assert.equal(r["Para entrar"], "1 mes de depósito + 1 mes por adelantado");
+  assert.equal(r["Contrato"], "2 años");
+  assert.equal(r["Ajuste"], "Por IPC");
+  assert.equal(r["Expensas"], "$ 45.000 por mes");
+  assert.equal(r["Paga el inquilino"], "Luz y agua");
+  assert.match(r["Disponible"] ?? "", /^Desde el 1 de marzo/);
+  assert.deepEqual(etiquetasCondiciones(c), ["Acepta caución", "Con mascotas"]);
+});

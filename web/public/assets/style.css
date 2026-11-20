@@ -705,3 +705,25 @@ html { -webkit-tap-highlight-color: transparent; }
   .card-ph img.foto-entra { opacity: 1; }
   .btn:active, .chip:active, .cat:active, .card:active, .rubro:active, .volver:active, .subnav a:active { transform: none; }
 }
+
+/* ---------- alquileres: condiciones (garantía, depósito, contrato…) ---------- */
+.condiciones-form { border: 0; padding: 0; margin: 0; }
+/* fieldset no siempre respeta display: grid, así que el espacio entre preguntas va con margen */
+.condiciones-form > .cond-fila + .cond-fila { margin-top: 20px; }
+.cond-fila { display: grid; gap: 8px; }
+.condiciones-form > .cond-fila:first-of-type { margin-top: 10px; }
+.cond-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cond-chips .chip { cursor: pointer; font: inherit; font-weight: 600; font-size: .98rem; background: #fff; border: 1px solid rgba(23,21,15,.18); color: var(--tinta); }
+.cond-chips .chip.on { background: var(--tinta); color: var(--crema); border-color: var(--tinta); }
+.cond-fecha, .cond-plata { width: auto; min-width: 150px; flex: 1 1 150px; max-width: 220px; }
+.condiciones { margin: 18px 0; padding: 16px 18px; border-radius: var(--r); background: var(--papel); border: 1px solid rgba(23,21,15,.08); }
+.condiciones h2 { font-size: 1.15rem; margin: 0 0 10px; }
+.condiciones dl { margin: 0; display: grid; gap: 0; }
+.condiciones dl > div { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(23,21,15,.08); }
+.condiciones dl > div:first-child { border-top: 0; padding-top: 0; }
+.condiciones dt { color: var(--tinta-2); font-weight: 600; }
+.condiciones dd { margin: 0; font-weight: 600; }
+.condiciones p { margin: 0; }
+.expensas { margin-top: -6px; }
+.chips-datos li.cond { background: #E7EFE2; color: #2F4A23; }
+

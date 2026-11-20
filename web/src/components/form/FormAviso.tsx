@@ -4,9 +4,13 @@ import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../../sh
 import type { ErrorCampo, NuevoAviso } from "../../../../shared/tipos.ts";
 import { validarAviso } from "../../../../shared/validar.ts";
 import { IconoRubro } from "../Iconos.tsx";
+import { CondicionesAlquiler } from "./CondicionesAlquiler.tsx";
 import { DatosGuiados } from "./DatosGuiados.tsx";
 import { ElegirFotos } from "./ElegirFotos.tsx";
 import { aNuevoAviso, monedaSugerida, type ValoresForm } from "./valores.ts";
+
+/** Tipos de inmueble donde no se pregunta por mascotas ni muebles. */
+const NO_VIVIENDA = ["Galpón o local", "Terreno"];
 
 export { mensajeWhatsApp, valoresIniciales, type ValoresForm } from "./valores.ts";
 
@@ -138,6 +142,9 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         <label className="check"><input type="checkbox" checked={v.financia} onChange={(e) => set("financia", e.target.checked)} /> {avanzado ? "Financia" : "Ofrezco financiación"}</label>
       </div>
       {v.rubro && <DatosGuiados key={v.rubro} rubro={v.rubro} datos={v.datos} onCambio={(d) => set("datos", d)} />}
+      {v.rubro === "inmuebles" && v.operacion === "alquiler" && (
+        <CondicionesAlquiler valor={v.condiciones} esVivienda={!NO_VIVIENDA.includes(v.tipo)} onCambio={(c) => set("condiciones", c)} />
+      )}
       <div>
         <label className="lbl" htmlFor="f-descripcion">Descripción <span className="opc">(opcional)</span></label>
         <textarea id="f-descripcion" maxLength={LIMITES.descripcion} placeholder="Estado, medidas, año, kilómetros, qué incluye…" value={v.descripcion} onChange={(e) => set("descripcion", e.target.value)} />

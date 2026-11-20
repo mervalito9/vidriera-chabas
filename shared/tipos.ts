@@ -1,5 +1,6 @@
 // Tipos compartidos entre el backend (server/) y la web (web/).
 // Solo sintaxis "borrable" de TypeScript: Node 24 los ejecuta sin compilar.
+import type { CondicionesAlquiler } from "./alquiler.ts";
 
 export type RubroId = "inmuebles" | "vehiculos" | "agro";
 export type Operacion = "venta" | "alquiler";
@@ -35,6 +36,8 @@ export interface AvisoPublico {
   venceEn: string;
   /** Precio anterior, si bajó o subió (historial de precios) */
   precioAnterior: number | null;
+  /** Solo alquileres: garantía, depósito, contrato, mascotas… (null si no completó nada o es venta) */
+  condiciones: CondicionesAlquiler | null;
 }
 
 /** Lo que ve el administrador en el panel. */
@@ -79,6 +82,8 @@ export interface NuevoAviso {
   telefono: string;
   /** Fotos como data URL (image/jpeg, image/png o image/webp), ya achicadas en el navegador */
   fotos: string[];
+  /** Solo alquileres (ver shared/alquiler.ts) */
+  condiciones: CondicionesAlquiler | null;
 }
 
 export interface NuevaBusqueda {
