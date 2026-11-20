@@ -1,5 +1,5 @@
 import { useRef, type ReactNode } from "react";
-import { ir, navegar } from "../router.ts";
+import { ir, navegar, salirDePantalla } from "../router.ts";
 import { Menu } from "./Menu.tsx";
 
 const NAV = [
@@ -12,7 +12,10 @@ const NAV = [
 export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjemplos: boolean; children: ReactNode }) {
   const main = useRef<HTMLElement>(null);
   const esInicio = ruta === "inicio";
-  const volver = () => (window.history.length > 1 ? window.history.back() : navegar(ir("inicio")));
+  const volver = () => {
+    const irAtras = () => (window.history.length > 1 ? window.history.back() : navegar(ir("inicio")));
+    if (!salirDePantalla("atras", irAtras)) irAtras();
+  };
 
   // El panel tiene su propio menú: sin el encabezado ni el pie del sitio.
   if (ruta === "admin") return <main ref={main} id="contenido" tabIndex={-1} className="pn-main">{children}</main>;

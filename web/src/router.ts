@@ -87,6 +87,18 @@ export function useRuta(): Ruta {
   return ruta;
 }
 
+/** Anima la salida de la pantalla actual y después llama a `seguir`. Devuelve false si no hay animación
+ * ("reducir movimiento" o nada que animar): entonces el que llama sigue de inmediato. */
+export function salirDePantalla(hacia: "adelante" | "atras", seguir: () => void): boolean {
+  const pantalla = document.querySelector(".pantalla");
+  if (!pantalla || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+  // Ya se está yendo (doble toque): no hacer nada más.
+  if (pantalla.classList.contains("sale-izq") || pantalla.classList.contains("sale-der")) return true;
+  pantalla.classList.add(hacia === "adelante" ? "sale-izq" : "sale-der");
+  window.setTimeout(seguir, 150);
+  return true;
+}
+
 export function navegar(hash: string): void {
   window.location.hash = hash;
 }

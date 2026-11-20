@@ -691,10 +691,15 @@ html { -webkit-tap-highlight-color: transparent; }
 .card:active, .rubro:active { transform: scale(.985); transition-duration: .12s; transition-delay: .07s; }
 /* Cambio de pantalla: la nueva entra de costado con un fundido, como en una app. Solo opacidad y un desplazamiento que no queda
    aplicado al terminar (fill-mode backwards), para no afectar barras fijas ni el visor de fotos. */
-.pantalla { animation: pantalla-adelante .36s cubic-bezier(.2,.8,.2,1) backwards; }
+.pantalla { animation: pantalla-adelante .4s cubic-bezier(.16,.84,.24,1) backwards; }
 [data-nav="atras"] .pantalla { animation-name: pantalla-atras; }
-@keyframes pantalla-adelante { from { opacity: 0; transform: translateX(32px); } }
-@keyframes pantalla-atras { from { opacity: 0; transform: translateX(-32px); } }
+@keyframes pantalla-adelante { from { opacity: 0; transform: translateX(64px); } }
+@keyframes pantalla-atras { from { opacity: 0; transform: translateX(-64px); } }
+/* Salida (antes de cambiar): la pantalla se va hacia el lado contrario en 150 ms */
+.pantalla.sale-izq { animation: pantalla-sale-izq .15s ease-in forwards; }
+.pantalla.sale-der { animation: pantalla-sale-der .15s ease-in forwards; }
+@keyframes pantalla-sale-izq { to { opacity: 0; transform: translateX(-40px); } }
+@keyframes pantalla-sale-der { to { opacity: 0; transform: translateX(40px); } }
 /* Mientras entra de costado, que no aparezca una barra horizontal */
 #contenido { overflow-x: clip; }
 

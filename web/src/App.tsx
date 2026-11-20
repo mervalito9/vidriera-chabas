@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { PUEBLOS, RUBROS } from "../../shared/config.ts";
 import { slug } from "../../shared/texto.ts";
 import type { RubroId } from "../../shared/tipos.ts";
@@ -10,7 +10,7 @@ import { Inicio } from "./pages/Inicio.tsx";
 import { Listado } from "./pages/Listado.tsx";
 import { Publicar } from "./pages/Publicar.tsx";
 import { ComoFunciona, NoEncontrado, PreguntasFrecuentes, Privacidad, Terminos } from "./pages/Textos.tsx";
-import { useRuta, type Ruta } from "./router.ts";
+import { leerRuta, salirDePantalla, useRuta, type Ruta } from "./router.ts";
 import { medirPagina } from "./medir.ts";
 import { Cargando } from "./components/Tarjeta.tsx";
 
@@ -61,6 +61,21 @@ export function App() {
   useEffect(() => medirPagina(ruta.nombre, ruta.param), [ruta.nombre, ruta.param]);
   useEffect(() => {
     listarAvisos({}, 1).then((l) => setSoloEjemplos(l.soloEjemplos && l.total > 0), () => setSoloEjemplos(false));
+  }, []);
+  // Al tocar un link a otra pantalla: la actual se va hacia la izquierda y recién ahí se cambia (como en una app).
+  const clave = useRef("");
+  clave.current = claveDePantalla(ruta);
+  useEffect(() => {
+    const alTocar = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const link = (e.target as Element | null)?.closest?.("a[href^='#']");
+      const destino = link?.getAttribute("href");
+      if (!link || !destino || link.getAttribute("target")) return;
+      if (claveDePantalla(leerRuta(destino)) === clave.current) return;
+      if (salirDePantalla("adelante", () => { window.location.hash = destino; })) e.preventDefault();
+    };
+    document.addEventListener("click", alTocar);
+    return () => document.removeEventListener("click", alTocar);
   }, []);
   return (
     <Marco ruta={ruta.nombre} soloEjemplos={soloEjemplos}>
