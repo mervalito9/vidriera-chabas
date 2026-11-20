@@ -78,8 +78,29 @@ const aQuery = (f: Partial<Filtros>, limite: number, desde: number): string => {
 
 const FILTROS_VACIOS: Filtros = { rubro: "", pueblo: "", q: "", tipo: "", op: "", max: "", moneda: "USD", permuta: false, financia: false, orden: "" };
 
+/** Avisos que ya llegaron en algún listado: al tocar una tarjeta, la ficha se muestra al instante con estos datos
+ * mientras se piden los actualizados. */
+const conocidos = new Map<number, AvisoPublico>();
+export const avisoConocido = (id: number): AvisoPublico | null => conocidos.get(id) ?? null;
+
+/** Listados pedidos hace menos de 1 minuto: al volver atrás aparecen al instante, sin "cargando". */
+const listadosRecientes = new Map<string, { hora: number; pedido: Promise<ListaAvisos> }>();
+const VIGENCIA_LISTADO = 60_000;
+
 export async function listarAvisos(f: Partial<Filtros>, limite: number, desde = 0): Promise<ListaAvisos> {
-  if (await conServidor()) return pedir<ListaAvisos>("GET", `avisos?${aQuery(f, limite, desde)}`);
+  if (await conServidor()) {
+    const consulta = `avisos?${aQuery(f, limite, desde)}`;
+    const guardado = listadosRecientes.get(consulta);
+    if (guardado && Date.now() - guardado.hora < VIGENCIA_LISTADO) return guardado.pedido;
+    const pedido = pedir<ListaAvisos>("GET", consulta).then((l) => {
+      for (const a of l.avisos) conocidos.set(a.id, a);
+      return l;
+    });
+    listadosRecientes.set(consulta, { hora: Date.now(), pedido });
+    pedido.catch(() => listadosRecientes.delete(consulta));
+    if (listadosRecientes.size > 40) listadosRecientes.delete(listadosRecientes.keys().next().value ?? "");
+    return pedido;
+  }
   const res = filtrarAvisos(avisosDemo(), { ...FILTROS_VACIOS, ...f });
   return { avisos: res.slice(desde, desde + limite), total: res.length, soloEjemplos: true, conteo: { inmuebles: 0, vehiculos: 0, agro: 0 }, dolar: DOLAR_VISTA_PREVIA };
 }

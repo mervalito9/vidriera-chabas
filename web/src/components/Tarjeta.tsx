@@ -3,6 +3,11 @@ import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
 import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
 
+/** Si la foto ya estaba bajada (por ejemplo al volver atrás), se muestra sin esperar. */
+const fotoLista = (img: HTMLImageElement | null): void => {
+  if (img?.complete && img.naturalWidth) img.classList.add("lista");
+};
+
 /** `previa`: vista previa en el panel (sin link y aceptando fotos recién elegidas). */
 export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: boolean }) {
   const tapa = a.fotos[0] ?? "";
@@ -12,7 +17,7 @@ export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: bo
   return (
     <Caja className="card" {...(previa ? {} : { href: ir("aviso", a.id) })}>
       <div className="card-ph">
-        {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" /> : <div className="sin-foto">Sin foto</div>}
+        {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" className="foto-entra" ref={fotoLista} onLoad={(e) => e.currentTarget.classList.add("lista")} /> : <div className="sin-foto">Sin foto</div>}
         <div className="tags">
           {a.ejemplo && <span className="tag tag-ej">Ejemplo</span>}
           {a.reservado && <span className="tag tag-res">Reservado</span>}

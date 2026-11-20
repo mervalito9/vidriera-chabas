@@ -694,10 +694,14 @@ html { -webkit-tap-highlight-color: transparent; }
 ::view-transition-new(root) { animation: .16s cubic-bezier(.2,.7,.2,1) .06s both vt-entra; }
 @keyframes vt-sale { to { opacity: 0; } }
 @keyframes vt-entra { from { opacity: 0; transform: translateY(4px); } }
+/* Las fotos de las tarjetas aparecen suave cuando terminan de bajar (con datos móviles no "saltan") */
+.card-ph img.foto-entra { opacity: 0; transition: opacity .3s ease; }
+.card-ph img.foto-entra.lista { opacity: 1; }
 /* Las tarjetas entran en cascada (una tras otra), no todas de golpe */
 .grid > .card:nth-child(2) { animation-delay: .04s; } .grid > .card:nth-child(3) { animation-delay: .08s; }
 .grid > .card:nth-child(4) { animation-delay: .12s; } .grid > .card:nth-child(5) { animation-delay: .16s; }
 .grid > .card:nth-child(6) { animation-delay: .2s; } .grid > .card:nth-child(n+7) { animation-delay: .24s; }
 @media (prefers-reduced-motion: reduce) {
+  .card-ph img.foto-entra { opacity: 1; }
   .btn:active, .chip:active, .cat:active, .card:active, .rubro:active, .volver:active, .subnav a:active { transform: none; }
 }

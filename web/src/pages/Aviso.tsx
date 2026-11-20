@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as PE, type RefObject } 
 import { RUBROS } from "../../../shared/config.ts";
 import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
-import { ErrorApi, linkContacto, listarAvisos, obtenerAviso } from "../api.ts";
+import { ErrorApi, avisoConocido, linkContacto, listarAvisos, obtenerAviso } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
 import { fotoSegura, porMes, precioTexto } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
@@ -11,9 +11,12 @@ import { ir } from "../router.ts";
 /** La única página de aviso: se llena con los datos que devuelve el backend para ese id. */
 export function Aviso({ id }: { id: number }) {
   const carga = useCarga(() => obtenerAviso(id), [id]);
-  const aviso = carga.estado === "listo" ? carga.datos : null;
+  // Si venía de una tarjeta, ya tenemos el aviso: se muestra enseguida y se actualiza cuando llegan los datos.
+  const conocido = carga.estado === "cargando" ? avisoConocido(id) : null;
+  const aviso = carga.estado === "listo" ? carga.datos : conocido;
   useTitulo(aviso ? aviso.titulo : carga.estado === "cargando" ? "Aviso" : "Aviso no encontrado");
 
+  if (conocido) return <FichaAviso a={conocido} />;
   if (carga.estado === "cargando") return <div className="wrap"><Cargando /></div>;
   if (carga.estado === "error") return <div className="wrap prose"><p className="form-err" role="alert">{carga.mensaje}</p></div>;
   if (!aviso) return <AvisoQueNoEsta />;
