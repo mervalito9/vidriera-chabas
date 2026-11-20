@@ -9,7 +9,7 @@ import { Busco } from "./pages/Busco.tsx";
 import { Inicio } from "./pages/Inicio.tsx";
 import { Listado } from "./pages/Listado.tsx";
 import { Publicar } from "./pages/Publicar.tsx";
-import { ComoFunciona, NoEncontrado, Privacidad, Terminos } from "./pages/Textos.tsx";
+import { ComoFunciona, NoEncontrado, PreguntasFrecuentes, Privacidad, Terminos } from "./pages/Textos.tsx";
 import { useRuta, type Ruta } from "./router.ts";
 import { medirPagina } from "./medir.ts";
 import { Cargando } from "./components/Tarjeta.tsx";
@@ -40,6 +40,7 @@ function Pagina({ ruta }: { ruta: Ruta }) {
   if (nombre === "publicar") return <Publicar key={param} rubro={param} />;
   if (nombre === "busco") return <Busco />;
   if (nombre === "como-funciona") return <ComoFunciona />;
+  if (nombre === "preguntas") return <PreguntasFrecuentes />;
   if (nombre === "terminos") return <Terminos />;
   if (nombre === "privacidad") return <Privacidad />;
   // #pueblo--sanford: el listado de toda la zona con el filtro de ese pueblo puesto (#pueblo--otro = pueblos fuera de la lista)
@@ -51,6 +52,9 @@ function Pagina({ ruta }: { ruta: Ruta }) {
   return <NoEncontrado />;
 }
 
+const claveDePantalla = ({ nombre, param }: Ruta): string =>
+  nombre === "admin" ? "admin" : nombre in RUBROS || nombre === "buscar" ? nombre : `${nombre}--${param}`;
+
 export function App() {
   const ruta = useRuta();
   const [soloEjemplos, setSoloEjemplos] = useState(false);
@@ -60,7 +64,11 @@ export function App() {
   }, []);
   return (
     <Marco ruta={ruta.nombre} soloEjemplos={soloEjemplos}>
-      <Pagina ruta={ruta} />
+      {/* Cada pantalla nueva entra con un fundido corto (la clave cambia → se vuelve a animar).
+          Un listado mantiene su clave al cambiar de atajo, para no perder los filtros. */}
+      <div className="pantalla" key={claveDePantalla(ruta)}>
+        <Pagina ruta={ruta} />
+      </div>
     </Marco>
   );
 }

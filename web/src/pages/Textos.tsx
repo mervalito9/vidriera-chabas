@@ -1,6 +1,7 @@
 import { WA_NUMERO } from "../../../shared/config.ts";
 import { linkWA } from "../../../shared/whatsapp.ts";
 import { Carta } from "../components/Carta.tsx";
+import { Preguntas } from "../components/Preguntas.tsx";
 import { useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
@@ -74,6 +75,17 @@ export function NoEncontrado() {
       <h1>No encontramos <em>esa página.</em></h1>
       <p>Puede que el aviso haya vencido o que el link esté mal escrito.</p>
       <p><a className="btn btn-main" href={ir("inicio")}>Ir al inicio</a></p>
+    </div>
+  );
+}
+
+export function PreguntasFrecuentes() {
+  useTitulo("Preguntas frecuentes");
+  return (
+    <div className="wrap prose">
+      <h1>Preguntas <em>frecuentes.</em></h1>
+      <Preguntas />
+      <p>¿Te quedó otra duda? Mirá <a href={ir("como-funciona")}>Cómo funciona</a> o escribinos por WhatsApp.</p>
     </div>
   );
 }

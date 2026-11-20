@@ -689,11 +689,11 @@ html { -webkit-tap-highlight-color: transparent; }
   transform: scale(.97); transition-duration: .1s; transition-delay: .04s;
 }
 .card:active, .rubro:active { transform: scale(.985); transition-duration: .12s; transition-delay: .07s; }
-/* Cambio de pantalla, corto y sin "doble imagen": la anterior se va en 90 ms y recién ahí entra la nueva (160 ms, sube 4 px). */
-::view-transition-old(root) { animation: .09s ease-in both vt-sale; }
-::view-transition-new(root) { animation: .16s cubic-bezier(.2,.7,.2,1) .06s both vt-entra; }
-@keyframes vt-sale { to { opacity: 0; } }
-@keyframes vt-entra { from { opacity: 0; transform: translateY(4px); } }
+/* Cambio de pantalla: la nueva entra con un fundido y sube apenas. Solo opacidad y un desplazamiento que no queda
+   aplicado al terminar (fill-mode backwards), para no afectar barras fijas ni el visor de fotos. */
+.pantalla { animation: pantalla-entra .24s cubic-bezier(.2,.7,.2,1) backwards; }
+@keyframes pantalla-entra { from { opacity: 0; transform: translateY(8px); } }
+
 /* Las fotos de las tarjetas aparecen suave cuando terminan de bajar (con datos móviles no "saltan") */
 .card-ph img.foto-entra { opacity: 0; transition: opacity .3s ease; }
 .card-ph img.foto-entra.lista { opacity: 1; }
@@ -727,3 +727,41 @@ html { -webkit-tap-highlight-color: transparent; }
 .expensas { margin-top: -6px; }
 .chips-datos li.cond { background: #E7EFE2; color: #2F4A23; }
 
+/* ---------- menú ☰ ---------- */
+.menu-btn { flex: none; width: 48px; height: 48px; margin-left: 8px; display: grid; place-content: center; gap: 5px; border: 1px solid rgba(23,21,15,.14); border-radius: 14px; background: var(--papel); cursor: pointer; }
+.menu-btn span { display: block; width: 20px; height: 2px; border-radius: 2px; background: var(--tinta); }
+.menu-btn:active { transform: scale(.94); }
+.top .wrap { flex-wrap: nowrap; }
+.menu { margin: 0 0 0 auto; height: 100dvh; max-height: none; width: min(340px, 88vw); padding: 0; border: 0; background: var(--crema); color: var(--tinta); box-shadow: -10px 0 40px rgba(23,21,15,.18); }
+.menu::backdrop { background: rgba(23,21,15,.42); }
+.menu[open] { animation: menu-entra .24s cubic-bezier(.2,.7,.2,1); }
+.menu[open]::backdrop { animation: menu-fondo .24s ease; }
+@keyframes menu-entra { from { transform: translateX(100%); } }
+@keyframes menu-fondo { from { opacity: 0; } }
+.menu-in { display: grid; gap: 18px; padding: 18px 20px calc(24px + env(safe-area-inset-bottom)); }
+.menu-cab { display: flex; align-items: center; justify-content: space-between; }
+.menu-inicio { font-weight: 800; font-size: 1.2rem; color: var(--tinta); text-decoration: none; padding: 10px 0; }
+.menu-x { width: 48px; height: 48px; border: 0; border-radius: 14px; background: var(--papel); font-size: 1.8rem; line-height: 1; cursor: pointer; color: var(--tinta); }
+.menu nav { display: grid; }
+.menu-t { margin: 0 0 4px; font-size: .8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-2); }
+.menu nav a { display: flex; align-items: center; min-height: 48px; border-bottom: 1px solid rgba(23,21,15,.08); color: var(--tinta); text-decoration: none; font-weight: 600; font-size: 1.05rem; }
+.menu nav a[aria-current] { color: var(--terra); }
+.menu nav a::after { content: "›"; margin-left: auto; color: var(--tinta-2); font-size: 1.3rem; }
+.menu-publicar, .menu-wa { width: 100%; }
+.menu-pie { margin: 0; font-size: .9rem; color: var(--tinta-2); }
+.menu-pie a { color: inherit; }
+
+/* ---------- preguntas frecuentes ---------- */
+.preguntas-home { margin-top: 40px; }
+.faq { display: grid; gap: 10px; margin: 8px 0 18px; }
+.faq details { background: var(--papel); border-radius: 16px; border: 1px solid rgba(23,21,15,.08); }
+.faq summary { list-style: none; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 18px; font-weight: 700; font-size: 1.05rem; cursor: pointer; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; margin-left: auto; font-size: 1.5rem; font-weight: 500; color: var(--terra); transition: transform .2s ease; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq-r { padding: 0 18px 16px; color: var(--tinta-2); }
+.faq details[open] .faq-r { animation: faq-abre .22s ease both; }
+@keyframes faq-abre { from { opacity: 0; transform: translateY(-4px); } }
+.prose .faq summary { font-size: 1.05rem; }
+
+.top .menu .menu-publicar { display: flex; }

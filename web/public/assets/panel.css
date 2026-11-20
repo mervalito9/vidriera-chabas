@@ -180,10 +180,13 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .pn-disco i { display: block; height: 100%; background: var(--oliva); border-radius: 4px; }
 .pn-disco i.alto { background: #A1341A; }
 
-.pn-barras { display: flex; align-items: flex-end; gap: 8px; height: 150px; }
+.pn-barras { display: flex; align-items: flex-end; gap: 8px; height: 170px; }
+.pn-barras-nota { margin: 0 0 14px; color: var(--tinta-2); font-size: .95rem; }
+.pn-barras-nota b { color: var(--tinta); }
+.pn-barras-n { font-size: 14px; font-weight: 700; color: var(--tinta); line-height: 1; }
 .pn-barras > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
 .pn-barras i { display: block; width: 100%; min-height: 2px; background: var(--terra); border-radius: 4px 4px 0 0; }
-.pn-barras span { font-size: 12px; color: var(--tinta-2); }
+.pn-barras span { font-size: 12px; color: var(--tinta-2); white-space: nowrap; }
 
 .pn-top { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .pn-top li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--crema-2); }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { flushSync } from "react-dom";
 
 /**
  * Rutas por "#": funcionan en cualquier hosting y en la vista previa, sin configurar nada.
@@ -78,13 +77,8 @@ export function useRuta(): Ruta {
         window.scrollTo(0, 0);
       }
     };
-    // Cambio de pantalla con un fundido corto (el navegador hace la animación; ver "respuesta al tocar" en style.css).
-    // Donde no existe, o con "reducir movimiento", cambia de golpe como siempre.
-    const cambio = () => {
-      const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!document.startViewTransition || quieto) return mostrar();
-      document.startViewTransition(() => flushSync(mostrar));
-    };
+    // La animación de entrada de cada pantalla la hace App (ver .pantalla en style.css).
+    const cambio = () => mostrar();
     window.addEventListener("hashchange", cambio);
     return () => window.removeEventListener("hashchange", cambio);
   }, []);

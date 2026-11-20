@@ -1,5 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import { ir, navegar } from "../router.ts";
+import { Menu } from "./Menu.tsx";
 
 const NAV = [
   ["inmuebles", "Inmuebles"],
@@ -32,6 +33,7 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
           </nav>
           <span className="spacer" />
           <a className="btn btn-main" href={ir("publicar")}>Publicar gratis</a>
+          <Menu ruta={ruta} />
         </div>
         {!esInicio && (
           <nav className="subnav wrap" aria-label="Accesos rápidos">
@@ -59,6 +61,7 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
               <a href={ir("publicar")}>Publicar gratis</a>
               <a href={ir("busco")}>Avisame cuando aparezca</a>
               <a href={ir("como-funciona")}>Cómo funciona</a>
+              <a href={ir("preguntas")}>Preguntas frecuentes</a>
               <a href={ir("terminos")}>Términos</a>
               <a href={ir("privacidad")}>Privacidad</a>
             </nav>

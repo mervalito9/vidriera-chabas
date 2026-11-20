@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from "react";
-import { PUEBLOS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
+import { PUEBLOS, RUBROS } from "../../../shared/config.ts";
 import { plural, slug } from "../../../shared/texto.ts";
-import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
 import { listarAvisos } from "../api.ts";
 import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
+import { Preguntas } from "../components/Preguntas.tsx";
 import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
 import { buscarDesdePortada } from "./Listado.tsx";
@@ -134,6 +134,13 @@ export function Inicio() {
         </div>
       </section>
 
+      <section className="wrap" aria-label="Avisame cuando aparezca" ref={rBusco}>
+        <aside className="busco">
+          <div><h2>¿No encontrás lo que buscás?</h2><p>Contanos qué buscás y te avisamos por WhatsApp cuando aparezca.</p></div>
+          <a className="btn" href={ir("busco")}>Avisame cuando aparezca</a>
+        </aside>
+      </section>
+
       <section className="wrap" aria-labelledby="vender" ref={rVender}>
         <div className="vender">
           <div className="vender-txt">
@@ -158,19 +165,10 @@ export function Inicio() {
 
       {soloEjemplos && avisosBloque}
 
-      <section className="wrap" aria-label="Avisame cuando aparezca" ref={rBusco}>
-        <aside className="busco">
-          <div><h2>¿No encontrás lo que buscás?</h2><p>Contanos qué buscás y te avisamos por WhatsApp cuando aparezca.</p></div>
-          <a className="btn" href={ir("busco")}>Avisame cuando aparezca</a>
-        </aside>
-      </section>
 
-      <section className="wrap firma-sitio">
-        <p><b>Vidriera la armé yo, Felipe, de Chabás.</b> Si tenés una idea o algo no te cierra, escribime.</p>
-        <div className="firma-btns">
-          {numeroWA(WA_NUMERO) && <a className="btn btn-wa" target="_blank" rel="noopener noreferrer" href={linkWA(WA_NUMERO, "Hola Felipe! Te escribo por Vidriera Chabás.")}>Escribime por WhatsApp</a>}
-          <a className="btn btn-line" href={ir("como-funciona")}>Por qué la armé</a>
-        </div>
+      <section className="wrap preguntas-home" aria-labelledby="faq-t">
+        <div className="sec-h"><h2 id="faq-t">Preguntas frecuentes</h2><a href={ir("preguntas")}>Ver todas</a></div>
+        <Preguntas cuantas={5} />
       </section>
     </>
   );

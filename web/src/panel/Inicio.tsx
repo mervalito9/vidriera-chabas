@@ -76,8 +76,17 @@ export function Inicio({ avisos, busquedas, accion }: { avisos: AvisoAdmin[] | n
           <div className="pn-caja-h"><h2>Visitas por día</h2><a href={ir("admin", "estad")}>Ver estadísticas</a></div>
           {e ? (
             <>
+              <p className="pn-barras-nota">
+                Cuántas personas entraron cada día. Hoy <b>{fmtNum(e.serie.at(-1)?.personas ?? 0)}</b> · en toda la semana <b>{fmtNum(e.total.personas)}</b> distintas
+              </p>
               <div className="pn-barras" role="img" aria-label={`Visitas de los últimos 7 días: ${e.serie.map((s) => s.personas).join(", ")}`}>
-                {e.serie.map((s) => <div key={s.fecha} title={`${s.fecha.slice(8)}/${s.fecha.slice(5, 7)}: ${s.personas}`}><i style={{ height: `${(s.personas / maxDia) * 100}%` }} /><span>{s.fecha.slice(8).replace(/^0/, "")}</span></div>)}
+                {e.serie.map((s) => (
+                  <div key={s.fecha}>
+                    <b className="pn-barras-n">{s.personas}</b>
+                    <i style={{ height: `${(s.personas / maxDia) * 100}%` }} />
+                    <span>{diaSemana(s.fecha)}</span>
+                  </div>
+                ))}
               </div>
             </>
           ) : <Cargando />}
@@ -93,7 +102,7 @@ export function Inicio({ avisos, busquedas, accion }: { avisos: AvisoAdmin[] | n
                   <li key={x.id}>
                     {foto ? <img src={foto} alt="" width={64} height={44} /> : <span className="pn-sinfoto" />}
                     <a href={ir("admin", `editar-${x.id}`)}><b>{x.titulo}</b><span>{a ? `${precioTexto(a)} · ${a.pueblo}` : ""}</span></a>
-                    <span className="pn-top-n"><b>{x.contactos}</b> contactos<br />{x.vistas} vistas</span>
+                    <span className="pn-top-n"><b>{x.contactos}</b> {x.contactos === 1 ? "contacto" : "contactos"}<br />{x.vistas} {x.vistas === 1 ? "vista" : "vistas"}</span>
                   </li>
                 );
               })}
@@ -121,4 +130,11 @@ export function Num({ t, v, pie, fuerte, barra }: { t: string; v: string; pie: s
       <small>{pie}</small>
     </div>
   );
+}
+
+/** "vie 20": día de la semana y número, para el eje del gráfico. */
+function diaSemana(fecha: string): string {
+  const [a, m, d] = fecha.split("-").map(Number);
+  const dia = new Date(a ?? 2026, (m ?? 1) - 1, d ?? 1).getDay();
+  return `${["dom", "lun", "mar", "mié", "jue", "vie", "sáb"][dia]} ${d}`;
 }
