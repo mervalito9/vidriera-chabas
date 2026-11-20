@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 /**
  * Rutas por "#": funcionan en cualquier hosting y en la vista previa, sin configurar nada.
@@ -26,9 +27,16 @@ export const ir = (nombre: string, param?: string | number): string =>
 export function useRuta(): Ruta {
   const [ruta, setRuta] = useState<Ruta>(() => leerRuta(window.location.hash));
   useEffect(() => {
-    const cambio = () => {
+    const mostrar = () => {
       setRuta(leerRuta(window.location.hash));
       window.scrollTo(0, 0);
+    };
+    // Cambio de pantalla con un fundido corto (el navegador hace la animación; ver "transiciones" en style.css).
+    // Donde no existe, o con "reducir movimiento", cambia de golpe como siempre.
+    const cambio = () => {
+      const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!document.startViewTransition || quieto) return mostrar();
+      document.startViewTransition(() => flushSync(mostrar));
     };
     window.addEventListener("hashchange", cambio);
     return () => window.removeEventListener("hashchange", cambio);

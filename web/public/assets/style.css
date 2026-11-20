@@ -677,3 +677,22 @@ input[type=file]:focus-visible + * , .foto-add:focus-within { outline: 3px solid
 .firma-sitio b { color: var(--tinta); }
 .firma-btns { display: flex; flex-wrap: wrap; gap: 10px; }
 
+/* ---------- respuesta al tocar y cambio de pantalla ---------- */
+html { -webkit-tap-highlight-color: transparent; }
+.btn, .chip, .cat, .rubro, .card, .volver, .subnav a, .nav a, .tabs a, .linkbtn, .foto-add, .rubro-pick label {
+  transition: transform .14s ease, background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease;
+}
+.btn:active { transform: scale(.96); }
+.btn-main:active, .btn-wa:active { box-shadow: 0 2px 6px rgba(23,21,15,.18); }
+.chip:active, .cat:active, .volver:active, .subnav a:active, .nav a:active, .tabs a:active, .linkbtn:active, .foto-add:active, .rubro-pick label:active { transform: scale(.95); }
+.card:active { transform: scale(.98); box-shadow: 0 2px 8px rgba(23,21,15,.10); }
+.rubro:active { transform: scale(.97); }
+/* Al cambiar de pantalla: la anterior se va rápido y la nueva sube apenas. El encabezado queda quieto. */
+.top { view-transition-name: cabecera; }
+::view-transition-old(root) { animation: .12s ease-out both vt-sale; }
+::view-transition-new(root) { animation: .22s cubic-bezier(.2,.7,.2,1) both vt-entra; }
+@keyframes vt-sale { to { opacity: 0; } }
+@keyframes vt-entra { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) {
+  .btn:active, .chip:active, .cat:active, .card:active, .rubro:active, .volver:active, .subnav a:active { transform: none; }
+}

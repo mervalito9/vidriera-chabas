@@ -372,3 +372,11 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
   .pn-caja-h a { min-height: 40px; display: inline-flex; align-items: center; }
 }
 .pn-etq { font-size: 12px; }
+
+/* Respuesta al tocar (el cambio de sección usa el mismo fundido que el sitio) */
+.pn-btn, .pn-chip, .pn-seg button, .pn-menu a, .pn-pop a, .pn-tarea, .pn-puntos, .pn-estrella, .pn-linkbtn, .pn-lista-mas a, .pn-pend-item {
+  transition: transform .14s ease, background-color .15s ease, box-shadow .15s ease, color .15s ease;
+}
+.pn-btn:active, .pn-chip:active, .pn-seg button:active, .pn-puntos:active, .pn-estrella:active, .pn-linkbtn:active { transform: scale(.95); }
+.pn-menu a:active, .pn-tarea:active, .pn-pop a:active, .pn-lista-mas a:active { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) { .pn-btn:active, .pn-chip:active, .pn-menu a:active, .pn-tarea:active { transform: none; } }
