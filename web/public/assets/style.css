@@ -689,10 +689,14 @@ html { -webkit-tap-highlight-color: transparent; }
   transform: scale(.97); transition-duration: .1s; transition-delay: .04s;
 }
 .card:active, .rubro:active { transform: scale(.985); transition-duration: .12s; transition-delay: .07s; }
-/* Cambio de pantalla: la nueva entra con un fundido y sube apenas. Solo opacidad y un desplazamiento que no queda
+/* Cambio de pantalla: la nueva entra de costado con un fundido, como en una app. Solo opacidad y un desplazamiento que no queda
    aplicado al terminar (fill-mode backwards), para no afectar barras fijas ni el visor de fotos. */
-.pantalla { animation: pantalla-entra .24s cubic-bezier(.2,.7,.2,1) backwards; }
-@keyframes pantalla-entra { from { opacity: 0; transform: translateY(8px); } }
+.pantalla { animation: pantalla-adelante .36s cubic-bezier(.2,.8,.2,1) backwards; }
+[data-nav="atras"] .pantalla { animation-name: pantalla-atras; }
+@keyframes pantalla-adelante { from { opacity: 0; transform: translateX(32px); } }
+@keyframes pantalla-atras { from { opacity: 0; transform: translateX(-32px); } }
+/* Mientras entra de costado, que no aparezca una barra horizontal */
+#contenido { overflow-x: clip; }
 
 /* Las fotos de las tarjetas aparecen suave cuando terminan de bajar (con datos móviles no "saltan") */
 .card-ph img.foto-entra { opacity: 0; transition: opacity .3s ease; }

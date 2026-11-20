@@ -69,6 +69,8 @@ export function useRuta(): Ruta {
       alturas.set(pantallaActual, window.scrollY);
       const { numero, vuelta } = marcarPantalla();
       pantallaActual = numero;
+      // Hacia dónde se movió la persona: la pantalla nueva entra desde la derecha, o desde la izquierda si volvió.
+      document.documentElement.dataset.nav = vuelta ? "atras" : "adelante";
       setRuta(leerRuta(window.location.hash));
       const y = vuelta ? alturas.get(numero) : undefined;
       if (y) irAAltura(y);
