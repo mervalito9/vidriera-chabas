@@ -183,7 +183,7 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
           {d && d.soloEjemplos && d.total > 0 && (
             <p className="banda-ej"><span className="badge">Ejemplos</span> Todavía no hay avisos reales: estos son de muestra. <a href={ir("publicar")}>Publicá el primero, es gratis</a></p>
           )}
-          {d?.total !== 0 && (
+          {(d?.total !== 0 || conMapa) && (
             <div className="res-bar">
               <strong id="count" aria-live="polite">{d ? plural(d.total, "aviso", "avisos") : ""}</strong>
               {conMapa && (
@@ -198,7 +198,7 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
           {!d && lista.estado === "cargando" && <Cargando />}
           {lista.estado === "error" && <p className="form-err" role="alert">{lista.mensaje}</p>}
           {d && (
-            d.total === 0 ? (
+            d.total === 0 && !enMapa ? (
               <Vacio buscando
                 texto={f.pueblo && !(f.q || f.max || f.permuta || f.financia) ? `Todavía no hay ${etiquetaAtajo?.toLowerCase() ?? "avisos de esto"} en ${lugar}.` : hayFiltros ? "No hay avisos con esos filtros." : "Todavía no hay avisos de esto."}
                 extra={f.pueblo ? <button type="button" className="btn btn-line" onClick={() => cambiar("pueblo", "")}>Ver en todos los pueblos</button> : undefined} />
