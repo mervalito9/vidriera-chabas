@@ -61,6 +61,9 @@ export const RUBRO_IDS = Object.keys(RUBROS) as RubroId[];
  */
 export const PUEBLOS: readonly string[] = ["Chabás", "Casilda", "Firmat", "Sanford", "Villada"];
 
+/** Microsoft Clarity (grabaciones y mapas de calor). Vacío = apagado. Es público: va en la página. */
+export const CLARITY_ID = "";
+
 /** Centro de cada pueblo (lat, lng), para el mapa. */
 export const COORDENADAS: Readonly<Record<string, readonly [number, number]>> = {
   Chabás: [-33.2457, -61.358],

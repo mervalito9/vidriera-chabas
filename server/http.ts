@@ -14,11 +14,11 @@ export class ErrorHttp extends Error {
 
 export const CSP = [
   "default-src 'none'",
-  "script-src 'self'",
+  "script-src 'self' https://www.clarity.ms https://*.clarity.ms",
   "style-src 'self'",
-  "img-src 'self' data: blob: https://tile.openstreetmap.org",
+  "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.clarity.ms https://c.bing.com",
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://*.clarity.ms https://c.bing.com",
   "manifest-src 'self'",
   "base-uri 'none'",
   "form-action 'self'",

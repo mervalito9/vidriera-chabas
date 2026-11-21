@@ -71,7 +71,7 @@ export function Panel({ param, onSalir }: { param: string; onSalir: () => void }
   const activo = (s: Seccion) => s === seccion || (s === "cargar" && seccion === "varios");
 
   return (
-    <div className="pn">
+    <div className="pn" data-clarity-mask="True">
       <aside className="pn-lado">
         <a className="pn-marca" href={ir("admin", "inicio")}><Logo /><span className="pn-etq">PANEL</span></a>
         <nav aria-label="Panel" className="pn-menu">

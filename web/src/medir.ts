@@ -1,5 +1,6 @@
 // Mide páginas vistas y búsquedas para las estadísticas del panel. Sin cookies, sin servicios externos.
 // Si algo falla, no pasa nada: nunca molesta al visitante.
+import { clarityPantalla } from "./clarity.ts";
 
 declare const __VISTA_PREVIA__: boolean;
 /** En la vista previa (sin servidor) no hay a quién mandarle nada. */
@@ -29,6 +30,7 @@ document.addEventListener("visibilitychange", latir);
 
 /** Cada vez que cambia la página (también la primera). */
 export function medirPagina(nombre: string, param: string): void {
+  clarityPantalla(nombre);
   enAdmin = nombre === "admin";
   if (enAdmin) return;
   paginaActual = param ? `${nombre}--${param}` : nombre;

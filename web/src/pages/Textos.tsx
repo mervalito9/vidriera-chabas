@@ -1,4 +1,4 @@
-import { WA_NUMERO } from "../../../shared/config.ts";
+import { CLARITY_ID, WA_NUMERO } from "../../../shared/config.ts";
 import { linkWA } from "../../../shared/whatsapp.ts";
 import { Carta } from "../components/Carta.tsx";
 import { Preguntas } from "../components/Preguntas.tsx";
@@ -59,7 +59,11 @@ export function Privacidad() {
       <h2>Qué se ve en tu aviso</h2>
       <p>Se ve tu primer nombre, como «Publica: …», para que quien te escriba sepa con quién habla. Tu WhatsApp no aparece escrito en la página: el servidor lo entrega recién cuando alguien toca "Hablar por WhatsApp" en tu aviso.</p>
       <h2>Cookies y estadísticas</h2>
-      <p>El sitio no usa cookies para visitantes, ni servicios de analítica ni publicidad de terceros. La única cookie es la del panel de administración.</p>
+      {CLARITY_ID ? (
+        <p>Para mejorar el sitio usamos <a href="https://clarity.microsoft.com" target="_blank" rel="noopener noreferrer">Microsoft Clarity</a>, que registra de forma anónima cómo se usa la página: por dónde se mueve la gente, hasta dónde baja y qué toca. Usa cookies propias de Clarity. Lo que se escribe en los formularios no se graba, y no lo usamos para publicidad. Podés ver cómo trata los datos en la <a href="https://privacy.microsoft.com/es-es/privacystatement" target="_blank" rel="noopener noreferrer">declaración de privacidad de Microsoft</a>. Fuera de eso, el sitio no usa publicidad de terceros; la otra cookie es la del panel de administración.</p>
+      ) : (
+        <p>El sitio no usa cookies para visitantes, ni servicios de analítica ni publicidad de terceros. La única cookie es la del panel de administración.</p>
+      )}
       <p>Para saber cuánta gente usa el sitio contamos, de forma propia y anónima, páginas vistas, contactos por WhatsApp, desde qué sitio se llegó y las palabras buscadas. Para no contar dos veces a la misma persona en un día usamos un código que se arma con la dirección IP y el navegador y una clave que cambia todos los días y se borra: no guardamos la IP y no se puede reconocer a nadie de un día para otro. De cada día solo quedan totales. También contamos, sin guardar IPs, los pedidos que recibe el servidor, sus errores y cuántas personas tienen el sitio abierto en este momento.</p>
       <h2>Borrar tus datos</h2>
       <p>Escribinos por WhatsApp y borramos tu aviso, sus fotos o tu búsqueda.</p>
