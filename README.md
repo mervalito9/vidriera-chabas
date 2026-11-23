@@ -40,6 +40,7 @@ Un bot de Telegram que corre dentro del mismo servidor. Felipe le reenvía los d
 - **Tope de gasto:** 40 pedidos a Claude por hora. Además, poné un límite mensual de gasto en la cuenta de la API.
 - **Datos:** el texto que le mandás (incluidos nombre y teléfono de los dueños) pasa por Telegram y por la API de Claude. Tiene que estar dicho en la política de privacidad.
 - **Activarlo:** cargá `TELEGRAM_BOT_TOKEN`, `TELEGRAM_USER_ID` y `ANTHROPIC_API_KEY` en las variables del servidor (ver `.env.example`). Si falta alguna, el bot no arranca y el sitio funciona igual.
+- **Avisos de novedades:** con solo `TELEGRAM_BOT_TOKEN` y `TELEGRAM_USER_ID` (sin la clave de Claude), el bot te escribe cada vez que alguien publica un aviso (queda pendiente) o deja una búsqueda. Tope de 20 mensajes por hora; si Telegram falla, el vecino no se entera y queda anotado en los registros (`server/notificar.ts`).
 - **Dos copias a la vez:** si dos servidores usan el mismo token, Telegram corta a uno. Durante un redeploy puede verse un error 409 unos segundos; se reintenta solo.
 - **Los borradores viven en memoria:** si el servidor se reinicia, se pierden los que no se publicaron.
 

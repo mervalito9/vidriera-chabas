@@ -3,12 +3,13 @@ import { statfsSync } from "node:fs";
 import { validarAviso, validarBusqueda } from "../../shared/validar.ts";
 import { linkWA } from "../../shared/whatsapp.ts";
 import { esAdmin } from "../auth.ts";
-import { MAX_CON_FOTOS, MAX_JSON, MAX_PENDIENTES, MAX_SUBIDAS_A_LA_VEZ, MIN_LIBRE_BYTES } from "../config.ts";
+import { MAX_CON_FOTOS, MAX_JSON, MAX_PENDIENTES, MAX_SUBIDAS_A_LA_VEZ, MIN_LIBRE_BYTES, sitioDe } from "../config.ts";
 import * as datos from "../db.ts";
 import { FOTOS_DIR } from "../db.ts";
 import * as estad from "../estad.ts";
 import { ErrorHttp, crearLimitador, json, leerJson } from "../http.ts";
 import { guardarFotos } from "../imagenes.ts";
+import { notificar } from "../notificar.ts";
 import { filtrosDe, idDe, type Rutas } from "./comun.ts";
 
 const limiteContacto = crearLimitador(30, 10 * 60_000);
@@ -67,6 +68,7 @@ export const rutasPublicas: Rutas = async ({ req, res, url, metodo, ip, recurso,
       // "Publicado por" lo pone solo el panel: un vecino no puede decir que es una inmobiliaria.
       const id = datos.crearAviso({ ...r.valor, anunciante: "", quien: "dueno" }, archivos, { estado: "pendiente" });
       json(res, 201, { id });
+      notificar.avisoNuevo(r.valor, id, sitioDe(req));
       return true;
     } finally {
       subidasEnCurso--;
@@ -78,6 +80,7 @@ export const rutasPublicas: Rutas = async ({ req, res, url, metodo, ip, recurso,
     const r = validarBusqueda(await leerJson(req, MAX_JSON));
     if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
     json(res, 201, { id: datos.crearBusqueda(r.valor) });
+    notificar.busquedaNueva(r.valor, sitioDe(req));
     return true;
   }
   return false;

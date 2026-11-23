@@ -21,7 +21,7 @@ export function iniciarBot(): boolean {
   );
   const clave = process.env.ANTHROPIC_API_KEY ?? "";
   if (permitidos.size === 0 || !clave) {
-    console.warn("Bot de Telegram: falta TELEGRAM_USER_ID o ANTHROPIC_API_KEY. No se activa.");
+    console.warn("Asistente de Telegram: falta TELEGRAM_USER_ID o ANTHROPIC_API_KEY, no se activa (los avisos de novedades andan igual).");
     return false;
   }
 
