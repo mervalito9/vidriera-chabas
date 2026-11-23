@@ -90,8 +90,13 @@ export function crearNotificador(tg: TelegramApi, destinos: number[], ahora: () 
 
 const NADA: Notificador = { avisoNuevo: () => {}, busquedaNueva: () => {} };
 
+/** Saca el token aunque la variable traiga texto de más (por ejemplo, si se pegó "TELEGRAM_BOT_TOKEN=..." con otras líneas). */
+export function tokenDe(valor: string): string {
+  return /\d{6,}:[A-Za-z0-9_-]{30,}/.exec(valor)?.[0] ?? "";
+}
+
 function desdeEntorno(): Notificador {
-  const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
+  const token = tokenDe(process.env.TELEGRAM_BOT_TOKEN ?? "");
   const destinos = (process.env.TELEGRAM_USER_ID ?? "")
     .split(",")
     .map((x) => Number(x.trim()))

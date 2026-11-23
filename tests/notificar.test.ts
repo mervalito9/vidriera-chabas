@@ -1,7 +1,7 @@
 // Pruebas de los avisos por Telegram a Felipe (Telegram simulado, sin red).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { crearNotificador, textoAvisoNuevo, textoBusquedaNueva } from "../server/notificar.ts";
+import { crearNotificador, textoAvisoNuevo, textoBusquedaNueva, tokenDe } from "../server/notificar.ts";
 import type { TelegramApi } from "../server/bot/telegram.ts";
 
 const aviso = { rubro: "inmuebles" as const, operacion: "alquiler" as const, titulo: "Casa 2 dormitorios con patio", precio: 450000, moneda: "ARS" as const, pueblo: "Chabás", nombre: "Laura", telefono: "03464 15 555123" };
@@ -61,4 +61,12 @@ test("si Telegram falla, no rompe nada", async () => {
   } finally {
     console.error = original;
   }
+});
+
+test("el token se reconoce aunque se haya pegado con texto de más", () => {
+  const t = "123456789:AAbbCCddEEffGGhhIIjjKKllMMnnOOppQQ_-";
+  assert.equal(tokenDe(t), t);
+  assert.equal(tokenDe(` ${t}\n`), t);
+  assert.equal(tokenDe(`TELEGRAM_BOT_TOKEN=${t}\nTELEGRAM_USER_ID=5\nSITE_URL=https://x.ar`), t);
+  assert.equal(tokenDe("cualquier cosa"), "");
 });

@@ -6,11 +6,12 @@ import { crearClaude } from "./claude.ts";
 import { crearTelegram } from "./telegram.ts";
 import { crearAviso } from "../db.ts";
 import { guardarFotos } from "../imagenes.ts";
+import { tokenDe } from "../notificar.ts";
 
 const dormir = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export function iniciarBot(): boolean {
-  const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
+  const token = tokenDe(process.env.TELEGRAM_BOT_TOKEN ?? "");
   if (!token) return false; // el bot es opcional
 
   const permitidos = new Set(
