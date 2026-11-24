@@ -3,8 +3,8 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { limpiarCondiciones, type CondicionesAlquiler } from "../shared/alquiler.ts";
-import { DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
-import type { AvisoAdmin, AvisoPublico, Busqueda, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, Quien, RubroId } from "../shared/tipos.ts";
+import { DIAS_SE_BUSCAN, DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
+import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, Quien, RubroId, SeBusca } from "../shared/tipos.ts";
 import { slug } from "../shared/texto.ts";
 import { dolar } from "./dolar.ts";
 
@@ -100,6 +100,17 @@ for (const [col, def] of [
   if (!hay) db.exec(`ALTER TABLE avisos ADD COLUMN ${col} ${def}`);
 }
 db.exec("CREATE INDEX IF NOT EXISTS avisos_pueblo ON avisos (pueblo);");
+// «Se buscan»: las búsquedas que Felipe elige mostrar en el sitio (sin nombre ni teléfono).
+for (const [col, def] of [
+  ["publica_desde", "TEXT"],
+  ["titulo", "TEXT NOT NULL DEFAULT ''"],
+  ["detalle", "TEXT NOT NULL DEFAULT ''"],
+  ["directo", "INTEGER NOT NULL DEFAULT 0"],
+  ["permiso", "INTEGER NOT NULL DEFAULT 0"],
+] as const) {
+  const hay = (db.prepare("PRAGMA table_info(busquedas)").all() as { name: string }[]).some((c) => c.name === col);
+  if (!hay) db.exec(`ALTER TABLE busquedas ADD COLUMN ${col} ${def}`);
+}
 
 type Fila = Record<string, unknown>;
 const str = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
@@ -375,14 +386,49 @@ export function borrarAviso(id: number): string[] {
 }
 
 export function crearBusqueda(b: NuevaBusqueda): number {
-  const r = db.prepare("INSERT INTO busquedas (rubro, que, presupuesto, nombre, telefono) VALUES (?,?,?,?,?)").run(b.rubro, b.que, b.presupuesto, b.nombre, b.telefono);
+  const r = db.prepare("INSERT INTO busquedas (rubro, que, presupuesto, nombre, telefono, permiso) VALUES (?,?,?,?,?,?)").run(b.rubro, b.que, b.presupuesto, b.nombre, b.telefono, b.permiso ? 1 : 0);
   return Number(r.lastInsertRowid);
 }
 
 export function listarBusquedas(): Busqueda[] {
   return (db.prepare("SELECT * FROM busquedas ORDER BY creado_en DESC").all() as Fila[]).map((f) => ({
     id: num(f.id), rubro: str(f.rubro), que: str(f.que), presupuesto: str(f.presupuesto), nombre: str(f.nombre), telefono: str(f.telefono), creadoEn: str(f.creado_en),
+    titulo: str(f.titulo), detalle: str(f.detalle), directo: num(f.directo) === 1, publicaDesde: f.publica_desde ? str(f.publica_desde) : null, permiso: num(f.permiso) === 1,
   }));
+}
+
+/** Una búsqueda que Felipe carga a mano para mostrarla en el sitio (no tiene nombre ni teléfono). */
+export function crearBusquedaPublica(b: BusquedaPublica): number {
+  const r = db.prepare("INSERT INTO busquedas (rubro, que, nombre, telefono, titulo, detalle, directo, publica_desde, permiso) VALUES (?,?,?,?,?,?,?,?,1)")
+    .run(b.rubro, b.titulo, "Cargada por Felipe", "", b.titulo, b.detalle, b.directo ? 1 : 0, new Date().toISOString());
+  return Number(r.lastInsertRowid);
+}
+
+/** Muestra u oculta una búsqueda en el sitio, o cambia lo que dice. Mostrar de nuevo la renueva por otros 30 días. */
+export function cambiarBusqueda(id: number, c: { publica?: boolean; titulo?: string; detalle?: string; directo?: boolean }): "ok" | "no-esta" | "sin-permiso" {
+  const antes = db.prepare("SELECT permiso FROM busquedas WHERE id = ?").get(id) as Fila | undefined;
+  if (!antes) return "no-esta";
+  // Una búsqueda que dejó un vecino solo se muestra si aceptó que se muestre.
+  if (c.publica === true && num(antes.permiso) !== 1) return "sin-permiso";
+  if (c.publica === true) {
+    db.prepare("UPDATE busquedas SET publica_desde = ?, titulo = CASE WHEN titulo = '' THEN substr(que, 1, 60) ELSE titulo END WHERE id = ?").run(new Date().toISOString(), id);
+  } else if (c.publica === false) {
+    db.prepare("UPDATE busquedas SET publica_desde = NULL WHERE id = ?").run(id);
+  }
+  if (c.titulo !== undefined) db.prepare("UPDATE busquedas SET titulo = ? WHERE id = ?").run(c.titulo, id);
+  if (c.detalle !== undefined) db.prepare("UPDATE busquedas SET detalle = ? WHERE id = ?").run(c.detalle, id);
+  if (c.directo !== undefined) db.prepare("UPDATE busquedas SET directo = ? WHERE id = ?").run(c.directo ? 1 : 0, id);
+  return "ok";
+}
+
+/** Lo que se ve en «Se buscan»: las que Felipe eligió y todavía no vencieron; las iguales se juntan en una sola. */
+export function listarSeBuscan(): SeBusca[] {
+  const filas = db.prepare(
+    `SELECT rubro, titulo, detalle, directo, COUNT(*) AS cuantas FROM busquedas
+     WHERE publica_desde IS NOT NULL AND titulo <> '' AND publica_desde >= strftime('%Y-%m-%dT%H:%M:%fZ','now','-${DIAS_SE_BUSCAN} days')
+     GROUP BY rubro, titulo, detalle, directo ORDER BY MAX(publica_desde) DESC`,
+  ).all() as Fila[];
+  return filas.map((f) => ({ rubro: str(f.rubro), titulo: str(f.titulo), detalle: str(f.detalle), directo: num(f.directo) === 1, cuantas: num(f.cuantas) }));
 }
 
 export function borrarBusqueda(id: number): void {

@@ -7,7 +7,7 @@ import { extname, join } from "node:path";
 import { LIMITES } from "../../shared/config.ts";
 import { recortar, soloDigitos } from "../../shared/texto.ts";
 import type { Estado } from "../../shared/tipos.ts";
-import { validarAviso } from "../../shared/validar.ts";
+import { validarAviso, validarBusquedaPublica } from "../../shared/validar.ts";
 import * as actividad from "../actividad.ts";
 import { claveCorrecta, cerrarSesion, esAdmin, exigirAdmin, iniciarSesion } from "../auth.ts";
 import { MAX_CON_FOTOS, MAX_JSON } from "../config.ts";
@@ -66,6 +66,25 @@ export const rutasAdmin: Rutas = async (p) => {
   if (a1 === "busquedas") {
     if (!p.a2 && metodo === "GET") {
       json(res, 200, datos.listarBusquedas());
+      return true;
+    }
+    if (!p.a2 && metodo === "POST") {
+      const r = validarBusquedaPublica(await leerJson(p.req, MAX_JSON));
+      if (!r.ok) throw new ErrorHttp(422, "Revisá los datos marcados.", r.errores);
+      json(res, 201, { id: datos.crearBusquedaPublica(r.valor) });
+      return true;
+    }
+    if (p.a2 && metodo === "PATCH") {
+      const c = (await leerJson(p.req, MAX_JSON)) as Record<string, unknown>;
+      const r = datos.cambiarBusqueda(idDe(p.a2), {
+        publica: typeof c.publica === "boolean" ? c.publica : undefined,
+        titulo: typeof c.titulo === "string" ? recortar(c.titulo, 60) : undefined,
+        detalle: typeof c.detalle === "string" ? recortar(c.detalle, 80) : undefined,
+        directo: typeof c.directo === "boolean" ? c.directo : undefined,
+      });
+      if (r === "no-esta") throw new ErrorHttp(404, "Esa búsqueda ya no está.");
+      if (r === "sin-permiso") throw new ErrorHttp(409, "Esta persona no aceptó que su búsqueda se muestre en el sitio.");
+      json(res, 200, { ok: true });
       return true;
     }
     if (p.a2 && metodo === "DELETE") {

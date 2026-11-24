@@ -7,6 +7,8 @@ import type { Rubro, RubroId } from "./tipos.ts";
 export const WA_NUMERO = "5493464626380";
 
 export const DIAS_VIGENCIA = 90;
+/** Cuánto tiempo se muestra una búsqueda en «Se buscan», salvo que se renueve desde el panel. */
+export const DIAS_SE_BUSCAN = 30;
 export const POR_PAGINA = 12;
 
 /** Límites de los formularios. El backend los vuelve a controlar siempre. */

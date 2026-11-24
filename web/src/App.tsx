@@ -4,6 +4,7 @@ import { slug } from "../../shared/texto.ts";
 import type { RubroId } from "../../shared/tipos.ts";
 import { listarAvisos } from "./api.ts";
 import { Marco } from "./components/Marco.tsx";
+import { SeBuscanPagina } from "./components/SeBuscan.tsx";
 import { Aviso } from "./pages/Aviso.tsx";
 import { Busco } from "./pages/Busco.tsx";
 import { Inicio } from "./pages/Inicio.tsx";
@@ -13,6 +14,7 @@ import { ComoFunciona, NoEncontrado, PreguntasFrecuentes, Privacidad, Terminos }
 import { leerRuta, salirDePantalla, useRuta, type Ruta } from "./router.ts";
 import { medirPagina } from "./medir.ts";
 import { Cargando } from "./components/Tarjeta.tsx";
+import { SE_BUSCAN_ACTIVO } from "./seBuscan.ts";
 
 declare const __PANEL_CSS__: string;
 
@@ -39,6 +41,7 @@ function Pagina({ ruta }: { ruta: Ruta }) {
   if (nombre === "aviso" && /^\d+$/.test(param)) return <Aviso key={param} id={Number(param)} />;
   if (nombre === "publicar") return <Publicar key={param} rubro={param} />;
   if (nombre === "busco") return <Busco />;
+  if (nombre === "se-buscan" && SE_BUSCAN_ACTIVO) return <SeBuscanPagina />;
   if (nombre === "como-funciona") return <ComoFunciona />;
   if (nombre === "preguntas") return <PreguntasFrecuentes />;
   if (nombre === "terminos") return <Terminos />;

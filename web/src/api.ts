@@ -3,7 +3,7 @@
 import { DIAS_VIGENCIA } from "../../shared/config.ts";
 import { EJEMPLOS } from "../../shared/ejemplos.ts";
 import { DOLAR_VISTA_PREVIA, filtrarAvisos } from "../../shared/filtrar.ts";
-import type { AvisoAdmin, AvisoPublico, Busqueda, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, ResumenActividad, ResumenEstadisticas } from "../../shared/tipos.ts";
+import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, ResumenActividad, ResumenEstadisticas, SeBusca } from "../../shared/tipos.ts";
 
 export class ErrorApi extends Error {
   readonly status: number;
@@ -131,6 +131,9 @@ export async function guardarBusqueda(b: NuevaBusqueda): Promise<{ id: number }>
   return pedir("POST", "busquedas", b);
 }
 
+/** Las búsquedas que Felipe eligió mostrar (sin datos de contacto). */
+export const seBuscan = () => pedir<SeBusca[]>("GET", "se-buscan");
+
 // ---------- panel ----------
 export const admin = {
   entrar: (clave: string) => pedir<{ ok: boolean }>("POST", "admin/login", { clave }),
@@ -144,5 +147,7 @@ export const admin = {
   busquedas: () => pedir<Busqueda[]>("GET", "admin/busquedas"),
   actividad: (periodo: string) => pedir<ResumenActividad>("GET", `admin/actividad?periodo=${periodo}`),
   estadisticas: (dias: number) => pedir<ResumenEstadisticas>("GET", `admin/estadisticas?dias=${dias}`),
+  crearBusquedaPublica: (b: BusquedaPublica) => pedir<{ id: number }>("POST", "admin/busquedas", b),
+  cambiarBusqueda: (id: number, c: { publica?: boolean; titulo?: string; detalle?: string; directo?: boolean }) => pedir<{ ok: boolean }>("PATCH", `admin/busquedas/${id}`, c),
   borrarBusqueda: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/busquedas/${id}`),
 };

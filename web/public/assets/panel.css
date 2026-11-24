@@ -407,3 +407,8 @@ input[type=password] { width: 100%; min-height: 52px; padding: 12px 14px; border
 .pn-redes-ayuda { margin: 0; font-size: .88rem; }
 .pn-redes .pn-toast { position: static; transform: none; margin: 0; justify-self: center; white-space: normal; text-align: center; font-size: 14px; }
 @media (max-width: 520px) { .pn-redes-botones { grid-template-columns: 1fr; } .pn-redes-in { padding: 16px; } }
+
+/* Búsquedas: agregar una para mostrar en el sitio */
+.pn-busq-nueva { display: grid; gap: 10px; margin: 14px 0; }
+.pn-busq-nueva label { display: grid; gap: 4px; font-weight: 600; }
+.pn-busq-nueva .pn-check { display: flex; gap: 8px; align-items: center; font-weight: 400; }

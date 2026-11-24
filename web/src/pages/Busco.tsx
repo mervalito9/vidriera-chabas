@@ -6,6 +6,7 @@ import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
 import { ErrorApi, SinServidor, guardarBusqueda } from "../api.ts";
 import { FaltaWhatsApp } from "../components/Pueblos.tsx";
 import { useTitulo } from "../hooks.ts";
+import { SE_BUSCAN_ACTIVO } from "../seBuscan.ts";
 import { ir } from "../router.ts";
 
 let sugerida: Partial<NuevaBusqueda> = {};
@@ -103,6 +104,12 @@ export function Busco() {
               aria-invalid={!!err("telefono") || undefined} onChange={(e) => set("telefono", e.target.value.replace(/[^\d\s-]/g, ""))} />
             {err("telefono") && <p className="err">{err("telefono")}</p>}
           </div>
+          {SE_BUSCAN_ACTIVO && (
+            <label className="check-busco">
+              <input type="checkbox" checked={!!b.permiso} onChange={(e) => setB({ ...b, permiso: e.target.checked })} />
+              <span>Se puede mostrar mi búsqueda en el sitio (sin mi nombre ni mi WhatsApp), así los dueños saben qué se busca.</span>
+            </label>
+          )}
           {error && <p className="form-err" role="alert">{error}</p>}
           <button type="submit" className="btn btn-main btn-xl" disabled={estado === "enviando"}>{estado === "enviando" ? "Enviando…" : "Avisame cuando aparezca"}</button>
           <p className="small">Usamos tu número solo para avisarte. Si ya no buscás, escribinos y te sacamos de la lista.</p>

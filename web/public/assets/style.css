@@ -816,3 +816,16 @@ html { -webkit-tap-highlight-color: transparent; }
 .publica small { font-size: .85rem; color: var(--tinta-2); }
 .cliente-elegir { margin-bottom: 14px; }
 
+
+/* ---------- Se buscan (en prueba) ---------- */
+.se-buscan { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.sb-item { display: flex; align-items: center; gap: 12px; background: var(--papel); border-radius: 20px; padding: 14px 16px; box-shadow: var(--sombra); }
+.sb-ico { flex: none; width: 46px; height: 46px; border-radius: 50%; background: var(--terra-claro); display: grid; place-items: center; }
+.sb-ico svg { width: 26px; height: 26px; }
+.sb-txt { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; }
+.sb-txt b { font-size: 1.1rem; line-height: 1.25; }
+.sb-txt span { color: var(--tinta-2); font-size: .95rem; }
+.sb-tengo { flex: none; background: var(--terra); color: #fff; font-weight: 700; font-size: .95rem; text-decoration: none; padding: 10px 14px; border-radius: 999px; min-height: 44px; display: inline-flex; align-items: center; }
+.sb-pie { margin: 14px 0 0; color: var(--tinta-2); }
+.check-busco { display: flex; gap: 10px; align-items: flex-start; font-size: .95rem; color: var(--tinta-2); }
+.check-busco input { margin-top: 4px; flex: none; }

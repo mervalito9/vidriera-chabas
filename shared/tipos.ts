@@ -106,11 +106,37 @@ export interface NuevaBusqueda {
   presupuesto: string;
   nombre: string;
   telefono: string;
+  /** Aceptó que su búsqueda se muestre en «Se buscan», sin nombre ni teléfono. */
+  permiso?: boolean;
 }
 
 export interface Busqueda extends NuevaBusqueda {
   id: number;
   creadoEn: string;
+  permiso: boolean;
+  /** Lo que se muestra en «Se buscan» (vacío = no tiene título propio). */
+  titulo: string;
+  detalle: string;
+  directo: boolean;
+  /** Desde cuándo se muestra en el sitio; null = no se muestra. */
+  publicaDesde: string | null;
+}
+
+/** Una búsqueda tal como la ve el público: sin nombre ni teléfono. Las iguales se juntan. */
+export interface SeBusca {
+  rubro: string;
+  titulo: string;
+  detalle: string;
+  directo: boolean;
+  cuantas: number;
+}
+
+/** Lo que Felipe carga o cambia desde el panel para mostrar una búsqueda. */
+export interface BusquedaPublica {
+  rubro: RubroId;
+  titulo: string;
+  detalle: string;
+  directo: boolean;
 }
 
 export interface Filtros {

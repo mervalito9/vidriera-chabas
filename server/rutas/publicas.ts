@@ -75,6 +75,11 @@ export const rutasPublicas: Rutas = async ({ req, res, url, metodo, ip, recurso,
     }
   }
 
+  if (recurso === "se-buscan" && metodo === "GET" && !a1) {
+    json(res, 200, datos.listarSeBuscan());
+    return true;
+  }
+
   if (recurso === "busquedas" && metodo === "POST" && !a1) {
     limiteBusqueda(ip);
     const r = validarBusqueda(await leerJson(req, MAX_JSON));

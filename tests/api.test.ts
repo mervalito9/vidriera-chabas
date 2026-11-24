@@ -326,6 +326,47 @@ test("quién publica: el dueño se ve por su primer nombre y un negocio por su n
   assert.equal((await (await fetch(`${URL_BASE}/api/avisos/${dueno.id}`)).json()).publica, "María");
 });
 
+test("se buscan: solo se ve lo que Felipe muestra, sin datos de contacto, juntando las iguales y respetando el permiso", async () => {
+  const cookie = await sesionAdmin();
+  const H2 = { ...H, cookie };
+  const lista = async () => (await (await fetch(`${URL_BASE}/api/se-buscan`)).json()) as { titulo: string; detalle: string; directo: boolean; cuantas: number }[];
+  assert.deepEqual(await lista(), []); // nada se muestra solo
+
+  // Una búsqueda de un vecino SIN permiso: no se puede mostrar
+  const sin = await (await fetch(`${URL_BASE}/api/busquedas`, { method: "POST", headers: H, body: JSON.stringify({ rubro: "Terreno", que: "Terreno cerca del centro", nombre: "Ana", telefono: "3464111222" }) })).json();
+  const mostrar = (id: number, publica: boolean) => fetch(`${URL_BASE}/api/admin/busquedas/${id}`, { method: "PATCH", headers: H2, body: JSON.stringify({ publica }) });
+  assert.equal((await mostrar(sin.id, true)).status, 409);
+  assert.deepEqual(await lista(), []);
+
+  // Con permiso sí; y nunca salen el nombre ni el teléfono
+  const con = await (await fetch(`${URL_BASE}/api/busquedas`, { method: "POST", headers: H, body: JSON.stringify({ rubro: "Galpón o local", que: "Local en esquina", nombre: "Beto", telefono: "3464333444", permiso: true }) })).json();
+  assert.equal((await mostrar(con.id, true)).status, 200);
+  let v = await lista();
+  assert.equal(v.length, 1);
+  assert.equal(v[0]?.titulo, "Local en esquina");
+  assert.ok(!JSON.stringify(v).match(/Beto|3464333444|telefono|nombre/));
+
+  // Felipe carga dos iguales a mano: se juntan en una sola con "2 personas"
+  const nueva = { rubro: "inmuebles", titulo: "Alquiler de casa o dpto", detalle: "1 o 2 habitaciones", directo: true };
+  for (let i = 0; i < 2; i++) assert.equal((await fetch(`${URL_BASE}/api/admin/busquedas`, { method: "POST", headers: H2, body: JSON.stringify(nueva) })).status, 201);
+  v = await lista();
+  assert.equal(v.length, 2);
+  const casa = v.find((x) => x.titulo === "Alquiler de casa o dpto");
+  assert.equal(casa?.cuantas, 2);
+  assert.equal(casa?.directo, true);
+
+  // Datos mal puestos y sin sesión
+  assert.equal((await fetch(`${URL_BASE}/api/admin/busquedas`, { method: "POST", headers: H2, body: JSON.stringify({ rubro: "inmuebles", titulo: "x" }) })).status, 422);
+  assert.equal((await fetch(`${URL_BASE}/api/admin/busquedas`, { method: "POST", headers: H, body: JSON.stringify(nueva) })).status, 401);
+
+  // Ocultar la saca; el panel la sigue viendo
+  assert.equal((await mostrar(con.id, false)).status, 200);
+  assert.equal((await lista()).length, 1);
+  const panel = (await (await fetch(`${URL_BASE}/api/admin/busquedas`, { headers: H2 })).json()) as { id: number; permiso: boolean; publicaDesde: string | null }[];
+  assert.equal(panel.find((b) => b.id === con.id)?.publicaDesde, null);
+  assert.equal(panel.find((b) => b.id === sin.id)?.permiso, false);
+});
+
 /** Una sola entrada al panel para las pruebas de abajo (el servidor limita los intentos de login). */
 let sesion: Promise<string> | null = null;
 function sesionAdmin(): Promise<string> {

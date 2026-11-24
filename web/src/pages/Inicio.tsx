@@ -4,6 +4,8 @@ import { plural, slug } from "../../../shared/texto.ts";
 import { listarAvisos } from "../api.ts";
 import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
 import { Preguntas } from "../components/Preguntas.tsx";
+import { SeBuscanPortada } from "../components/SeBuscan.tsx";
+import { SE_BUSCAN_ACTIVO } from "../seBuscan.ts";
 import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
 import { buscarDesdePortada } from "./Listado.tsx";
@@ -140,6 +142,8 @@ export function Inicio() {
           <a className="btn" href={ir("busco")}>Avisame cuando aparezca</a>
         </aside>
       </section>
+
+      {SE_BUSCAN_ACTIVO && <SeBuscanPortada />}
 
       <section className="wrap" aria-labelledby="vender" ref={rVender}>
         <div className="vender">

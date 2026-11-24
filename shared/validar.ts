@@ -2,7 +2,7 @@
 // y el backend la usa SIEMPRE antes de guardar (nunca se confía en el navegador).
 import { limpiarCondiciones } from "./alquiler.ts";
 import { RUBROS, LIMITES, PUEBLOS, OTRO_PUEBLO } from "./config.ts";
-import type { ErrorCampo, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
+import type { BusquedaPublica, ErrorCampo, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
 import { recortar, slug, soloDigitos } from "./texto.ts";
 import { telefonoArgentino } from "./whatsapp.ts";
 
@@ -81,10 +81,22 @@ export function validarBusqueda(entrada: unknown): Resultado<NuevaBusqueda> {
     presupuesto: recortar(e.presupuesto, 40),
     nombre: recortar(e.nombre, LIMITES.nombre),
     telefono: telefonoArgentino(typeof e.telefono === "string" ? e.telefono : ""),
+    permiso: e.permiso === true,
   };
   if (!valor.rubro) errores.push({ campo: "rubro", msg: "Elegí qué buscás." });
   if (valor.que.length < 3) errores.push({ campo: "que", msg: "Contanos en pocas palabras qué buscás." });
   if (!valor.nombre) errores.push({ campo: "nombre", msg: "Escribí tu nombre." });
   if (!valor.telefono) errores.push({ campo: "telefono", msg: MSG_TELEFONO });
+  return { ok: errores.length === 0, errores, valor };
+}
+
+/** Una búsqueda para mostrar en el sitio (la carga Felipe desde el panel): sin datos de contacto. */
+export function validarBusquedaPublica(entrada: unknown): Resultado<BusquedaPublica> {
+  const e = esObjeto(entrada) ? entrada : {};
+  const errores: ErrorCampo[] = [];
+  const rubro = (typeof e.rubro === "string" && e.rubro in RUBROS ? e.rubro : "") as RubroId | "";
+  const valor: BusquedaPublica = { rubro: rubro || "inmuebles", titulo: recortar(e.titulo, 60), detalle: recortar(e.detalle, 80), directo: e.directo === true };
+  if (!rubro) errores.push({ campo: "rubro", msg: "Elegí el rubro." });
+  if (valor.titulo.length < 3) errores.push({ campo: "titulo", msg: "Escribí qué se busca, en pocas palabras." });
   return { ok: errores.length === 0, errores, valor };
 }

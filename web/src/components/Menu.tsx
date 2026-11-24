@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import { WA_NUMERO } from "../../../shared/config.ts";
 import { linkWA } from "../../../shared/whatsapp.ts";
+import { SE_BUSCAN_ACTIVO } from "../seBuscan.ts";
 import { ir } from "../router.ts";
 
 const SECCIONES: [string, [string, string][]][] = [
   ["Buscar", [["inmuebles--alquiler", "Alquileres"], ["inmuebles--venta", "Casas y terrenos en venta"], ["vehiculos", "Autos, camionetas y motos"], ["buscar", "Todos los avisos"]]],
-  ["Vidriera", [["busco", "Avisame cuando aparezca"], ["como-funciona", "Cómo funciona"], ["preguntas", "Preguntas frecuentes"]]],
+  ["Vidriera", [...(SE_BUSCAN_ACTIVO ? [["se-buscan", "Se buscan"] as [string, string]] : []), ["busco", "Avisame cuando aparezca"], ["como-funciona", "Cómo funciona"], ["preguntas", "Preguntas frecuentes"]]],
 ];
 
 /** Botón ☰ y menú lateral con todas las secciones (el clásico de cualquier sitio en el celular). */
