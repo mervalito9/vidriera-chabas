@@ -4,7 +4,7 @@ import type { Rubro, RubroId } from "./tipos.ts";
  * WhatsApp que recibe los avisos para publicar y los "Avisame cuando aparezca". Solo números: 549 + código de área sin 0 + número sin 15.
  * Si queda vacío (""), el sitio muestra "Falta configurar el WhatsApp" en vez de un link roto.
  */
-export const WA_NUMERO = "5493464593621";
+export const WA_NUMERO = "5493464626380";
 
 export const DIAS_VIGENCIA = 90;
 export const POR_PAGINA = 12;
