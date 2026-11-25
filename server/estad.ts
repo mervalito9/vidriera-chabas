@@ -61,6 +61,9 @@ function visitante(req: IncomingMessage, fecha: string): string {
   return createHash("sha256").update(`${sal(fecha)}|${ipDe(req)}|${req.headers["user-agent"] ?? ""}`).digest("hex").slice(0, 20);
 }
 
+const entroPorPortada = (fecha: string, v: string): boolean =>
+  db.prepare("SELECT 1 FROM estad_vis WHERE fecha = ? AND marca = ?").get(fecha, `${v}:ep`) !== undefined;
+
 /** true si es la primera vez hoy que pasa `marca` (visitante, visitante+aviso, etc.). */
 function primeraVez(fecha: string, marca: string): boolean {
   return db.prepare("INSERT OR IGNORE INTO estad_vis (fecha, marca) VALUES (?, ?)").run(fecha, marca).changes === 1;
@@ -91,9 +94,12 @@ const infoAviso = (id: number): InfoAviso | null =>
   (db.prepare("SELECT id, rubro, pueblo FROM avisos WHERE id = ? AND ejemplo = 0").get(id) as InfoAviso | undefined) ?? null;
 
 /** Una página vista. Devuelve si contó una visita nueva a un aviso (para el contador del aviso). */
-export function registrarPagina(req: IncomingMessage, d: { avisoId: number | null; de: string; ref: string; propio: string }): void {
+export function registrarPagina(req: IncomingMessage, d: { pagina?: string; entrada?: boolean; avisoId: number | null; de: string; ref: string; propio: string }): void {
   const fecha = hoy();
   const v = visitante(req, fecha);
+  // ¿Pasan de la portada? Cuenta a quien entró por la portada y, de esos, a quien después abrió otra pantalla (una vez por persona y día).
+  if (d.pagina === "inicio" && d.entrada && primeraVez(fecha, `${v}:ep`)) sumar(fecha, "portada:entran");
+  if (d.pagina && d.pagina !== "inicio" && !d.entrada && entroPorPortada(fecha, v) && primeraVez(fecha, `${v}:sig`)) sumar(fecha, "portada:siguen");
   if (primeraVez(fecha, v)) sumar(fecha, "personas", `de:${origenDe(d.de, d.ref, d.propio)}`);
   sumar(fecha, "paginas");
   if (d.avisoId) {
@@ -185,6 +191,7 @@ export function resumen(dias: number): ResumenEstadisticas {
     rubros: cruzar("r:"),
     pueblos: cruzar("p:"),
     avisosEstado: estados,
+    portada: { entran: por(actual, "portada:entran"), siguen: por(actual, "portada:siguen") },
     desde: primera.f,
   };
 }

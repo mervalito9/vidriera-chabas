@@ -45,6 +45,17 @@ export function Estadisticas({ pendientes, irPendientes }: { pendientes: number;
         </div>
       </div>
 
+      {d.portada.entran > 0 && (
+        <section className="estad-bloque estad-portada">
+          <h3>¿Pasan de la portada?</h3>
+          <p>
+            De <b>{fmtNum(d.portada.entran)}</b> {d.portada.entran === 1 ? "persona que entró" : "personas que entraron"} por la portada,{" "}
+            <b>{fmtNum(d.portada.siguen)}</b> ({Math.round((d.portada.siguen / d.portada.entran) * 100)}%) abrieron después un aviso u otra pantalla.
+          </p>
+          <p className="small">El resto miró la portada y se fue. Se mide desde el 25/11. Es más confiable que «En vivo», que muestra solo dónde está cada uno en este momento.</p>
+        </section>
+      )}
+
       {sinDatos ? (
         <p className="estad-vacio">Todavía no hay visitas medidas en este período. Se empiezan a contar desde ahora: volvé en unos días.</p>
       ) : (

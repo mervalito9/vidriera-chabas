@@ -829,3 +829,10 @@ html { -webkit-tap-highlight-color: transparent; }
 .sb-pie { margin: 14px 0 0; color: var(--tinta-2); }
 .check-busco { display: flex; gap: 10px; align-items: flex-start; font-size: .95rem; color: var(--tinta-2); }
 .check-busco input { margin-top: 4px; flex: none; }
+
+/* ---------- Portada nueva (en prueba, ?portada=1) ---------- */
+.cat > span:first-child { color: var(--tinta); display: flex; flex-direction: column; transform: none; }
+.cat .cuenta { color: var(--tinta-2); font-weight: 500; font-size: .85rem; }
+.chip .cuenta { color: var(--terra-txt); font-weight: 700; }
+.vender.corto .historia li > span { display: none; }
+.vender.corto .historia li { padding-top: 12px; padding-bottom: 12px; }

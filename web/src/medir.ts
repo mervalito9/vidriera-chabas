@@ -36,7 +36,7 @@ export function medirPagina(nombre: string, param: string): void {
   paginaActual = param ? `${nombre}--${param}` : nombre;
   latir();
   const aviso = nombre === "aviso" && /^\d+$/.test(param) ? Number(param) : null;
-  mandar({ t: "pv", aviso, de: primera ? de : "", ref: primera ? document.referrer : "" });
+  mandar({ t: "pv", aviso, p: nombre, ent: primera, de: primera ? de : "", ref: primera ? document.referrer : "" });
   if (primera && de) {
     // Saca el ?de=wa de la dirección para que, si la comparten de nuevo, no se cuente mal.
     try { history.replaceState(null, "", window.location.pathname + window.location.hash); } catch { /* nada */ }

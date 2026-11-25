@@ -183,6 +183,8 @@ export interface ResumenEstadisticas {
   rubros: { nombre: string; vistas: number; contactos: number }[];
   pueblos: { nombre: string; vistas: number; contactos: number }[];
   avisosEstado: Record<string, number>;
+  /** Gente que entró por la portada y, de esa, cuántos abrieron después otra pantalla (se mide desde el 25/11/2026). */
+  portada: { entran: number; siguen: number };
   desde: string | null;
 }
 

@@ -44,6 +44,7 @@ export function Inicio({ avisos, busquedas, accion }: { avisos: AvisoAdmin[] | n
           {act && act.enVivo.paginas.length > 0 ? (
             <ul>{act.enVivo.paginas.slice(0, 4).map((p) => <li key={p.nombre}><span>{p.nombre.replace(/^Aviso: /, "")}</span><b>{p.n}</b></li>)}</ul>
           ) : <p className="pn-vivo-nadie">Nadie en este momento. Vos con el panel no contás.</p>}
+          {act && act.enVivo.total > 0 && <p className="pn-vivo-nota">Es dónde está cada uno ahora. Quien tocó WhatsApp ya no figura; para saber si pasan de la portada, mirá Estadísticas.</p>}
         </section>
 
         <section className="pn-caja">

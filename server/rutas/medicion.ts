@@ -35,7 +35,7 @@ export const rutasMedicion: Rutas = async (p) => {
           const avisoId = Number(b.aviso);
           let propio = "";
           try { propio = new URL(SITE_URL || `http://${req.headers.host ?? ""}`).hostname.replace(/^www\./, ""); } catch { /* sin host */ }
-          estad.registrarPagina(req, { avisoId: Number.isInteger(avisoId) && avisoId > 0 ? avisoId : null, de: texto(b.de, 10), ref: texto(b.ref, 300), propio });
+          estad.registrarPagina(req, { pagina: texto(b.p, 20), entrada: b.ent === true, avisoId: Number.isInteger(avisoId) && avisoId > 0 ? avisoId : null, de: texto(b.de, 10), ref: texto(b.ref, 300), propio });
         } else if (b.t === "busca") {
           const n = Number(b.n);
           estad.registrarBusqueda(req, texto(b.q, 60), Number.isFinite(n) ? n : -1);

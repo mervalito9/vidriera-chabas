@@ -367,6 +367,26 @@ test("se buscan: solo se ve lo que Felipe muestra, sin datos de contacto, juntan
   assert.equal(panel.find((b) => b.id === sin.id)?.permiso, false);
 });
 
+test("estadísticas: cuántos pasan de la portada (una vez por persona y día)", async () => {
+  const cookie = await sesionAdmin();
+  const m = (ua: string, b: unknown) => fetch(`${URL_BASE}/api/m`, { method: "POST", headers: { ...H, "user-agent": ua }, body: JSON.stringify({ t: "pv", aviso: null, de: "", ref: "", ...(b as object) }) });
+  const ver = async () => (await (await fetch(`${URL_BASE}/api/admin/estadisticas?dias=7`, { headers: { cookie } })).json()).portada as { entran: number; siguen: number };
+  const antes = await ver();
+  const uaA = "Mozilla/5.0 (Linux; Android 13) Portada-A", uaB = "Mozilla/5.0 (iPhone) Portada-B", uaC = "Mozilla/5.0 (iPhone) Portada-C";
+  // A entra por la portada y abre un listado y un aviso: cuenta una sola vez como "sigue"
+  await m(uaA, { p: "inicio", ent: true });
+  await m(uaA, { p: "inmuebles", ent: false });
+  await m(uaA, { p: "aviso", ent: false });
+  // B entra por la portada y se va
+  await m(uaB, { p: "inicio", ent: true });
+  // C entra directo a un aviso (link de WhatsApp): no cuenta para la portada
+  await m(uaC, { p: "aviso", ent: true });
+  await m(uaC, { p: "inicio", ent: false });
+  const despues = await ver();
+  assert.equal(despues.entran - antes.entran, 2);
+  assert.equal(despues.siguen - antes.siguen, 1);
+});
+
 /** Una sola entrada al panel para las pruebas de abajo (el servidor limita los intentos de login). */
 let sesion: Promise<string> | null = null;
 function sesionAdmin(): Promise<string> {

@@ -5,6 +5,7 @@ import { listarAvisos } from "../api.ts";
 import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
 import { Preguntas } from "../components/Preguntas.tsx";
 import { SeBuscanPortada } from "../components/SeBuscan.tsx";
+import { PORTADA_NUEVA } from "../pruebas.ts";
 import { SE_BUSCAN_ACTIVO } from "../seBuscan.ts";
 import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
@@ -63,6 +64,15 @@ export function Inicio() {
           ? bajaron.slice(0, 8)
           : reales.filter((a) => a.rubro === pestana).slice(0, 8)
     : [];
+  // Portada nueva: cada categoría y pueblo con su cantidad; los que no tienen avisos no se muestran (no llevan a un listado vacío).
+  const contar = PORTADA_NUEVA && !soloEjemplos;
+  const cats = EXPLORAR.map(([rubro, atajo, nombre]) => ({
+    rubro, atajo, nombre,
+    n: reales.filter((a) => a.rubro === rubro && (atajo === "alquiler" ? a.operacion === "alquiler" : slug(a.tipo) === atajo)).length,
+  })).filter((c) => !contar || c.n > 0);
+  const pueblos = [...PUEBLOS.map((p) => ({ nombre: p, ruta: slug(p), n: reales.filter((a) => a.pueblo === p).length })),
+    { nombre: "Otro", ruta: "otro", n: reales.filter((a) => !(PUEBLOS as readonly string[]).includes(a.pueblo)).length }]
+    .filter((p) => !contar || p.n > 0);
   const rExplorar = useAparecer<HTMLElement>();
   const rVender = useAparecer<HTMLElement>();
   const rEjemplos = useAparecer<HTMLElement>();
@@ -122,16 +132,22 @@ export function Inicio() {
 
       {!soloEjemplos && avisosBloque}
 
+      {PORTADA_NUEVA && <SeBuscanPortada />}
+
       <section className="wrap explorar" aria-labelledby="explorar" ref={rExplorar}>
         <div className="sec-h"><h2 id="explorar">Buscá por categoría</h2><a href={ir("buscar")}>Ver todo</a></div>
-        <nav className="por-pueblo" aria-label="Avisos por pueblo">
-          <span>Por pueblo:</span>
-          {PUEBLOS.map((p) => <a key={p} className="chip" href={ir("pueblo", slug(p))}>{p}</a>)}
-          <a className="chip" href={ir("pueblo", "otro")}>Otro</a>
-        </nav>
+        {pueblos.length > 1 && (
+          <nav className="por-pueblo" aria-label="Avisos por pueblo">
+            <span>Por pueblo:</span>
+            {pueblos.map((p) => <a key={p.ruta} className="chip" href={ir("pueblo", p.ruta)}>{p.nombre}{contar && <small className="cuenta"> {p.n}</small>}</a>)}
+          </nav>
+        )}
         <div className="cats">
-          {EXPLORAR.map(([rubro, atajo, nombre]) => (
-            <a key={nombre} className="cat" href={ir(rubro, atajo)}>{nombre}<span aria-hidden="true">→</span></a>
+          {cats.map((c) => (
+            <a key={c.nombre} className="cat" href={ir(c.rubro, c.atajo)}>
+              <span>{c.nombre}{contar && <small className="cuenta">{c.n === 1 ? "1 aviso" : `${c.n} avisos`}</small>}</span>
+              <span aria-hidden="true">→</span>
+            </a>
           ))}
         </div>
       </section>
@@ -143,10 +159,10 @@ export function Inicio() {
         </aside>
       </section>
 
-      {SE_BUSCAN_ACTIVO && <SeBuscanPortada />}
+      {SE_BUSCAN_ACTIVO && !PORTADA_NUEVA && <SeBuscanPortada />}
 
       <section className="wrap" aria-labelledby="vender" ref={rVender}>
-        <div className="vender">
+        <div className={PORTADA_NUEVA ? "vender corto" : "vender"}>
           <div className="vender-txt">
             <p className="kicker">Recién arrancamos · Sé de los primeros</p>
             <h2 id="vender">¿Tenés algo para vender o alquilar? <em>Así funciona.</em></h2>
