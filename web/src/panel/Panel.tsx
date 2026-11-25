@@ -1,6 +1,7 @@
 // Armazón del panel: menú al costado en la compu, barra abajo en el celular.
+import { RedesDialogo } from "./Redes.tsx";
 import { clientesDe } from "../components/form/Cliente.tsx";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AvisoAdmin, Busqueda } from "../../../shared/tipos.ts";
 import { ErrorApi, admin } from "../api.ts";
 import { Cargando } from "../components/Tarjeta.tsx";
@@ -50,6 +51,20 @@ export function Panel({ param, onSalir }: { param: string; onSalir: () => void }
     setError("");
     try { await fn(); await recargar(); } catch (e) { fallo(e); }
   }, [recargar, fallo]);
+
+  // Apenas Felipe publica un aviso (aprobar, «Guardar y publicar» o cargar uno nuevo), se abren la historia y el posteo
+  // listos para Instagram y Facebook. Si publica varios juntos (.zip), no: se hacen desde el menú de cada uno.
+  const antes = useRef<Map<number, string> | null>(null);
+  const [paraRedes, setParaRedes] = useState<number | null>(null);
+  useEffect(() => {
+    if (!avisos) return;
+    const previo = antes.current;
+    antes.current = new Map(avisos.map((a) => [a.id, a.estado]));
+    if (!previo) return;
+    const nuevos = avisos.filter((a) => a.estado === "publicado" && previo.get(a.id) !== "publicado" && !a.ejemplo);
+    if (nuevos.length === 1 && nuevos[0]) setParaRedes(nuevos[0].id);
+  }, [avisos]);
+  const avisoRedes = paraRedes !== null ? avisos?.find((a) => a.id === paraRedes) : undefined;
 
   // Clientes guardados: salen de los avisos ya cargados (se eligen de una lista al cargar uno nuevo).
   const clientes = useMemo(() => clientesDe(avisos ?? []), [avisos]);
@@ -119,6 +134,7 @@ export function Panel({ param, onSalir }: { param: string; onSalir: () => void }
         <a href={ir("admin", "estad")} aria-current={seccion === "estad" ? "page" : undefined}><Ico d={I.estad} size={22} />Números</a>
         <a href={ir("admin", "mas")} aria-current={["mas", "busquedas", "actividad"].includes(seccion) ? "page" : undefined}><Ico d={I.puntos} size={22} />Más{nuevas > 0 && <span className="pn-num">{nuevas}</span>}</a>
       </nav>
+      {avisoRedes && <RedesDialogo key={avisoRedes.id} a={avisoRedes} recienPublicado onCerrar={() => setParaRedes(null)} />}
     </div>
   );
 }
