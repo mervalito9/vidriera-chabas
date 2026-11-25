@@ -12,11 +12,10 @@ export function enPrueba(clave: string): boolean {
   }
 }
 
-/** Boceto «feed»: avisos de a uno, foto grande, como Instagram (de donde llega la gente). Incluye la portada nueva. */
-export const FEED = enPrueba("feed");
-if (FEED) document.documentElement.classList.add("portada-feed");
-
-/** Portada nueva: categorías con cantidad y sin vacías, «Se buscan» arriba, bloque de publicar más corto. */
-export const PORTADA_NUEVA = enPrueba("portada") || FEED;
-// Los estilos de la prueba se aplican solo con esta clase (así el resto del público no ve cambios).
-if (PORTADA_NUEVA) document.documentElement.classList.add("portada-nueva");
+// Aprobadas por Felipe el 25/11/2026 y prendidas para todos:
+/** Portada en formato feed: avisos de a uno, foto grande, precio sobre la foto. */
+export const FEED = true;
+/** Versión nueva: sin cuadros arriba, categorías con cantidad, «Nuevo», «N fotos», cómo publicar, «Se buscan». */
+export const PORTADA_NUEVA = true;
+// Los estilos de la versión nueva cuelgan de estas clases.
+document.documentElement.classList.add("portada-nueva", "portada-feed");
