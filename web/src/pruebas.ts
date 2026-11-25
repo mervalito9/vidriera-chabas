@@ -14,3 +14,5 @@ export function enPrueba(clave: string): boolean {
 
 /** Portada nueva: categorías con cantidad y sin vacías, «Se buscan» arriba, bloque de publicar más corto. */
 export const PORTADA_NUEVA = enPrueba("portada");
+// Los estilos de la prueba se aplican solo con esta clase (así el resto del público no ve cambios).
+if (PORTADA_NUEVA) document.documentElement.classList.add("portada-nueva");

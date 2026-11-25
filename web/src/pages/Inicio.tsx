@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { PUEBLOS, RUBROS } from "../../../shared/config.ts";
+import { PUEBLOS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
+import { linkWA } from "../../../shared/whatsapp.ts";
 import { plural, slug } from "../../../shared/texto.ts";
 import { listarAvisos } from "../api.ts";
 import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
@@ -86,7 +87,7 @@ export function Inicio() {
         <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : "Avisos"}</h2>
         {datos && !soloEjemplos && <a href={ir("buscar")}>Ver todos ({datos.total})</a>}
       </div>
-      {!soloEjemplos && PESTANAS.filter(([, , n]) => n > 0).length > 2 && (
+      {!soloEjemplos && !(PORTADA_NUEVA && reales.length < 12) && PESTANAS.filter(([, , n]) => n > 0).length > 2 && (
         <div className="pestanas-home" role="tablist" aria-label="Qué avisos mostrar">
           {PESTANAS.filter(([, , n]) => n > 0).map(([id, nombre]) => (
             <button key={id} type="button" role="tab" aria-selected={pestana === id} className={pestana === id ? "activa" : ""} onClick={() => setPestana(id)}>{nombre}</button>
@@ -117,6 +118,7 @@ export function Inicio() {
               <button type="submit" className="btn btn-dark"><IconoBuscar /><span>Buscar</span></button>
             </form>
             <a className="btn btn-main publicar-home" href={ir("publicar")}><IconoMas />Publicar gratis</a>
+            {PORTADA_NUEVA && <a className="dudas-wa" target="_blank" rel="noopener noreferrer" href={linkWA(WA_NUMERO, "Hola Felipe! Te escribo por Vidriera Chabás.")}>¿Dudas? Escribime por WhatsApp</a>}
             {!sinCuadros && <div className="rubros">
               {PRINCIPALES.map((r) => (
                 <a key={r} className="rubro" href={ir(r)}>
@@ -133,6 +135,15 @@ export function Inicio() {
       </section>
 
       {!soloEjemplos && avisosBloque}
+
+      {PORTADA_NUEVA && (
+        <section className="wrap" aria-label="Avisame cuando aparezca">
+          <aside className="busco busco-corto">
+            <div><h2>¿Buscás algo que no está?</h2><p>Dejanos tu WhatsApp y te avisamos apenas aparezca. Muchos buscan alquiler.</p></div>
+            <a className="btn" href={ir("busco")}>Avisame cuando aparezca</a>
+          </aside>
+        </section>
+      )}
 
       {PORTADA_NUEVA && <SeBuscanPortada />}
 
@@ -154,12 +165,14 @@ export function Inicio() {
         </div>
       </section>
 
-      <section className="wrap" aria-label="Avisame cuando aparezca" ref={rBusco}>
+{!PORTADA_NUEVA && (
+        <section className="wrap" aria-label="Avisame cuando aparezca" ref={rBusco}>
         <aside className="busco">
           <div><h2>¿No encontrás lo que buscás?</h2><p>Contanos qué buscás y te avisamos por WhatsApp cuando aparezca.</p></div>
           <a className="btn" href={ir("busco")}>Avisame cuando aparezca</a>
         </aside>
       </section>
+      )}
 
       {SE_BUSCAN_ACTIVO && !PORTADA_NUEVA && <SeBuscanPortada />}
 

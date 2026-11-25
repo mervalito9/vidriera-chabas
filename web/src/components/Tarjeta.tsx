@@ -28,7 +28,7 @@ export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: bo
         </div>
       </div>
       <div className="card-body">
-        <p className="price">
+        <p className={a.precio === null || a.precio <= 0 ? "price consultar" : "price"}>
           {precioTexto(a)}
           {porMes(a) && <span> por mes</span>}
         </p>
