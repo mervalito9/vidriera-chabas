@@ -6,7 +6,7 @@ import { listarAvisos } from "../api.ts";
 import { IconoBuscar, IconoMas, IconoRubro } from "../components/Iconos.tsx";
 import { Preguntas } from "../components/Preguntas.tsx";
 import { SeBuscanPortada } from "../components/SeBuscan.tsx";
-import { PORTADA_NUEVA } from "../pruebas.ts";
+import { FEED, PORTADA_NUEVA } from "../pruebas.ts";
 import { SE_BUSCAN_ACTIVO } from "../seBuscan.ts";
 import { Tarjeta, Vacio } from "../components/Tarjeta.tsx";
 import { useAparecer, useCarga, useTitulo } from "../hooks.ts";
@@ -84,7 +84,7 @@ export function Inicio() {
   const avisosBloque = (
     <section className="wrap ejemplos" aria-labelledby="ultTitulo" ref={rEjemplos}>
       <div className="sec-h">
-        <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : "Avisos"}</h2>
+        <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : FEED ? "En la vidriera" : "Avisos"}</h2>
         {datos && !soloEjemplos && <a href={ir("buscar")}>Ver todos ({datos.total})</a>}
       </div>
       {!soloEjemplos && !(PORTADA_NUEVA && reales.length < 12) && PESTANAS.filter(([, , n]) => n > 0).length > 2 && (
@@ -100,7 +100,7 @@ export function Inicio() {
       {lista.estado === "listo" && muestra.length === 0 ? (
         <Vacio texto="Todavía no hay avisos." />
       ) : (
-        <div className={`grid mini ${soloEjemplos ? "ej" : "reales"}`}>{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
+        <div className={FEED && !soloEjemplos ? "grid feed" : `grid mini ${soloEjemplos ? "ej" : "reales"}`}>{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
       )}
     </section>
   );
