@@ -66,6 +66,8 @@ export function Inicio() {
     : [];
   // Portada nueva: cada categoría y pueblo con su cantidad; los que no tienen avisos no se muestran (no llevan a un listado vacío).
   const contar = PORTADA_NUEVA && !soloEjemplos;
+  // Portada nueva con avisos reales: sin los cuadros Inmuebles/Vehículos (repiten las pestañas de «Avisos»), así las fotos suben a la primera pantalla.
+  const sinCuadros = contar;
   const cats = EXPLORAR.map(([rubro, atajo, nombre]) => ({
     rubro, atajo, nombre,
     n: reales.filter((a) => a.rubro === rubro && (atajo === "alquiler" ? a.operacion === "alquiler" : slug(a.tipo) === atajo)).length,
@@ -104,7 +106,7 @@ export function Inicio() {
 
   return (
     <>
-      <section className="hero">
+      <section className={sinCuadros ? "hero corto" : "hero"}>
         <div className="wrap hero-solo">
           <div className="hero-txt">
             <h1>Casas, autos y más de Chabás y la zona.</h1>
@@ -115,7 +117,7 @@ export function Inicio() {
               <button type="submit" className="btn btn-dark"><IconoBuscar /><span>Buscar</span></button>
             </form>
             <a className="btn btn-main publicar-home" href={ir("publicar")}><IconoMas />Publicar gratis</a>
-            <div className="rubros">
+            {!sinCuadros && <div className="rubros">
               {PRINCIPALES.map((r) => (
                 <a key={r} className="rubro" href={ir(r)}>
                   <span className="circ"><IconoRubro rubro={r} /></span>
@@ -125,7 +127,7 @@ export function Inicio() {
                   </span>
                 </a>
               ))}
-            </div>
+            </div>}
           </div>
         </div>
       </section>

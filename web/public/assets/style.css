@@ -836,3 +836,7 @@ html { -webkit-tap-highlight-color: transparent; }
 .chip .cuenta { color: var(--terra-txt); font-weight: 700; }
 .vender.corto .historia li > span { display: none; }
 .vender.corto .historia li { padding-top: 12px; padding-bottom: 12px; }
+.hero.corto { padding-bottom: 4px; }
+.hero.corto h1 { font-size: clamp(1.75rem, 4.2vw + .9rem, 3.2rem); }
+.hero.corto .sub { font-size: clamp(1.15rem, 1.2vw + .9rem, 1.6rem); margin-bottom: 14px; }
+.hero.corto + .ejemplos .sec-h { margin-top: 18px; }
