@@ -39,6 +39,18 @@ function intercalar<T extends { rubro: string }>(avisos: T[], cuantos: number): 
 
 const CINTA = ["Casas", "Alquileres", "Departamentos", "Terrenos", "Galpones y locales", "Autos", "Camionetas", "Utilitarios", "Motos"];
 
+/** Cuándo entró esta persona la vez anterior (en este celular). Se lee una vez por carga y se actualiza. */
+const ULTIMA = "vidriera-ultima-visita";
+const visitaAnterior: number | null = (() => {
+  try {
+    const antes = Number(window.localStorage.getItem(ULTIMA)) || null;
+    window.localStorage.setItem(ULTIMA, String(Date.now()));
+    return antes;
+  } catch {
+    return null;
+  }
+})();
+
 export function Inicio() {
   useTitulo("");
   const lista = useCarga(() => listarAvisos({}, 60), []);
@@ -67,6 +79,9 @@ export function Inicio() {
     : [];
   // Portada nueva: cada categoría y pueblo con su cantidad; los que no tienen avisos no se muestran (no llevan a un listado vacío).
   const contar = PORTADA_NUEVA && !soloEjemplos;
+  // Quien vuelve (la mayoría viene seguido desde Instagram): qué hay de nuevo desde su última visita.
+  const esNuevo = (a: { publicadoEn: string }) => contar && visitaAnterior !== null && Date.parse(a.publicadoEn) > visitaAnterior;
+  const nuevos = contar && visitaAnterior !== null ? reales.filter(esNuevo).length : null;
   // Portada nueva con avisos reales: sin los cuadros Inmuebles/Vehículos (repiten las pestañas de «Avisos»), así las fotos suben a la primera pantalla.
   const sinCuadros = contar;
   const cats = EXPLORAR.map(([rubro, atajo, nombre]) => ({
@@ -87,6 +102,13 @@ export function Inicio() {
         <h2 id="ultTitulo">{soloEjemplos ? "Así se ve un aviso" : FEED ? "En la vidriera" : "Avisos"}</h2>
         {datos && !soloEjemplos && <a href={ir("buscar")}>Ver todos ({datos.total})</a>}
       </div>
+      {nuevos !== null && (
+        <p className={nuevos > 0 ? "novedades hay" : "novedades"}>
+          {nuevos > 0
+            ? <>{nuevos === 1 ? "1 aviso nuevo" : `${nuevos} avisos nuevos`} desde tu última visita.</>
+            : <>Nada nuevo desde tu última visita. <a href={ir("busco")}>Avisame cuando aparezca lo que busco</a></>}
+        </p>
+      )}
       {!soloEjemplos && !(PORTADA_NUEVA && reales.length < 12) && PESTANAS.filter(([, , n]) => n > 0).length > 2 && (
         <div className="pestanas-home" role="tablist" aria-label="Qué avisos mostrar">
           {PESTANAS.filter(([, , n]) => n > 0).map(([id, nombre]) => (
@@ -100,7 +122,7 @@ export function Inicio() {
       {lista.estado === "listo" && muestra.length === 0 ? (
         <Vacio texto="Todavía no hay avisos." />
       ) : (
-        <div className={FEED && !soloEjemplos ? "grid feed" : `grid mini ${soloEjemplos ? "ej" : "reales"}`}>{muestra.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
+        <div className={FEED && !soloEjemplos ? "grid feed" : `grid mini ${soloEjemplos ? "ej" : "reales"}`}>{muestra.map((a) => <Tarjeta key={a.id} aviso={a} nuevo={esNuevo(a)} />)}</div>
       )}
     </section>
   );

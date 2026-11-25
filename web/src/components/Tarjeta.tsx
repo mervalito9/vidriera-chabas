@@ -10,7 +10,7 @@ const fotoLista = (img: HTMLImageElement | null): void => {
 };
 
 /** `previa`: vista previa en el panel (sin link y aceptando fotos recién elegidas). */
-export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: boolean }) {
+export function Tarjeta({ aviso: a, previa, nuevo }: { aviso: AvisoPublico; previa?: boolean; nuevo?: boolean }) {
   const tapa = a.fotos[0] ?? "";
   const foto = previa && /^data:image\/(jpeg|png|webp);base64,/.test(tapa) ? tapa : fotoSegura(tapa);
   const Caja = previa ? "div" : "a";
@@ -20,8 +20,10 @@ export function Tarjeta({ aviso: a, previa }: { aviso: AvisoPublico; previa?: bo
     <Caja className="card" {...(previa ? {} : { href: ir("aviso", a.id) })}>
       <div className="card-ph">
         {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" className="foto-entra" ref={fotoLista} onLoad={(e) => e.currentTarget.classList.add("lista")} /> : <div className="sin-foto">Sin foto</div>}
+        {a.fotos.length > 1 && <span className="n-fotos">{a.fotos.length} fotos</span>}
         <div className="tags">
           {a.ejemplo && <span className="tag tag-ej">Ejemplo</span>}
+          {nuevo && <span className="tag tag-nuevo">Nuevo</span>}
           {a.reservado && <span className="tag tag-res">Reservado</span>}
           <span className="tag">{a.operacion === "alquiler" ? "Alquiler" : "Venta"}</span>
           {a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior && <span className="tag tag-baja">Bajó de precio</span>}

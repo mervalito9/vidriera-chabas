@@ -6,6 +6,7 @@ import { ErrorApi, SinServidor, conServidor, publicar } from "../api.ts";
 import { FormAviso, mensajeWhatsApp, valoresIniciales, type ValoresForm } from "../components/form/FormAviso.tsx";
 import { FaltaWhatsApp } from "../components/Pueblos.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
+import { PORTADA_NUEVA } from "../pruebas.ts";
 import { ir } from "../router.ts";
 
 export function Publicar({ rubro }: { rubro: string }) {
@@ -61,6 +62,18 @@ export function Publicar({ rubro }: { rubro: string }) {
         <h1>Publicá tu aviso <em>gratis.</em></h1>
         <p>{hayServidor ? "Completá estos datos, agregá las fotos y listo: lo revisamos y queda publicado. Sin comisión." : "Completá estos datos y tocá el botón: se abre WhatsApp con el mensaje listo. Después mandás las fotos por ahí mismo. Sin comisión."}</p>
       </div>
+      {PORTADA_NUEVA && hayServidor && !resultado && (
+        <div className="como-publicar">
+          <ol>
+            <li><b>Completás esto</b> desde el celular: qué es, fotos, precio y tu WhatsApp. Son 2 minutos.</li>
+            <li><b>Lo reviso y lo publico</b>, normalmente en el día. Te aviso por WhatsApp.</li>
+            <li><b>Te escriben directo a vos.</b> Sin comisión.</li>
+          </ol>
+          {numeroWA(WA_NUMERO) && (
+            <p>¿Te resulta más fácil por WhatsApp? <a target="_blank" rel="noopener noreferrer" href={linkWA(WA_NUMERO, "Hola Felipe! Quiero publicar algo en Vidriera Chabás. Te mando fotos y datos.")}>Mandame fotos y datos, y lo cargo yo</a>.</p>
+          )}
+        </div>
+      )}
       {resultado?.tipo === "whatsapp" ? (
         <div className="form">
           <h2>Último paso: mandalo por WhatsApp</h2>
