@@ -75,6 +75,10 @@ export function servirSitio(req: IncomingMessage, res: ServerResponse, url: URL)
     res.end(INDEXAR ? "User-agent: *\nDisallow: /api/\n" : "User-agent: *\nDisallow: /\n");
     return;
   }
+  // Safari, WhatsApp y muchos navegadores piden estos íconos en la raíz aunque la página diga dónde están:
+  // se sirven los que ya tenemos (antes daban 404 en cada visita).
+  const icono = ruta === "/favicon.ico" ? "/assets/img/favicon-32.png" : /^\/apple-touch-icon(-precomposed)?(-\d+x\d+)?\.png$/.test(ruta) ? "/assets/img/apple-touch-icon.png" : "";
+  if (icono && servirArchivo(res, WEB_DIR, icono, "public, max-age=86400")) return;
   const compartir = /^\/a\/(\d{1,9})\/?$/.exec(ruta);
   if (compartir) return paginaCompartir(req, res, Number(compartir[1]), url.searchParams.get("de") ?? "");
   if (ruta.startsWith("/fotos/") && servirArchivo(res, FOTOS_DIR, ruta.slice("/fotos".length), "public, max-age=31536000, immutable")) return;

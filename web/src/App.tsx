@@ -30,7 +30,14 @@ function cargarEstilos(href: string): Promise<void> {
 
 // El panel solo lo usa Felipe: su código y sus estilos se bajan aparte, así los visitantes no los cargan.
 const Admin = lazy(() =>
-  Promise.all([import("./panel/index.tsx"), cargarEstilos(__PANEL_CSS__)]).then(([m]) => ({ default: m.Admin })),
+  Promise.all([import("./panel/index.tsx"), cargarEstilos(__PANEL_CSS__)]).then(
+    ([m]) => ({ default: m.Admin }),
+    (err: unknown) => {
+      // Si se publicó una versión nueva con la página abierta, el pedazo viejo del panel ya no existe (404): se recarga una sola vez.
+      if (!sessionStorage.getItem("vidriera-recargado")) { sessionStorage.setItem("vidriera-recargado", "1"); window.location.reload(); }
+      throw err;
+    },
+  ),
 );
 
 function Pagina({ ruta }: { ruta: Ruta }) {

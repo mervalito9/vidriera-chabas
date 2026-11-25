@@ -2,7 +2,7 @@
 // Usa el mismo bot que el asistente (TELEGRAM_BOT_TOKEN y TELEGRAM_USER_ID), pero no necesita la clave de Claude.
 // Si faltan las variables, no hace nada. Nunca frena ni rompe el pedido del vecino: si Telegram falla, se anota y sigue.
 import { RUBROS } from "../shared/config.ts";
-import type { NuevaBusqueda, NuevoAviso, RubroId } from "../shared/tipos.ts";
+import type { AvisoAdmin, NuevaBusqueda, NuevoAviso, PropuestaMejora, RubroId } from "../shared/tipos.ts";
 import { numeroWA } from "../shared/whatsapp.ts";
 import { crearTelegram, type TelegramApi } from "./bot/telegram.ts";
 
@@ -12,6 +12,7 @@ const TOPE_POR_HORA = 20;
 export interface Notificador {
   avisoNuevo(a: Pick<NuevoAviso, "rubro" | "operacion" | "titulo" | "precio" | "moneda" | "pueblo" | "nombre" | "telefono">, id: number, sitio: string): void;
   busquedaNueva(b: NuevaBusqueda, sitio: string): void;
+  mejoraLista(a: AvisoAdmin, p: PropuestaMejora, sitio: string): void;
 }
 
 const corto = (s: string, n = 120): string => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -57,6 +58,22 @@ export function textoBusquedaNueva(b: NuevaBusqueda, sitio: string): string {
     .join("\n");
 }
 
+export function textoMejoraLista(a: AvisoAdmin, p: PropuestaMejora, sitio: string): string {
+  return [
+    `✨ Ordené el aviso n.° ${a.id}`,
+    "",
+    `Antes: «${corto(a.titulo)}»`,
+    `Ahora: «${corto(p.titulo)}»`,
+    p.cambios.length ? `Cambios: ${corto(p.cambios.join(" · "), 300)}` : "",
+    p.faltan.length ? `Falta: ${p.faltan.map((f) => f.que).join(", ")}` : "No falta nada importante.",
+    p.notasFotos ? `Fotos: ${corto(p.notasFotos, 200)}` : "",
+    "",
+    `Revisalo y publicalo en ${sitio || "el sitio"}/#admin--editar-${a.id}`,
+  ]
+    .filter((l, i, todas) => l !== "" || todas[i - 1] !== "")
+    .join("\n");
+}
+
 export function crearNotificador(tg: TelegramApi, destinos: number[], ahora: () => number = Date.now): Notificador {
   let ventana = 0;
   let enviados = 0;
@@ -85,10 +102,11 @@ export function crearNotificador(tg: TelegramApi, destinos: number[], ahora: () 
   return {
     avisoNuevo: (a, id, sitio) => mandar(textoAvisoNuevo(a, id, sitio)),
     busquedaNueva: (b, sitio) => mandar(textoBusquedaNueva(b, sitio)),
+    mejoraLista: (a, p, sitio) => mandar(textoMejoraLista(a, p, sitio)),
   };
 }
 
-const NADA: Notificador = { avisoNuevo: () => {}, busquedaNueva: () => {} };
+const NADA: Notificador = { avisoNuevo: () => {}, busquedaNueva: () => {}, mejoraLista: () => {} };
 
 /** Saca el token aunque la variable traiga texto de más (por ejemplo, si se pegó "TELEGRAM_BOT_TOKEN=..." con otras líneas). */
 export function tokenDe(valor: string): string {

@@ -50,7 +50,42 @@ export interface AvisoPublico {
 }
 
 /** Lo que ve el administrador en el panel. */
+/** Lo que propone el asistente para un aviso que mandó un vecino (ver server/mejorar.ts). */
+export interface PropuestaMejora {
+  tipo: string;
+  operacion: Operacion;
+  titulo: string;
+  precio: number | null;
+  moneda: Moneda;
+  pueblo: string;
+  zona: string;
+  descripcion: string;
+  datos: string[];
+  permuta: boolean;
+  financia: boolean;
+  /** Las fotos del aviso en el orden sugerido (índices del orden original; siempre están todas). */
+  ordenFotos: number[];
+  notasFotos: string;
+  /** Lo que conviene pedirle al dueño. */
+  faltan: { que: string; pregunta: string }[];
+  /** Mensaje de WhatsApp listo para mandarle al dueño pidiendo lo que falta. */
+  mensajeDueno: string;
+  /** Información general que no dijo el vecino: Felipe la confirma antes de usarla. */
+  sugerencias: string[];
+  /** Qué cambió, en frases cortas. */
+  cambios: string[];
+}
+
+export interface Mejora {
+  estado: "trabajando" | "lista" | "error" | "usada" | "descartada";
+  propuesta: PropuestaMejora | null;
+  error: string;
+  fecha: string;
+}
+
 export interface AvisoAdmin extends AvisoPublico {
+  /** Propuesta del asistente para los avisos que mandan los vecinos (null = no hay). */
+  mejora: Mejora | null;
   estado: Estado;
   nombre: string;
   telefono: string;

@@ -9,6 +9,7 @@ import { FOTOS_DIR } from "../db.ts";
 import * as estad from "../estad.ts";
 import { ErrorHttp, crearLimitador, json, leerJson } from "../http.ts";
 import { guardarFotos } from "../imagenes.ts";
+import { mejorarEnSegundoPlano } from "../mejoras.ts";
 import { notificar } from "../notificar.ts";
 import { filtrosDe, idDe, type Rutas } from "./comun.ts";
 
@@ -69,6 +70,7 @@ export const rutasPublicas: Rutas = async ({ req, res, url, metodo, ip, recurso,
       const id = datos.crearAviso({ ...r.valor, anunciante: "", quien: "dueno" }, archivos, { estado: "pendiente" });
       json(res, 201, { id });
       notificar.avisoNuevo(r.valor, id, sitioDe(req));
+      mejorarEnSegundoPlano(id);
       return true;
     } finally {
       subidasEnCurso--;

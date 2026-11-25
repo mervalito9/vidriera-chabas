@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { limpiarCondiciones, type CondicionesAlquiler } from "../shared/alquiler.ts";
 import { DIAS_SE_BUSCAN, DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
-import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, Quien, RubroId, SeBusca } from "../shared/tipos.ts";
+import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, Quien, RubroId, SeBusca, Mejora } from "../shared/tipos.ts";
 import { slug } from "../shared/texto.ts";
 import { dolar } from "./dolar.ts";
 
@@ -95,6 +95,7 @@ for (const [col, def] of [
   ["lat", "REAL"],
   ["lng", "REAL"],
   ["usuario_id", "INTEGER REFERENCES usuarios(id) ON DELETE SET NULL"],
+  ["mejora", "TEXT NOT NULL DEFAULT ''"],
 ] as const) {
   const hay = (db.prepare("PRAGMA table_info(avisos)").all() as { name: string }[]).some((c) => c.name === col);
   if (!hay) db.exec(`ALTER TABLE avisos ADD COLUMN ${col} ${def}`);
@@ -189,10 +190,31 @@ function aPublico(f: Fila): AvisoPublico {
   };
 }
 
+function leerMejora(x: unknown): Mejora | null {
+  if (typeof x !== "string" || !x) return null;
+  try {
+    const m = JSON.parse(x) as Mejora;
+    return m && typeof m.estado === "string" ? m : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Guarda lo que propuso el asistente (o en qué anda) para un aviso. */
+export function guardarMejora(id: number, m: Mejora): void {
+  db.prepare("UPDATE avisos SET mejora = ? WHERE id = ?").run(JSON.stringify(m), id);
+}
+
+/** Avisos pendientes que el asistente todavía no miró (por ejemplo, si el servidor se reinició a mitad de camino). */
+export function pendientesSinMejora(): number[] {
+  return (db.prepare("SELECT id FROM avisos WHERE estado = 'pendiente' AND ejemplo = 0 AND (mejora = '' OR mejora LIKE '{\"estado\":\"trabajando\"%') ORDER BY id").all() as Fila[]).map((f) => num(f.id));
+}
+
 function aAdmin(f: Fila): AvisoAdmin {
   return {
     ...aPublico(f),
     estado: str(f.estado) as Estado,
+    mejora: leerMejora(f.mejora),
     nombre: str(f.nombre),
     telefono: str(f.telefono),
     vistas: num(f.vistas),

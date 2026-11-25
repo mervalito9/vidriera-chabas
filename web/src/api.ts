@@ -3,7 +3,7 @@
 import { DIAS_VIGENCIA } from "../../shared/config.ts";
 import { EJEMPLOS } from "../../shared/ejemplos.ts";
 import { DOLAR_VISTA_PREVIA, filtrarAvisos } from "../../shared/filtrar.ts";
-import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, ResumenActividad, ResumenEstadisticas, SeBusca } from "../../shared/tipos.ts";
+import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, ErrorCampo, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, ResumenActividad, ResumenEstadisticas, SeBusca, Mejora } from "../../shared/tipos.ts";
 
 export class ErrorApi extends Error {
   readonly status: number;
@@ -143,6 +143,9 @@ export const admin = {
   crear: (a: NuevoAviso, pendiente = false) => pedir<AvisoAdmin>("POST", pendiente ? "admin/avisos?estado=pendiente" : "admin/avisos", a),
   editar: (id: number, a: NuevoAviso) => pedir<AvisoAdmin>("PUT", `admin/avisos/${id}`, a),
   cambiar: (id: number, c: Record<string, unknown>) => pedir<AvisoAdmin>("PATCH", `admin/avisos/${id}`, c),
+  mejora: (id: number) => pedir<{ activo: boolean; mejora: Mejora | null }>("GET", `admin/avisos/${id}/mejora`),
+  mejorar: (id: number) => pedir<{ ok: boolean }>("POST", `admin/avisos/${id}/mejora`),
+  marcarMejora: (id: number, estado: "usada" | "descartada") => pedir<{ ok: boolean }>("PATCH", `admin/avisos/${id}/mejora`, { estado }),
   borrar: (id: number) => pedir<{ ok: boolean }>("DELETE", `admin/avisos/${id}`),
   busquedas: () => pedir<Busqueda[]>("GET", "admin/busquedas"),
   actividad: (periodo: string) => pedir<ResumenActividad>("GET", `admin/actividad?periodo=${periodo}`),

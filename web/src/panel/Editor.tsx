@@ -10,6 +10,7 @@ import { FormAviso, valoresIniciales, type ValoresForm } from "../components/for
 import { Tarjeta } from "../components/Tarjeta.tsx";
 import { ir } from "../router.ts";
 import { CargarVarios } from "./CargarVarios.tsx";
+import { PanelMejora, conPropuesta, useMejora } from "./Mejora.tsx";
 import { Titulo, mensajeError, type Accion } from "./comunes.tsx";
 
 export const valoresDe = (a: AvisoAdmin): ValoresForm => ({
@@ -51,7 +52,14 @@ export function Revision({ v }: { v: ValoresForm }) {
 }
 
 export function Editor({ a, accion, onListo, clientes }: { a: AvisoAdmin; accion: Accion; onListo: () => void; clientes: Cliente[] }) {
-  const [v, setV] = useState<ValoresForm>(() => valoresDe(a));
+  // Si el asistente ya ordenó el aviso (y Felipe no lo descartó), el formulario arranca con la versión ordenada.
+  const propuestaInicial = a.estado === "pendiente" && a.mejora?.estado === "lista" ? a.mejora.propuesta : null;
+  const [v, setV] = useState<ValoresForm>(() => (propuestaInicial ? conPropuesta(valoresDe(a), a, propuestaInicial) : valoresDe(a)));
+  const [usando, setUsando] = useState(!!propuestaInicial);
+  const m = useMejora(a);
+  const usar = () => { if (m.mejora?.propuesta) { setV(conPropuesta(valoresDe(a), a, m.mejora.propuesta)); setUsando(true); } };
+  const original = () => { setV(valoresDe(a)); setUsando(false); };
+  const sumar = (frase: string) => setV((x) => ({ ...x, descripcion: `${x.descripcion.trim()}${x.descripcion.trim() ? "\n" : ""}${frase}` }));
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErrorCampo[]>([]);
   const [error, setError] = useState("");
@@ -61,7 +69,11 @@ export function Editor({ a, accion, onListo, clientes }: { a: AvisoAdmin; accion
     setErrores([]);
     setError("");
     admin.editar(a.id, n).then(
-      async () => { if (aprobar.current) await accion(() => admin.cambiar(a.id, { estado: "publicado" })); onListo(); },
+      async () => {
+        if (m.mejora?.estado === "lista") void admin.marcarMejora(a.id, usando ? "usada" : "descartada").catch(() => {});
+        if (aprobar.current) await accion(() => admin.cambiar(a.id, { estado: "publicado" }));
+        onListo();
+      },
       (e: unknown) => { if (e instanceof ErrorApi) { setErrores(e.campos); setError(e.campos.length ? "Revisá los datos marcados." : e.message); } else setError(mensajeError(e)); },
     ).finally(() => { setEnviando(false); aprobar.current = false; });
   };
@@ -72,6 +84,7 @@ export function Editor({ a, accion, onListo, clientes }: { a: AvisoAdmin; accion
         <h1>{a.titulo}</h1>
         <span className={`pn-chip ${a.estado === "publicado" ? "pub" : a.estado === "pendiente" ? "pen" : "ven"}`}>{a.estado === "publicado" ? "Publicado" : a.estado === "pendiente" ? "Pendiente" : a.estado === "vendido" ? "Vendido" : "Rechazado"}</span>
       </div>
+      <PanelMejora a={a} activo={m.activo} mejora={m.mejora} usando={usando} onUsar={usar} onOriginal={original} onSumar={sumar} rehacer={m.rehacer} error={m.error} />
       <div className="pn-edit">
         <div className="pn-edit-form pn-caja">
           <FormAviso

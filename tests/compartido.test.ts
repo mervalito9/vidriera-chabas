@@ -104,3 +104,15 @@ test("ubicación: solo puntos razonables dentro de Argentina, redondeados", asyn
   assert.deepEqual(ubicacion(null, null), { lat: null, lng: null });
   assert.deepEqual(ubicacion("abc", -61), { lat: null, lng: null });
 });
+
+test("errores del panel: se explican en criollo", async () => {
+  const { explicarError } = await import("../web/src/panel/errores.ts");
+  const e = (ruta: string, estado = 404, robot = false) => explicarError({ ruta, estado, robot, metodo: "GET" });
+  assert.match(e("/wp-login.php").texto, /Robot buscando/);
+  assert.match(e("/.env").texto, /Robot buscando/);
+  assert.match(e("/favicon.ico").texto, /Ícono/);
+  assert.match(e("/assets/partes/chunk-ABC.js").texto, /versión anterior/);
+  assert.match(e("/api/avisos/12").texto, /ya no está/);
+  assert.equal(e("/api/x", 500).importa, true);
+  assert.equal(e("/#admin--actividad").importa, false);
+});

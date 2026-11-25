@@ -16,6 +16,7 @@ import { FOTOS_DIR } from "../db.ts";
 import * as estad from "../estad.ts";
 import { ErrorHttp, crearLimitador, json, leerJson } from "../http.ts";
 import { borrarFotos, guardarFotos } from "../imagenes.ts";
+import { ASISTENTE_ACTIVO, mejorarEnSegundoPlano } from "../mejoras.ts";
 import { armarZip, escribirZip } from "../zip.ts";
 import { idDe, type Pedido, type Rutas } from "./comun.ts";
 
@@ -133,6 +134,7 @@ async function avisos(p: Pedido): Promise<boolean> {
   }
   const id = idDe(a2);
   if (resto[3] === "fotos.zip" && metodo === "GET") return fotosEnZip(p, id);
+  if (resto[3] === "mejora" && resto.length === 4) return mejora(p, id);
   if (resto.length > 3) return false;
   if (metodo === "PATCH") {
     const c = (await leerJson(req, MAX_JSON)) as Record<string, unknown>;
@@ -157,6 +159,34 @@ async function avisos(p: Pedido): Promise<boolean> {
     return true;
   }
   return false;
+}
+
+/**
+ * Asistente de avisos: POST = ordenarlo (de nuevo), PATCH {estado: "usada" | "descartada"} = lo que hizo Felipe con la propuesta.
+ * GET = cómo está (para refrescar mientras trabaja).
+ */
+async function mejora({ req, res, metodo }: Pedido, id: number): Promise<true> {
+  const a = datos.obtenerAdmin(id);
+  if (!a) throw new ErrorHttp(404, "No encontrado.");
+  if (metodo === "GET") {
+    json(res, 200, { activo: ASISTENTE_ACTIVO, mejora: a.mejora });
+    return true;
+  }
+  if (metodo === "POST") {
+    if (!ASISTENTE_ACTIVO) throw new ErrorHttp(409, "El asistente está apagado: falta cargar ANTHROPIC_API_KEY en Railway.");
+    datos.guardarMejora(id, { estado: "trabajando", propuesta: null, error: "", fecha: new Date().toISOString() });
+    mejorarEnSegundoPlano(id);
+    json(res, 202, { ok: true });
+    return true;
+  }
+  if (metodo === "PATCH") {
+    const c = (await leerJson(req, MAX_JSON)) as Record<string, unknown>;
+    if (!a.mejora || (c.estado !== "usada" && c.estado !== "descartada")) throw new ErrorHttp(400, "Pedido inválido.");
+    datos.guardarMejora(id, { ...a.mejora, estado: c.estado });
+    json(res, 200, { ok: true });
+    return true;
+  }
+  throw new ErrorHttp(405, "Método no permitido.");
 }
 
 /** Todas las fotos del aviso juntas, en el orden del aviso (1 = tapa). */

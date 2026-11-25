@@ -1,3 +1,4 @@
+import { explicarError } from "./errores.ts";
 import { useEffect, useState } from "react";
 import type { CuentaActividad as Cuenta, ResumenActividad as Datos } from "../../../shared/tipos.ts";
 import { admin } from "../api.ts";
@@ -108,6 +109,10 @@ export function Actividad() {
         </section>
         <section className="estad-bloque">
           <h3>Últimos errores del visitante</h3>
+          {errores4.length > 0 && (() => {
+            const robots = errores4.filter((e) => /Robot/.test(explicarError(e).texto)).length;
+            return <p className="small"><b>De los últimos {errores4.length}: {robots} son robots probando direcciones.</b> Al lado de cada uno dice qué es.</p>;
+          })()}
           {errores4.length === 0 ? <p className="small">Ninguno.</p> : <ListaErrores errores={errores4.slice(0, 25)} />}
           <p className="small">Normales en cualquier sitio: avisos que ya no están, direcciones mal escritas, robots probando, demasiados intentos.</p>
         </section>
@@ -146,7 +151,7 @@ function ListaErrores({ errores }: { errores: Datos["errores"] }) {
       {errores.map((e, i) => (
         <li key={i}>
           <span className={`err-cod${e.estado >= 500 ? " grave" : ""}`}>{e.estado}</span>
-          <span className="err-txt"><b>{e.metodo} {e.ruta}</b>{e.mensaje && <> · {e.mensaje}</>}{e.robot && <> · robot</>}<br /><span className="small">{horaCorta(e.fecha)}</span></span>
+          <span className="err-txt"><b>{e.metodo} {e.ruta}</b>{e.mensaje && <> · {e.mensaje}</>}<br /><span className={explicarError(e).importa ? "small err" : "small"}>{explicarError(e).texto}</span> · <span className="small">{horaCorta(e.fecha)}</span></span>
         </li>
       ))}
     </ul>

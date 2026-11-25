@@ -61,10 +61,23 @@ export function Avisos({ avisos, accion }: { avisos: AvisoAdmin[]; accion: Accio
                     <b>{a.titulo}</b>
                     <span>{precioTexto(a)} · {a.pueblo} · {a.fotos.length} {a.fotos.length === 1 ? "foto" : "fotos"}</span>
                     <small>{a.nombre || "Sin nombre"} · {a.telefono ? formatearTelefono(a.telefono) : "sin WhatsApp"} · {fmtFecha(new Date(a.creadoEn))}</small>
+                    {a.mejora?.estado === "lista" && a.mejora.propuesta && (
+                      <span className="pn-chip pn-chip-mejora">✨ Ordenado{a.mejora.propuesta.faltan.length ? ` · falta ${a.mejora.propuesta.faltan.map((f) => f.que.toLowerCase()).join(", ")}` : ""}</span>
+                    )}
+                    {a.mejora?.estado === "trabajando" && <span className="pn-chip">✨ Ordenando…</span>}
                   </div>
                   <div className="pn-pend-acc">
-                    <button type="button" className="pn-btn pn-btn-ok" onClick={() => void accion(() => admin.cambiar(a.id, { estado: "publicado" }))}>Aprobar</button>
-                    <a className="pn-btn pn-btn-line" href={ir("admin", `editar-${a.id}`)}>Revisar</a>
+                    {a.mejora?.estado === "lista" ? (
+                      <>
+                        <a className="pn-btn pn-btn-ok" href={ir("admin", `editar-${a.id}`)}>Ver ordenado</a>
+                        <button type="button" className="pn-btn pn-btn-line" onClick={() => void accion(() => admin.cambiar(a.id, { estado: "publicado" }))}>Aprobar el original</button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" className="pn-btn pn-btn-ok" onClick={() => void accion(() => admin.cambiar(a.id, { estado: "publicado" }))}>Aprobar</button>
+                        <a className="pn-btn pn-btn-line" href={ir("admin", `editar-${a.id}`)}>Revisar</a>
+                      </>
+                    )}
                     <Confirmar texto="Rechazar" chico onSi={() => void accion(() => admin.cambiar(a.id, { estado: "rechazado" }))} />
                   </div>
                 </div>
