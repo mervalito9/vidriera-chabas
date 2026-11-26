@@ -50,6 +50,20 @@ export function useMejora(a: AvisoAdmin): { activo: boolean | null; mejora: Mejo
   return { activo, mejora, rehacer, error };
 }
 
+/** Lo que falta y el botón para pedírselo al dueño por WhatsApp (sirve aunque el aviso ya se haya guardado o publicado). */
+export function PedirFaltante({ a, p }: { a: AvisoAdmin; p: PropuestaMejora }) {
+  const wa = numeroWA(a.telefono) && p.mensajeDueno ? linkWA(a.telefono, p.mensajeDueno) : "";
+  if (!p.faltan.length && !p.notasFotos) return null;
+  return (
+    <div className="pn-mejora-faltan">
+      {p.faltan.length > 0 && <><b>Le falta:</b><ul>{p.faltan.map((f) => <li key={f.que}><b>{f.que}</b> — {f.pregunta}</li>)}</ul></>}
+      {p.notasFotos && <p className="pn-mejora-fotos"><b>Fotos:</b> {p.notasFotos}</p>}
+      {wa && <a className="pn-btn pn-btn-wa" target="_blank" rel="noopener noreferrer" href={wa}>Pedírselo por WhatsApp</a>}
+      {wa && <details className="pn-mejora-msj"><summary>Ver el mensaje</summary><p>{p.mensajeDueno}</p></details>}
+    </div>
+  );
+}
+
 export function PanelMejora({ a, activo, mejora, usando, onUsar, onOriginal, onSumar, rehacer, error }: {
   a: AvisoAdmin;
   activo: boolean | null;
@@ -80,8 +94,20 @@ export function PanelMejora({ a, activo, mejora, usando, onUsar, onOriginal, onS
       </section>
     );
 
+  // Si ya se usó o se descartó (o el aviso ya no está pendiente), queda a mano lo que falta pedirle al dueño.
+  if (mejora.estado !== "lista" || a.estado !== "pendiente")
+    return (
+      <section className="pn-caja pn-mejora">
+        <h2 className="pn-h-chico">✨ Lo que sugirió el asistente</h2>
+        {p.faltan.length === 0 && !p.notasFotos && <p className="pn-gris small">No le faltaba nada importante.</p>}
+        <PedirFaltante a={a} p={p} />
+        {a.estado === "pendiente" && <button type="button" className="pn-btn pn-btn-line pn-btn-chico" onClick={onUsar}>Cargar otra vez la versión ordenada</button>}
+        <button type="button" className="linkbtn small" onClick={rehacer}>Volver a ordenarlo</button>
+        {error && <p className="form-err">{error}</p>}
+      </section>
+    );
+
   const tapaNueva = p.ordenFotos[0] !== undefined && p.ordenFotos[0] !== 0;
-  const wa = numeroWA(a.telefono) && p.mensajeDueno ? linkWA(a.telefono, p.mensajeDueno) : "";
   return (
     <section className="pn-caja pn-mejora">
       <div className="pn-mejora-cab">
@@ -98,16 +124,7 @@ export function PanelMejora({ a, activo, mejora, usando, onUsar, onOriginal, onS
         <div><span>Ahora</span><b>{p.titulo}</b></div>
       </div>
       {p.cambios.length > 0 && <ul className="pn-mejora-lista">{p.cambios.map((c) => <li key={c}>{c}</li>)}{tapaNueva && !p.cambios.some((c) => /foto/i.test(c)) && <li>Otra foto de tapa</li>}</ul>}
-      {p.notasFotos && <p className="pn-mejora-fotos"><b>Fotos:</b> {p.notasFotos}</p>}
-
-      {p.faltan.length > 0 && (
-        <div className="pn-mejora-faltan">
-          <b>Le falta:</b>
-          <ul>{p.faltan.map((f) => <li key={f.que}><b>{f.que}</b> — {f.pregunta}</li>)}</ul>
-          {wa && <a className="pn-btn pn-btn-wa" target="_blank" rel="noopener noreferrer" href={wa}>Pedírselo por WhatsApp</a>}
-          {wa && <details className="pn-mejora-msj"><summary>Ver el mensaje</summary><p>{p.mensajeDueno}</p></details>}
-        </div>
-      )}
+      <PedirFaltante a={a} p={p} />
 
       {p.sugerencias.length > 0 && (
         <div className="pn-mejora-sug">

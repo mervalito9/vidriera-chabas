@@ -72,7 +72,12 @@ export function servirSitio(req: IncomingMessage, res: ServerResponse, url: URL)
   const ruta = url.pathname;
   if (ruta === "/robots.txt") {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end(INDEXAR ? "User-agent: *\nDisallow: /api/\n" : "User-agent: *\nDisallow: /\n");
+    res.end(INDEXAR ? `User-agent: *\nDisallow: /api/\nSitemap: ${sitioDe(req)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n");
+    return;
+  }
+  if (ruta === "/sitemap.xml" && INDEXAR) {
+    res.writeHead(200, { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" });
+    res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${sitioDe(req)}/</loc><changefreq>daily</changefreq></url></urlset>\n`);
     return;
   }
   // Safari, WhatsApp y muchos navegadores piden estos íconos en la raíz aunque la página diga dónde están:

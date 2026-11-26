@@ -65,6 +65,9 @@ export function Avisos({ avisos, accion }: { avisos: AvisoAdmin[]; accion: Accio
                       <span className="pn-chip pn-chip-mejora">✨ Ordenado{a.mejora.propuesta.faltan.length ? ` · falta ${a.mejora.propuesta.faltan.map((f) => f.que.toLowerCase()).join(", ")}` : ""}</span>
                     )}
                     {a.mejora?.estado === "trabajando" && <span className="pn-chip">✨ Ordenando…</span>}
+                    {a.mejora?.estado !== "lista" && a.telefono && a.mejora?.propuesta?.mensajeDueno && a.mejora.propuesta.faltan.length > 0 && (
+                      <a className="pn-chip pn-chip-mejora" target="_blank" rel="noopener noreferrer" href={linkWA(a.telefono, a.mejora.propuesta.mensajeDueno)}>✨ Pedirle por WhatsApp: {a.mejora.propuesta.faltan.map((f) => f.que.toLowerCase()).join(", ")}</a>
+                    )}
                   </div>
                   <div className="pn-pend-acc">
                     {a.mejora?.estado === "lista" ? (
@@ -246,6 +249,9 @@ export function MenuAviso({ a, abierto, onAbrir, accion }: { a: AvisoAdmin; abie
           <button role="menuitem" type="button" onClick={() => { onAbrir(false); setRedes(true); }}>Para redes (historia y posteo)</button>
           {pub && <button role="menuitem" type="button" onClick={() => void copiarLink()}>Copiar link del aviso</button>}
           {a.fotos.length > 0 && <a role="menuitem" href={`api/admin/avisos/${a.id}/fotos.zip`} download={`aviso-${a.id}-fotos.zip`} onClick={() => onAbrir(false)}>Bajar fotos ({a.fotos.length})</a>}
+          {a.telefono && a.mejora?.propuesta?.mensajeDueno && (a.mejora.propuesta.faltan.length > 0 || a.mejora.propuesta.notasFotos) && (
+            <a role="menuitem" target="_blank" rel="noopener noreferrer" href={linkWA(a.telefono, a.mejora.propuesta.mensajeDueno)}>✨ Pedirle lo que falta ({a.mejora.propuesta.faltan.map((f) => f.que.toLowerCase()).join(", ") || "fotos"})</a>
+          )}
           {a.telefono && <a role="menuitem" target="_blank" rel="noopener noreferrer" href={linkWA(a.telefono, `Hola ${a.nombre}! Te escribo de Vidriera Chabás por tu aviso «${a.titulo}».`)}>Escribirle al vendedor</a>}
           <hr />
           {borrar ? (
