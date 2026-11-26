@@ -221,3 +221,18 @@ test("cliente de OpenRouter: manda las herramientas y lee las llamadas", async (
   const mal = (async () => new Response("no", { status: 402 })) as typeof fetch;
   await assert.rejects(crearModeloOpenRouter("k", "m", mal)([], []), /sin crédito/);
 });
+
+test("cliente de OpenRouter: caché automática y modelo de respaldo", async () => {
+  const { crearModeloOpenRouter } = await import("../server/bot/agente.ts");
+  let cuerpo: Record<string, unknown> = {};
+  const f = (async (_url: string, init: RequestInit) => {
+    cuerpo = JSON.parse(String(init.body));
+    return new Response(JSON.stringify({ model: "deepseek/deepseek-v4.1-flash", choices: [{ message: { content: "hola" } }] }), { status: 200 });
+  }) as typeof fetch;
+  const r = await crearModeloOpenRouter("k", "anthropic/claude-haiku-5.5", f, undefined, "deepseek/deepseek-v4.1-flash")([{ role: "user", content: "hola" }], []);
+  assert.deepEqual(cuerpo.models, ["anthropic/claude-haiku-5.5", "deepseek/deepseek-v4.1-flash"]);
+  assert.deepEqual(cuerpo.cache_control, { type: "ephemeral" });
+  assert.equal(r.texto, "hola");
+  await crearModeloOpenRouter("k", "m", f)([{ role: "user", content: "x" }], []);
+  assert.equal(cuerpo.models, undefined, "sin respaldo no manda la lista");
+});

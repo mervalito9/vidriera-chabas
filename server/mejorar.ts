@@ -180,7 +180,9 @@ export function crearMejorador(clave: string, modelo: string, f: typeof fetch = 
  * Lo mismo, pero por OpenRouter (una sola clave para Claude, GPT, Gemini, Grok…). Usa el formato de OpenAI:
  * las fotos van como image_url y la respuesta llega como una llamada a función con los argumentos en JSON.
  */
-export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1"): Mejorador {
+export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1", respaldo = ""): Mejorador {
+  // Si el modelo principal está caído o saturado, OpenRouter prueba con el de respaldo.
+  const modelos = respaldo && respaldo !== modelo ? [modelo, respaldo] : undefined;
   /** Saca el motivo del error que devuelve OpenRouter (sin datos sensibles, corto). */
   const motivo = (texto: string): string => {
     try {
@@ -232,6 +234,7 @@ export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeo
     // 1) Con función (lo más prolijo). 2) Si el modelo o el proveedor no la acepta (400), pidiendo un JSON en el texto.
     let r = await pedir({
       model: modelo,
+      models: modelos,
       max_tokens: 2500,
       messages: [{ role: "system", content: SISTEMA }, { role: "user", content: contenido }],
       tools: [{ type: "function", function: { name: "proponer_aviso", description: "Devuelve la versión prolija del aviso y lo que falta.", parameters: ESQUEMA } }],
@@ -240,6 +243,7 @@ export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeo
     if (!r.ok && r.estado === 400) {
       r = await pedir({
         model: modelo,
+        models: modelos,
         max_tokens: 2500,
         messages: [
           { role: "system", content: `${SISTEMA}\n\nRespondé SOLO con un objeto JSON (sin texto antes ni después) con estas claves: ${Object.keys(ESQUEMA.properties).join(", ")}.` },

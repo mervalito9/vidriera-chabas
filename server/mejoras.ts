@@ -16,7 +16,7 @@ export const ASISTENTE_ACTIVO = !!clave && (process.env.NODE_ENV !== "test" || !
 const cola = ASISTENTE_ACTIVO
   ? crearCola({
       mejorar: claveOR
-        ? crearMejoradorOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, base || undefined)
+        ? crearMejoradorOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, base || undefined, process.env.OPENROUTER_RESPALDO ?? "deepseek/deepseek-v4.1-flash")
         : crearMejorador(claveAnthropic, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", fetch, base || undefined),
       leer: (id) => {
         const aviso = datos.obtenerAdmin(id);

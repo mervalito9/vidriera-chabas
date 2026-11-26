@@ -40,7 +40,7 @@ export function iniciarBot(): boolean {
   const agente = claveOR
     ? crearAgente({
         tg,
-        modelo: crearModeloOpenRouter(claveOR, process.env.BOT_MODEL || process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined),
+        modelo: crearModeloOpenRouter(claveOR, process.env.BOT_MODEL || process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined, process.env.OPENROUTER_RESPALDO ?? "deepseek/deepseek-v4.1-flash"),
         sitio: crearAccesoSitio(urlSitio),
         permitidos,
         propio,

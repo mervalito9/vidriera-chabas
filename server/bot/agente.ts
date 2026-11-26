@@ -32,14 +32,19 @@ export interface RespuestaIA {
 }
 export type LlamarModelo = (mensajes: MensajeIA[], herramientas: unknown[]) => Promise<RespuestaIA>;
 
-export function crearModeloOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1"): LlamarModelo {
+/**
+ * `respaldo`: otro modelo que OpenRouter usa solo si el principal falla (caído, saturado). Con caché automática:
+ * las instrucciones y la charla que se repiten en cada pedido salen ~10 veces más baratas.
+ */
+export function crearModeloOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1", respaldo = ""): LlamarModelo {
+  const modelos = respaldo && respaldo !== modelo ? [modelo, respaldo] : undefined;
   return async (mensajes, herramientas) => {
     let r: Response;
     try {
       r = await f(`${base}/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${clave}`, "x-title": "Vidriera Chabas" },
-        body: JSON.stringify({ model: modelo, max_tokens: 1500, messages: mensajes, tools: herramientas, tool_choice: "auto" }),
+        body: JSON.stringify({ model: modelo, models: modelos, max_tokens: 1500, messages: mensajes, tools: herramientas, tool_choice: "auto", cache_control: { type: "ephemeral" } }),
         signal: AbortSignal.timeout(90_000),
       });
     } catch {
@@ -50,7 +55,8 @@ export function crearModeloOpenRouter(clave: string, modelo: string, f: typeof f
       console.error(new Date().toISOString(), `bot: OpenRouter ${r.status}: ${detalle}`);
       throw new Error(`OpenRouter respondió con error ${r.status}${r.status === 401 ? " (clave no válida)" : r.status === 402 ? " (sin crédito)" : ""}`);
     }
-    const j = (await r.json()) as { choices?: { message?: { content?: string | null; tool_calls?: LlamadaHerramienta[] } }[] };
+    const j = (await r.json()) as { model?: string; choices?: { message?: { content?: string | null; tool_calls?: LlamadaHerramienta[] } }[] };
+    if (modelos && j.model && !j.model.startsWith(modelo)) console.warn(new Date().toISOString(), `bot: contestó el modelo de respaldo (${j.model})`);
     const m = j.choices?.[0]?.message;
     const llamadas = (m?.tool_calls ?? [])
       .filter((t) => t?.function?.name)
