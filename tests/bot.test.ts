@@ -364,3 +364,10 @@ test("charla fluida: detecta un aviso sin comandos, arma la ficha sola, se corri
   await enviar("cancelá");
   assert.match(dichos.at(-1)!, /lo borré/);
 });
+
+test("fotos solas y después «listo»: le dice cuántas fotos tiene y le pide los datos", async () => {
+  const { enviar, foto, ultimo } = montar();
+  await foto(); await foto();
+  await enviar("/listo");
+  assert.match(ultimo(), /Tengo 2 foto\(s\)/);
+});

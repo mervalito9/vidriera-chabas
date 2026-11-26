@@ -314,7 +314,7 @@ export function crearAsistente(deps: DepsAsistente) {
 
     if (cmd === "estado") return decir(chat, vista(b));
     if (cmd === "listo") {
-      if (!b.pendientes.length && !b.ficha) return decir(chat, "Primero mandame los datos del aviso y las fotos.");
+      if (!b.pendientes.length && !b.ficha) return decir(chat, b.fotos.length ? `Tengo ${b.fotos.length} foto(s) 👍 Ahora pasame los datos (qué es, año, km, precio, dónde y el WhatsApp del dueño) y te armo la ficha.` : "Mandame los datos del aviso y las fotos, como te salgan, y te armo la ficha.");
       if (!b.pendientes.length) return decir(chat, vista(b));
       return procesar(chat, b);
     }
