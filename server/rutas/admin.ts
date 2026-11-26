@@ -173,7 +173,7 @@ async function mejora({ req, res, metodo }: Pedido, id: number): Promise<true> {
     return true;
   }
   if (metodo === "POST") {
-    if (!ASISTENTE_ACTIVO) throw new ErrorHttp(409, "El asistente está apagado: falta cargar ANTHROPIC_API_KEY en Railway.");
+    if (!ASISTENTE_ACTIVO) throw new ErrorHttp(409, "El asistente está apagado: falta cargar OPENROUTER_API_KEY en Railway.");
     datos.guardarMejora(id, { estado: "trabajando", propuesta: null, error: "", fecha: new Date().toISOString() });
     mejorarEnSegundoPlano(id);
     json(res, 202, { ok: true });

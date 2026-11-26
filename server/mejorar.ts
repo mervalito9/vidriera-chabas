@@ -171,6 +171,51 @@ export function crearMejorador(clave: string, modelo: string, f: typeof fetch = 
 }
 
 /**
+ * Lo mismo, pero por OpenRouter (una sola clave para Claude, GPT, Gemini, Grok…). Usa el formato de OpenAI:
+ * las fotos van como image_url y la respuesta llega como una llamada a función con los argumentos en JSON.
+ */
+export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1"): Mejorador {
+  return async (a, fotos) => {
+    const contenido: unknown[] = [{ type: "text", text: armarPedido(a) }];
+    fotos.forEach((foto, i) => {
+      contenido.push({ type: "text", text: `Foto ${i}:` });
+      contenido.push(foto ? { type: "image_url", image_url: { url: `data:${foto.media_type};base64,${foto.data}` } } : { type: "text", text: "(no se pudo leer esta foto)" });
+    });
+    let r: Response;
+    try {
+      r = await f(`${base}/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${clave}`, "x-title": "Vidriera Chabás" },
+        body: JSON.stringify({
+          model: modelo,
+          max_tokens: 2500,
+          messages: [{ role: "system", content: SISTEMA }, { role: "user", content: contenido }],
+          tools: [{ type: "function", function: { name: "proponer_aviso", description: "Devuelve la versión prolija del aviso y lo que falta.", parameters: ESQUEMA } }],
+          tool_choice: { type: "function", function: { name: "proponer_aviso" } },
+        }),
+        signal: AbortSignal.timeout(120_000),
+      });
+    } catch {
+      throw new Error("OpenRouter no respondió a tiempo");
+    }
+    if (!r.ok) {
+      const detalle = await r.text().catch(() => "");
+      throw new Error(`OpenRouter respondió con error ${r.status}${/credit|insufficient|balance/i.test(detalle) ? " (sin crédito)" : ""}`);
+    }
+    const j = (await r.json()) as { choices?: { message?: { tool_calls?: { function?: { name?: string; arguments?: string } }[]; content?: string } }[] };
+    const llamada = j.choices?.[0]?.message?.tool_calls?.find((t) => t.function?.name === "proponer_aviso");
+    let datos: unknown = null;
+    try {
+      datos = JSON.parse(llamada?.function?.arguments ?? j.choices?.[0]?.message?.content ?? "");
+    } catch {
+      datos = null;
+    }
+    if (typeof datos !== "object" || datos === null) throw new Error("La IA no devolvió la propuesta");
+    return normalizarPropuesta(datos, a);
+  };
+}
+
+/**
  * Fila de trabajo: los avisos se mejoran de a uno, en el orden en que llegan.
  * `guardar` escribe el resultado; `avisar` le cuenta a Felipe (Telegram) cuando está lista.
  */

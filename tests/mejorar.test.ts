@@ -1,7 +1,7 @@
 // Pruebas del asistente que ordena los avisos (sin red: Claude simulado).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { armarPedido, crearCola, crearMejorador, normalizarPropuesta } from "../server/mejorar.ts";
+import { armarPedido, crearCola, crearMejorador, crearMejoradorOpenRouter, normalizarPropuesta } from "../server/mejorar.ts";
 import { textoMejoraLista } from "../server/notificar.ts";
 import type { AvisoAdmin, Mejora } from "../shared/tipos.ts";
 
@@ -70,4 +70,25 @@ test("la fila guarda el progreso, reintenta una vez y avisa cuando está lista",
   console.error = original;
   assert.equal(errores.at(-1)?.estado, "error");
   assert.equal(errores.at(-1)?.error, "sin saldo");
+});
+
+test("por OpenRouter: fotos como image_url, respuesta como función, y avisa si no hay crédito", async () => {
+  let url = "", cuerpo: { model: string; messages: { role: string; content: unknown }[]; tool_choice: { function: { name: string } } } | null = null, auth = "";
+  const f = (async (u: string, init: { body: string; headers: Record<string, string> }) => {
+    url = u; cuerpo = JSON.parse(init.body); auth = init.headers.authorization ?? "";
+    return new Response(JSON.stringify({ choices: [{ message: { tool_calls: [{ function: { name: "proponer_aviso", arguments: JSON.stringify(salida) } }] } }] }), { status: 200 });
+  }) as unknown as typeof fetch;
+  const p = await crearMejoradorOpenRouter("sk-or-x", "anthropic/claude-sonnet-5.5", f)(aviso, [{ media_type: "image/jpeg", data: "AAA" }, null]);
+  assert.equal(p.tipo, "Terreno");
+  assert.equal(url, "https://openrouter.ai/api/v1/chat/completions");
+  assert.equal(auth, "Bearer sk-or-x");
+  assert.equal(cuerpo!.model, "anthropic/claude-sonnet-5.5");
+  assert.equal(cuerpo!.messages[0]!.role, "system");
+  const c = cuerpo!.messages[1]!.content as { type: string; image_url?: { url: string } }[];
+  assert.equal(c.filter((x) => x.type === "image_url").length, 1);
+  assert.match(c.find((x) => x.type === "image_url")!.image_url!.url, /^data:image\/jpeg;base64,AAA$/);
+  assert.equal(cuerpo!.tool_choice.function.name, "proponer_aviso");
+
+  const sinCredito = (async () => new Response('{"error":{"message":"Insufficient credits"}}', { status: 402 })) as unknown as typeof fetch;
+  await assert.rejects(crearMejoradorOpenRouter("k", "m", sinCredito)(aviso, []), /402 \(sin crédito\)/);
 });

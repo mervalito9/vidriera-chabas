@@ -3,15 +3,21 @@
 import { SITE_URL } from "./config.ts";
 import * as datos from "./db.ts";
 import { FOTOS_DIR } from "./db.ts";
-import { crearCola, crearMejorador, leerFotos } from "./mejorar.ts";
+import { crearCola, crearMejorador, crearMejoradorOpenRouter, leerFotos } from "./mejorar.ts";
 import { notificar } from "./notificar.ts";
 
-const clave = process.env.ANTHROPIC_API_KEY ?? "";
-export const ASISTENTE_ACTIVO = !!clave && (process.env.NODE_ENV !== "test" || !!process.env.ANTHROPIC_BASE_URL);
+// OpenRouter (OPENROUTER_API_KEY) o la API de Claude directa (ANTHROPIC_API_KEY). Si están las dos, va OpenRouter.
+const claveOR = (process.env.OPENROUTER_API_KEY ?? "").trim();
+const claveAnthropic = (process.env.ANTHROPIC_API_KEY ?? "").trim();
+const clave = claveOR || claveAnthropic;
+const base = claveOR ? process.env.OPENROUTER_BASE_URL : process.env.ANTHROPIC_BASE_URL;
+export const ASISTENTE_ACTIVO = !!clave && (process.env.NODE_ENV !== "test" || !!base);
 
 const cola = ASISTENTE_ACTIVO
   ? crearCola({
-      mejorar: crearMejorador(clave, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", fetch, process.env.ANTHROPIC_BASE_URL || undefined),
+      mejorar: claveOR
+        ? crearMejoradorOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-5.5", fetch, base || undefined)
+        : crearMejorador(claveAnthropic, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5", fetch, base || undefined),
       leer: (id) => {
         const aviso = datos.obtenerAdmin(id);
         return aviso ? { aviso, fotos: leerFotos(FOTOS_DIR, datos.archivosDe(id)) } : null;
