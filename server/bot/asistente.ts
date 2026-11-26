@@ -1,11 +1,13 @@
-// Asistente de avisos por Telegram. Solo responde a los IDs de Telegram permitidos (Felipe), en chat privado.
-// Felipe reenvía los datos crudos y las fotos; el asistente arma la ficha con Claude, Felipe la revisa y la
-// publica con /publicar. Este archivo no toca la base ni el disco: eso lo conecta server/bot/index.ts.
+// Asistente de Felipe por Telegram. Solo responde a los IDs de Telegram permitidos (Felipe), en chat privado.
+// Dos usos: 1) preguntas sobre el sitio (gente en vivo, visitas, avisos, búsquedas…): contesta con los datos reales;
+// 2) cargar un aviso: con /aviso o mandando una foto, Felipe pasa los datos crudos, el asistente arma la ficha y
+// se publica con /publicar. Este archivo no toca la base ni el disco: eso lo conecta server/bot/index.ts.
 import { LIMITES } from "../../shared/config.ts";
 import type { NuevoAviso } from "../../shared/tipos.ts";
 import { fmtNum } from "../../shared/texto.ts";
 import { validarAviso } from "../../shared/validar.ts";
 import type { ArmarFicha, Ficha } from "./claude.ts";
+import type { Consultar } from "./consultas.ts";
 import type { MensajeTelegram, TelegramApi, UpdateTelegram } from "./telegram.ts";
 
 const HORAS_12 = 12 * 60 * 60 * 1000;
@@ -22,6 +24,9 @@ export interface DepsAsistente {
   /** Contacto que se usa cuando el aviso es de Felipe. */
   propio: { nombre: string; telefono: string };
   urlSitio: string;
+  /** Preguntas sobre el sitio: la IA contesta con `datosSitio()` (una foto del estado actual). */
+  consultar?: Consultar;
+  datosSitio?: () => unknown;
   /** Tope de pedidos a Claude por hora, para acotar el gasto. */
   maxLlamadasPorHora?: number;
   ahora?: () => number;
@@ -36,18 +41,25 @@ interface Borrador {
   /** Ya se le avisó que se llegó al tope de fotos. */
   avisoTope: boolean;
   saludado: boolean;
+  /** Felipe pidió cargar un aviso (/aviso o mandó una foto): los textos van al borrador, no son preguntas. */
+  enAviso: boolean;
   ultima: number;
 }
 
-const AYUDA = `Soy tu asistente de avisos de Vidriera Chabás.
+const AYUDA = `Soy tu asistente de Vidriera Chabás.
 
-1. Mandame los datos del aviso (reenviá los mensajes tal cual) y las fotos.
+PREGUNTAME LO QUE QUIERAS DEL SITIO
+"¿Cuánta gente hay ahora?", "¿Cómo vamos esta semana?", "¿Qué aviso se mira más?", "¿Qué busca la gente y no encuentra?", "¿Hay pendientes?"…
+
+CARGAR UN AVISO
+1. Tocá /aviso (o mandame directamente una foto) y pasame los datos: reenviá los mensajes tal cual.
 2. Tocá /listo y te armo la ficha.
 3. Revisala. Si hay algo para cambiar, escribime el cambio ("el precio es 8.500 USD").
 4. Cuando esté bien, /publicar.
 
-Otros comandos: /estado (ver el borrador), /cancelar (empezar de cero).
-Si el aviso es tuyo, decímelo ("es mío") y uso tu contacto. Un aviso a la vez.`;
+Mientras cargás un aviso, para preguntarme algo empezá con "?" (por ejemplo "? cuánta gente hay").
+Otros comandos: /estado (ver el borrador), /cancelar (salir del aviso).
+Si el aviso es tuyo, decímelo ("es mío") y uso tu contacto.`;
 
 function mimeReal(b: Buffer): "image/jpeg" | "image/png" | "image/webp" | null {
   if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
@@ -58,7 +70,7 @@ function mimeReal(b: Buffer): "image/jpeg" | "image/png" | "image/webp" | null {
 
 /** "/listo", "/listo@mi_bot" o simplemente "listo". */
 function comandoDe(texto: string): string {
-  const m = /^\/?(start|ayuda|help|listo|publicar|cancelar|estado)(?:@\w+)?$/i.exec(texto.trim());
+  const m = /^\/?(start|ayuda|help|listo|publicar|cancelar|estado|aviso)(?:@\w+)?$/i.exec(texto.trim());
   return m?.[1]?.toLowerCase() ?? "";
 }
 
@@ -79,6 +91,7 @@ export function crearAsistente(deps: DepsAsistente) {
   const ahora = deps.ahora ?? Date.now;
   const maxLlamadas = deps.maxLlamadasPorHora ?? 40;
   const borradores = new Map<number, Borrador>();
+  const charlas = new Map<number, { de: "felipe" | "bot"; texto: string; t: number }[]>();
   let llamadas: number[] = [];
 
   const decir = (chat: number, texto: string): Promise<void> => deps.tg.sendMessage(chat, texto);
@@ -86,7 +99,7 @@ export function crearAsistente(deps: DepsAsistente) {
   function borradorDe(chat: number): Borrador {
     const b = borradores.get(chat);
     if (b && ahora() - b.ultima < HORAS_12) return b;
-    const nuevo: Borrador = { pendientes: [], fotos: [], ficha: null, advertido: false, avisoTope: false, saludado: false, ultima: ahora() };
+    const nuevo: Borrador = { pendientes: [], fotos: [], ficha: null, advertido: false, avisoTope: false, saludado: false, enAviso: false, ultima: ahora() };
     borradores.set(chat, nuevo);
     return nuevo;
   }
@@ -130,11 +143,32 @@ export function crearAsistente(deps: DepsAsistente) {
     return lineas.join("\n");
   }
 
-  async function procesar(chat: number, b: Borrador): Promise<void> {
+  /** Cuenta un pedido a la IA; false si se llegó al tope de la hora. */
+  function hayCupo(): boolean {
     const t = ahora();
     llamadas = llamadas.filter((x) => t - x < 60 * 60 * 1000);
-    if (llamadas.length >= maxLlamadas) return decir(chat, "Llegué al tope de pedidos por hora. Probá de nuevo en un rato.");
+    if (llamadas.length >= maxLlamadas) return false;
     llamadas.push(t);
+    return true;
+  }
+
+  async function responder(chat: number, pregunta: string): Promise<void> {
+    if (!deps.consultar || !deps.datosSitio) return decir(chat, "Para preguntas sobre el sitio todavía no estoy configurado. Para cargar un aviso: /aviso.");
+    if (!hayCupo()) return decir(chat, "Llegué al tope de pedidos por hora. Probá de nuevo en un rato.");
+    const historial = (charlas.get(chat) ?? []).filter((h) => ahora() - h.t < HORAS_12);
+    let respuesta: string;
+    try {
+      respuesta = await deps.consultar(pregunta, historial, deps.datosSitio());
+    } catch (err) {
+      console.error(new Date().toISOString(), "bot: no pude responder:", err instanceof Error ? err.message : "error");
+      return decir(chat, `No pude responderte ahora${err instanceof Error && /sin crédito|clave/.test(err.message) ? ` (${err.message.replace(/^.*\((.*)\).*$/, "$1")})` : ""}. Probá en un rato.`);
+    }
+    charlas.set(chat, [...historial, { de: "felipe" as const, texto: pregunta, t: ahora() }, { de: "bot" as const, texto: respuesta, t: ahora() }].slice(-8));
+    return decir(chat, respuesta);
+  }
+
+  async function procesar(chat: number, b: Borrador): Promise<void> {
+    if (!hayCupo()) return decir(chat, "Llegué al tope de pedidos por hora. Probá de nuevo en un rato.");
     try {
       b.ficha = await deps.armar({ nuevo: b.pendientes, actual: b.ficha });
       b.pendientes = [];
@@ -212,11 +246,24 @@ export function crearAsistente(deps: DepsAsistente) {
     if (cmd === "start" || cmd === "ayuda" || cmd === "help") return decir(chat, AYUDA);
     if (cmd === "cancelar") {
       borradores.delete(chat);
-      return decir(chat, "Listo, borré el borrador. Mandame un aviso nuevo cuando quieras.");
+      return decir(chat, "Listo, borré el borrador. Preguntame lo que quieras o tocá /aviso para cargar otro.");
     }
+
+    // "? algo" o "/pregunta algo": pregunta sobre el sitio aunque haya un aviso a medio cargar.
+    const pregunta = /^(?:\?|\/pregunta(?:@\w+)?\s)\s*([\s\S]+)$/i.exec(texto)?.[1]?.trim();
+    if (pregunta && !m.photo && !m.document) return responder(chat, pregunta);
 
     const b = borradorDe(chat);
     b.ultima = ahora();
+
+    if (cmd === "aviso") {
+      b.enAviso = true;
+      return decir(chat, b.ficha || b.pendientes.length || b.fotos.length ? "Seguimos con el aviso que estabas cargando. Mandame más datos o fotos, y /listo." : "Dale. Mandame los datos del aviso (reenviá los mensajes tal cual) y las fotos. Cuando termines, /listo.");
+    }
+    // Sin aviso en curso, un texto suelto es una pregunta sobre el sitio.
+    const cargando = b.enAviso || b.ficha !== null || b.pendientes.length > 0 || b.fotos.length > 0;
+    if (!cargando && !cmd && texto && !m.photo && !m.document && deps.consultar) return responder(chat, texto);
+    if (m.photo || m.document) b.enAviso = true;
 
     if (cmd === "estado") return decir(chat, vista(b));
     if (cmd === "listo") {

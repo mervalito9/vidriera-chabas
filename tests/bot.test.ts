@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { crearAsistente } from "../server/bot/asistente.ts";
-import { crearClaude, normalizarFicha, armarPedido, SISTEMA, type Ficha, type PedidoFicha } from "../server/bot/claude.ts";
+import { crearClaude, normalizarFicha, armarPedido, SISTEMA, type Ficha, type PedidoFicha, crearOpenRouter } from "../server/bot/claude.ts";
 import { crearTelegram, type TelegramApi, type UpdateTelegram } from "../server/bot/telegram.ts";
 import type { NuevoAviso } from "../shared/tipos.ts";
 
@@ -242,4 +242,77 @@ test("un update sin mensaje no rompe nada", async () => {
   });
   await a.manejar(vacio);
   assert.deepEqual(t.dichos, []);
+});
+
+test("cliente por OpenRouter: función, plan B con JSON si da 400, y error claro sin crédito", async () => {
+  const ficha = { rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Fiat Cronos", precio: 0, moneda: "USD", pueblo: "Chabás", zona: "", descripcion: "", datos: [], permuta: false, financia: false, nombre: "Juan", telefono: "3464123456", duenoSoyYo: false, faltan: ["Precio"] };
+  const cuerpos: Record<string, unknown>[] = [];
+  const f = (async (_u: string, init: { body: string }) => {
+    const b = JSON.parse(init.body) as Record<string, unknown>; cuerpos.push(b);
+    if (b.tools) return new Response("{}", { status: 400 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(ficha) } }] }), { status: 200 });
+  }) as unknown as typeof fetch;
+  const r = await crearOpenRouter("sk-or-x", "m", f)({ nuevo: ["cronos 2021"], actual: null });
+  assert.equal(r.titulo, "Fiat Cronos");
+  assert.equal(r.precio, null);
+  assert.equal(cuerpos.length, 2);
+  const sinCredito = (async () => new Response("{}", { status: 402 })) as unknown as typeof fetch;
+  await assert.rejects(crearOpenRouter("sk-or-x", "m", sinCredito)({ nuevo: ["x"], actual: null }), (e: Error) => /402 \(sin crédito\)/.test(e.message) && !e.message.includes("sk-or-x"));
+});
+
+test("preguntas: sin aviso en curso contesta con los datos del sitio; /aviso o una foto arrancan la carga; '?' pregunta en el medio", async () => {
+  const dichos: string[] = [];
+  const preguntas: { p: string; datos: unknown; hist: number }[] = [];
+  const armados: PedidoFicha[] = [];
+  let n = 0;
+  const a = crearAsistente({
+    tg: { getUpdates: async () => [], sendMessage: async (_c, t) => void dichos.push(t), descargar: async () => JPG },
+    armar: async (p) => { armados.push(p); return ficha(); },
+    publicar: () => 1,
+    permitidos: new Set([FELIPE]),
+    propio: { nombre: "Felipe", telefono: "3464111222" },
+    urlSitio: "",
+    consultar: async (p, hist, datos) => { preguntas.push({ p, datos, hist: hist.length }); return `Ahora hay 3 personas (${p})`; },
+    datosSitio: () => ({ enVivo: { total: 3 } }),
+  });
+  const enviar = (text: string) => a.manejar({ update_id: ++n, message: { message_id: n, from: { id: FELIPE }, chat: { id: FELIPE, type: "private" }, text } });
+  const foto = () => a.manejar({ update_id: ++n, message: { message_id: n, from: { id: FELIPE }, chat: { id: FELIPE, type: "private" }, photo: [{ file_id: "x", width: 900, height: 900, file_size: 1000 }] } });
+
+  await enviar("cuánta gente hay ahora?");
+  assert.equal(preguntas.length, 1);
+  assert.deepEqual(preguntas[0]!.datos, { enVivo: { total: 3 } });
+  assert.match(dichos.at(-1)!, /3 personas/);
+  await enviar("y ayer?");
+  assert.equal(preguntas[1]!.hist, 2); // lleva la charla anterior
+
+  await enviar("/aviso");
+  await enviar("Gol Trend 2015, 9500 USD, Laura 3464555123");
+  assert.equal(preguntas.length, 2); // fue al borrador, no es pregunta
+  await enviar("? cuántas visitas hoy");
+  assert.equal(preguntas.length, 3);
+  assert.equal(preguntas[2]!.p, "cuántas visitas hoy");
+  await enviar("/listo");
+  assert.equal(armados.length, 1);
+  assert.deepEqual(armados[0]!.nuevo, ["Gol Trend 2015, 9500 USD, Laura 3464555123"]);
+
+  await enviar("/cancelar");
+  await foto(); // una foto arranca un aviso sola
+  await enviar("Moto Honda Wave");
+  assert.equal(preguntas.length, 3);
+});
+
+test("consultas por OpenRouter: manda los datos y la pregunta, limpia los asteriscos", async () => {
+  const { crearConsultasOpenRouter } = await import("../server/bot/consultas.ts");
+  let cuerpo: { messages: { role: string; content: string }[] } | null = null;
+  const f = (async (_u: string, init: { body: string }) => {
+    cuerpo = JSON.parse(init.body);
+    return new Response(JSON.stringify({ choices: [{ message: { content: "Hay **3** personas en vivo." } }] }), { status: 200 });
+  }) as unknown as typeof fetch;
+  const r = await crearConsultasOpenRouter("k", "m", f)("cuánta gente hay", [{ de: "felipe", texto: "hola" }, { de: "bot", texto: "hola!" }], { enVivo: { total: 3 } });
+  assert.equal(r, "Hay 3 personas en vivo.");
+  const ultimo = cuerpo!.messages.at(-1)!.content;
+  assert.match(ultimo, /<datos>[\s\S]*"total":3[\s\S]*<\/datos>/);
+  assert.match(ultimo, /<pregunta>\ncuánta gente hay\n<\/pregunta>/);
+  assert.equal(cuerpo!.messages[1]!.role, "user");
+  assert.equal(cuerpo!.messages[2]!.role, "assistant");
 });

@@ -2,7 +2,9 @@
 // sin un acceso nuevo al panel. Si falta alguna variable, no arranca y el sitio funciona igual.
 import { WA_NUMERO } from "../../shared/config.ts";
 import { crearAsistente } from "./asistente.ts";
-import { crearClaude } from "./claude.ts";
+import { crearClaude, crearOpenRouter } from "./claude.ts";
+import { crearConsultasClaude, crearConsultasOpenRouter } from "./consultas.ts";
+import { fotoDelSitio } from "./datosSitio.ts";
 import { crearTelegram } from "./telegram.ts";
 import { crearAviso } from "../db.ts";
 import { guardarFotos } from "../imagenes.ts";
@@ -20,20 +22,28 @@ export function iniciarBot(): boolean {
       .map((x) => Number(x.trim()))
       .filter((n) => Number.isSafeInteger(n) && n > 0),
   );
-  const clave = process.env.ANTHROPIC_API_KEY ?? "";
-  if (permitidos.size === 0 || !clave) {
-    console.warn("Asistente de Telegram: falta TELEGRAM_USER_ID o ANTHROPIC_API_KEY, no se activa (los avisos de novedades andan igual).");
+  // OpenRouter (la misma clave que el asistente del panel) o la API de Claude directa.
+  const claveOR = (process.env.OPENROUTER_API_KEY ?? "").trim();
+  const clave = (process.env.ANTHROPIC_API_KEY ?? "").trim();
+  if (permitidos.size === 0 || (!claveOR && !clave)) {
+    console.warn("Asistente de Telegram: falta TELEGRAM_USER_ID o la clave de IA (OPENROUTER_API_KEY), no se activa (los avisos de novedades andan igual).");
     return false;
   }
 
   const tg = crearTelegram(token);
   const asistente = crearAsistente({
     tg,
-    armar: crearClaude(clave, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5"),
+    armar: claveOR
+      ? crearOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined)
+      : crearClaude(clave, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5"),
     publicar: (aviso) => crearAviso(aviso, guardarFotos(aviso.fotos), { estado: "publicado" }),
     permitidos,
     propio: { nombre: process.env.BOT_NOMBRE_PROPIO || "Felipe", telefono: process.env.BOT_TELEFONO_PROPIO || WA_NUMERO },
     urlSitio: (process.env.SITE_URL ?? "").replace(/\/$/, ""),
+    consultar: claveOR
+      ? crearConsultasOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined)
+      : crearConsultasClaude(clave, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5"),
+    datosSitio: fotoDelSitio,
   });
 
   void (async () => {

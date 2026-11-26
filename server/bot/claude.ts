@@ -41,7 +41,7 @@ export const SISTEMA = `Sos el asistente de carga de avisos de Vidriera Chabás,
 Quien te escribe es Felipe, el administrador del sitio. Te pasa datos sueltos de un aviso (mensajes reenviados, notas) y a veces correcciones. Tu trabajo es devolver la ficha del aviso con la herramienta armar_aviso.
 
 REGLAS
-1. No inventes nada. Si un dato no está en lo que Felipe te dio, dejalo vacío (precio null, texto "") y anotalo en "faltan". Esto incluye año, kilómetros, versión, estado, equipamiento, nombre y teléfono.
+1. No inventes nada. Si un dato no está en lo que Felipe te dio, dejalo vacío (precio 0, texto "") y anotalo en "faltan". Esto incluye año, kilómetros, versión, estado, equipamiento, nombre y teléfono.
 2. Tono sobrio, en castellano rioplatense. Nada de "oportunidad única", "imperdible" ni mayúsculas gritadas. La descripción (3 a 5 líneas) solo tiene datos que se puedan comprobar mirando el bien.
 3. En el título y la descripción no pongas teléfono, dirección exacta ni apellido del dueño. El contacto va en "nombre" y "telefono".
 4. "tipo" tiene que ser exactamente uno de estos según el rubro:
@@ -49,7 +49,7 @@ ${tiposPorRubro}
 5. "datos": hasta 8 datos cortos (máximo 40 caracteres cada uno), por ejemplo "Año 2015", "120.000 km", "Nafta", "Manual". Solo los que Felipe te dio.
 6. "titulo": máximo ${LIMITES.titulo} caracteres, formato "Marca Modelo Versión · Año" o equivalente. "descripcion": máximo ${LIMITES.descripcion} caracteres.
 7. "telefono": solo dígitos, con código de área (ej. 3464123456). Si Felipe dice que el bien es suyo ("es mío", "mi auto"), poné duenoSoyYo en true y dejá nombre y teléfono vacíos.
-8. "moneda": USD o ARS según lo que diga Felipe. Si no lo aclara y el precio es muy alto o bajo para saber, no adivines: poné precio null y anotalo en "faltan".
+8. "moneda": USD o ARS según lo que diga Felipe. Si no lo aclara y el precio es muy alto o bajo para saber, no adivines: poné precio 0 y anotalo en "faltan".
 9. Si hay datos contradictorios (dos precios, dos años), no elijas: dejá el campo vacío y anotá la duda en "faltan".
 10. Si ya hay una ficha, aplicá solo los cambios que pide Felipe y conservá el resto igual. Devolvé siempre la ficha completa.
 11. "pueblo": dónde está el bien. Usá uno de estos si corresponde: ${PUEBLOS.join(", ")}. Si es otro pueblo, escribí su nombre. Si Felipe no lo dijo, dejalo vacío y anotalo en "faltan".
@@ -62,7 +62,7 @@ const ESQUEMA = {
     tipo: { type: "string" },
     operacion: { type: "string", enum: ["venta", "alquiler"] },
     titulo: { type: "string" },
-    precio: { type: ["integer", "null"], description: "Solo el número entero, sin puntos ni símbolo. null si no se sabe." },
+    precio: { type: "integer", description: "Solo el número entero, sin puntos ni símbolo. 0 si no se sabe." },
     moneda: { type: "string", enum: ["USD", "ARS"] },
     pueblo: { type: "string", description: "Pueblo donde está el bien. Vacío si no se sabe." },
     zona: { type: "string", description: "Barrio o zona dentro del pueblo, si Felipe la dijo." },
@@ -143,5 +143,54 @@ export function crearClaude(clave: string, modelo: string, f: typeof fetch = fet
     const bloque = j.content?.find((b) => b.type === "tool_use" && b.name === "armar_aviso");
     if (!bloque || typeof bloque.input !== "object" || bloque.input === null) throw new Error("Claude no devolvió la ficha");
     return normalizarFicha(bloque.input);
+  };
+}
+
+/**
+ * Lo mismo por OpenRouter (formato OpenAI): cualquier modelo con una sola clave.
+ * Si el modelo no acepta la función (error 400), lo pide de nuevo como JSON en el texto.
+ */
+export function crearOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1"): ArmarFicha {
+  async function pedir(cuerpo: Record<string, unknown>): Promise<Response> {
+    try {
+      return await f(`${base}/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${clave}`, "x-title": "Vidriera Chabas" },
+        body: JSON.stringify(cuerpo),
+        signal: AbortSignal.timeout(60_000),
+      });
+    } catch {
+      throw new Error("OpenRouter no respondió a tiempo");
+    }
+  }
+  return async (pedido) => {
+    const usuario = { role: "user", content: armarPedido(pedido) };
+    let r = await pedir({
+      model: modelo,
+      max_tokens: 1500,
+      messages: [{ role: "system", content: SISTEMA }, usuario],
+      tools: [{ type: "function", function: { name: "armar_aviso", description: "Devuelve la ficha completa del aviso.", parameters: ESQUEMA } }],
+      tool_choice: { type: "function", function: { name: "armar_aviso" } },
+    });
+    if (r.status === 400) {
+      r = await pedir({
+        model: modelo,
+        max_tokens: 1500,
+        messages: [{ role: "system", content: `${SISTEMA}\n\nRespondé SOLO con un objeto JSON (sin texto antes ni después) con estas claves: ${Object.keys(ESQUEMA.properties).join(", ")}.` }, usuario],
+      });
+    }
+    if (!r.ok) throw new Error(`OpenRouter respondió con error ${r.status}${r.status === 401 ? " (clave no válida)" : r.status === 402 ? " (sin crédito)" : ""}`);
+    const j = (await r.json()) as { choices?: { message?: { tool_calls?: { function?: { name?: string; arguments?: string } }[]; content?: string } }[] };
+    const m = j.choices?.[0]?.message;
+    const crudo = (m?.tool_calls?.find((t) => t.function?.name === "armar_aviso")?.function?.arguments ?? m?.content ?? "").replace(/^```(?:json)?\s*|\s*```$/g, "");
+    let datos: unknown = null;
+    try {
+      datos = JSON.parse(crudo);
+    } catch {
+      const desde = crudo.indexOf("{");
+      try { datos = desde >= 0 ? JSON.parse(crudo.slice(desde, crudo.lastIndexOf("}") + 1)) : null; } catch { datos = null; }
+    }
+    if (typeof datos !== "object" || datos === null) throw new Error("La IA no devolvió la ficha");
+    return normalizarFicha(datos);
   };
 }
