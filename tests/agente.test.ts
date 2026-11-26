@@ -236,3 +236,38 @@ test("cliente de OpenRouter: caché automática y modelo de respaldo", async () 
   await crearModeloOpenRouter("k", "m", f)([{ role: "user", content: "x" }], []);
   assert.equal(cuerpo.models, undefined, "sin respaldo no manda la lista");
 });
+
+test("notas de voz: se pasan a texto y el agente las lee como un mensaje más", async () => {
+  const { crearAgente, crearTranscriptorOpenRouter } = await import("../server/bot/agente.ts");
+  const dichos: string[] = [];
+  const vistos: string[] = [];
+  let pedido: Record<string, unknown> = {};
+  const f = (async (_u: string, init: RequestInit) => {
+    pedido = JSON.parse(String(init.body));
+    return new Response(JSON.stringify({ text: "vendo un Punto a catorce millones" }), { status: 200 });
+  }) as typeof fetch;
+  const mk = (transcribir?: ReturnType<typeof crearTranscriptorOpenRouter>) =>
+    crearAgente({
+      tg: { getUpdates: async () => [], sendMessage: async (_c, t) => void dichos.push(t), descargar: async () => JPG },
+      transcribir,
+      modelo: async (msgs) => (vistos.push(msgs.map((m) => ("content" in m ? String(m.content) : "")).join("\n")), decirIA("ok")),
+      sitio: { publicar: () => 1, buscar: () => ({}), ver: () => ({}), editar: () => "ok", agregarFotos: () => "ok", estadisticas: () => ({}) },
+      permitidos: new Set([FELIPE]), propio: { nombre: "Felipe", telefono: "1" }, urlSitio: "", dir: mkdtempSync(join(base, "voz-")), esperaTextoMs: 5,
+    });
+  const voz = { update_id: 1, message: { message_id: 1, from: { id: FELIPE }, chat: { id: FELIPE, type: "private" }, voice: { file_id: "v", duration: 8, mime_type: "audio/ogg" } } };
+
+  const sin = mk();
+  await sin.manejar(voz);
+  assert.match(dichos[0] ?? "", /Todavía no entiendo audios/);
+
+  const con = mk(crearTranscriptorOpenRouter("k", "openai/whisper-large-v3", f));
+  await con.manejar(voz);
+  await con.esperar();
+  assert.equal(pedido.model, "openai/whisper-large-v3");
+  assert.equal((pedido.input_audio as { format: string }).format, "ogg");
+  assert.match(vistos[0] ?? "", /\[audio\] vendo un Punto a catorce millones/);
+
+  const larga = { ...voz, message: { ...voz.message, voice: { file_id: "v", duration: 900 } } };
+  await con.manejar(larga);
+  assert.match(dichos[dichos.length - 1] ?? "", /muy largo/);
+});

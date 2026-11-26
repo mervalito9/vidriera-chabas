@@ -2,7 +2,7 @@
 // sin un acceso nuevo al panel. Si falta alguna variable, no arranca y el sitio funciona igual.
 import { WA_NUMERO } from "../../shared/config.ts";
 import { join } from "node:path";
-import { crearAgente, crearModeloOpenRouter } from "./agente.ts";
+import { crearAgente, crearModeloOpenRouter, crearTranscriptorOpenRouter } from "./agente.ts";
 import { crearAsistente } from "./asistente.ts";
 import { crearAccesoSitio } from "./sitio.ts";
 import { crearClaude, crearOpenRouter } from "./claude.ts";
@@ -41,6 +41,7 @@ export function iniciarBot(): boolean {
     ? crearAgente({
         tg,
         modelo: crearModeloOpenRouter(claveOR, process.env.BOT_MODEL || process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined, process.env.OPENROUTER_RESPALDO ?? "deepseek/deepseek-v4.1-flash"),
+        transcribir: crearTranscriptorOpenRouter(claveOR, process.env.BOT_STT_MODEL || "openai/whisper-large-v3", fetch, process.env.OPENROUTER_BASE_URL || undefined),
         sitio: crearAccesoSitio(urlSitio),
         permitidos,
         propio,

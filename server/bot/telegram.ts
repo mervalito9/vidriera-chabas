@@ -16,6 +16,9 @@ export interface MensajeTelegram {
   caption?: string;
   photo?: FotoTelegram[];
   document?: { file_id: string; mime_type?: string; file_size?: number };
+  /** Nota de voz (OGG/Opus) o archivo de audio. */
+  voice?: { file_id: string; duration?: number; mime_type?: string; file_size?: number };
+  audio?: { file_id: string; duration?: number; mime_type?: string; file_size?: number };
 }
 
 export interface UpdateTelegram {
