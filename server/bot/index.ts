@@ -44,6 +44,7 @@ export function iniciarBot(): boolean {
       ? crearConsultasOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined)
       : crearConsultasClaude(clave, process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5"),
     datosSitio: fotoDelSitio,
+    esperaAutoMs: 6000,
   });
 
   void (async () => {

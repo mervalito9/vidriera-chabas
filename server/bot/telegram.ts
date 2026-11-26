@@ -27,6 +27,8 @@ export interface TelegramApi {
   /** Pide mensajes nuevos y espera hasta `segundos` si no hay (long polling). */
   getUpdates(offset: number, segundos: number): Promise<UpdateTelegram[]>;
   sendMessage(chatId: number, texto: string): Promise<void>;
+  /** Muestra «escribiendo…» unos segundos (opcional). */
+  escribiendo?(chatId: number): Promise<void>;
   /** Baja un archivo de Telegram. Falla si pesa más de `maxBytes`. */
   descargar(fileId: string, maxBytes: number): Promise<Buffer>;
 }
@@ -58,6 +60,9 @@ export function crearTelegram(token: string, f: typeof fetch = fetch): TelegramA
   return {
     getUpdates: (offset, segundos) => llamar<UpdateTelegram[]>("getUpdates", { offset, timeout: segundos, allowed_updates: ["message"] }, (segundos + 15) * 1000),
 
+    async escribiendo(chatId) {
+      await llamar("sendChatAction", { chat_id: chatId, action: "typing" }).catch(() => {});
+    },
     async sendMessage(chatId, texto) {
       for (let i = 0; i < texto.length || i === 0; i += MAX_TEXTO) {
         await llamar("sendMessage", { chat_id: chatId, text: texto.slice(i, i + MAX_TEXTO), disable_web_page_preview: true });

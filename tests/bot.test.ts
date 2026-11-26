@@ -316,3 +316,51 @@ test("consultas por OpenRouter: manda los datos y la pregunta, limpia los asteri
   assert.equal(cuerpo!.messages[1]!.role, "user");
   assert.equal(cuerpo!.messages[2]!.role, "assistant");
 });
+
+test("charla fluida: detecta un aviso sin comandos, arma la ficha sola, se corrige hablando y se publica con «publicalo»", async () => {
+  const dichos: string[] = [];
+  const armados: PedidoFicha[] = [];
+  const publicados: NuevoAviso[] = [];
+  let n = 0;
+  const a = crearAsistente({
+    tg: { getUpdates: async () => [], sendMessage: async (_c, t) => void dichos.push(t), descargar: async () => JPG },
+    armar: async (p) => { armados.push(structuredClone(p)); return ficha(p.nuevo.some((x) => /9\.?000/.test(x)) ? { precio: 9000 } : {}); },
+    publicar: (av) => { publicados.push(av); return 7; },
+    permitidos: new Set([FELIPE]),
+    propio: { nombre: "Felipe", telefono: "3464111222" },
+    urlSitio: "https://vidrierachabas.ar",
+    consultar: async (p) => (/vendo|gol/i.test(p) ? "__AVISO__" : "Hay 2 personas en vivo."),
+    datosSitio: () => ({}),
+    esperaAutoMs: 20,
+  });
+  const enviar = (text: string) => a.manejar({ update_id: ++n, message: { message_id: n, from: { id: FELIPE }, chat: { id: FELIPE, type: "private" }, text } });
+  const foto = () => a.manejar({ update_id: ++n, message: { message_id: n, from: { id: FELIPE }, chat: { id: FELIPE, type: "private" }, photo: [{ file_id: "x", width: 900, height: 900, file_size: 1000 }] } });
+  const esperar = () => new Promise((r) => setTimeout(r, 60));
+
+  await enviar("vendo gol trend 2015 9500 usd laura 3464555123");
+  assert.equal(armados.length, 1); // sin /listo
+  assert.match(dichos.at(-1)!, /FICHA/);
+  assert.match(dichos.at(-1)!, /¿Lo publico\?|Escribime lo que falte/);
+
+  await foto(); await foto(); await foto();
+  await enviar("el precio es 9.000 dólares");
+  await esperar();
+  assert.equal(armados.length, 2); // se actualizó sola
+  assert.deepEqual(armados[1]!.nuevo, ["el precio es 9.000 dólares"]);
+
+  await enviar("cuánta gente hay?"); // pregunta en el medio
+  assert.match(dichos.at(-1)!, /2 personas/);
+
+  await enviar("publicalo");
+  assert.equal(publicados.length, 1);
+  assert.equal(publicados[0]!.precio, 9000);
+  assert.match(dichos.at(-1)!, /Publicado ✅/);
+
+  // Fotos primero, datos después: también sin comandos.
+  await foto();
+  await enviar("Moto Honda Wave 2022, 1800 dólares, Ana 3464401237");
+  await esperar();
+  assert.equal(armados.length, 3);
+  await enviar("cancelá");
+  assert.match(dichos.at(-1)!, /lo borré/);
+});
