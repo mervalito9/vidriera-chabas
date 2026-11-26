@@ -9,6 +9,7 @@ import { validarAviso } from "../../shared/validar.ts";
 import * as datos from "../db.ts";
 import { FOTOS_DIR } from "../db.ts";
 import { borrarFotos } from "../imagenes.ts";
+import { leerFotos } from "../mejorar.ts";
 import type { AccesoSitio, CambiosAviso } from "./agente.ts";
 import { fotoDelSitio } from "./datosSitio.ts";
 
@@ -109,6 +110,27 @@ export function crearAccesoSitio(urlSitio: string): AccesoSitio {
       }
       const sobran = rutas.length - nuevas.length;
       return `ok: el aviso n.º ${id} ahora tiene ${viejas.length + nuevas.length} fotos${sobran > 0 ? ` (${sobran} no entraron por el máximo de ${LIMITES.fotos})` : ""}. ${urlSitio}/a/${id}`;
+    },
+
+    fotosDe(id) {
+      const a = datos.obtenerAdmin(id);
+      if (!a || a.ejemplo) return { error: `No existe el aviso n.º ${id}` };
+      const archivos = datos.archivosDe(id);
+      const leidas = leerFotos(FOTOS_DIR, archivos.slice(0, 12));
+      const fotos = leidas.flatMap((f) => (f ? [`data:${f.media_type};base64,${f.data}`] : []));
+      return fotos.length ? { fotos, total: archivos.length } : { error: "Ese aviso no tiene fotos que se puedan leer." };
+    },
+
+    ordenarFotos(id, orden) {
+      const a = datos.obtenerAdmin(id);
+      if (!a || a.ejemplo) return `error: no existe el aviso n.º ${id}`;
+      const archivos = datos.archivosDe(id);
+      const validas = [...new Set(orden.filter((n) => n >= 1 && n <= archivos.length))];
+      if (!validas.length) return `error: el aviso tiene ${archivos.length} fotos; mandá números entre 1 y ${archivos.length}`;
+      const primeras = validas.map((n) => archivos[n - 1] as string);
+      const final = [...primeras, ...archivos.filter((f) => !primeras.includes(f))];
+      datos.editarAviso(id, aNuevo(a), final);
+      return `ok: fotos del aviso n.º ${id} reordenadas (${final.length} en total). ${urlSitio}/a/${id}`;
     },
 
     estadisticas: fotoDelSitio,

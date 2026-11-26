@@ -40,15 +40,17 @@ function montar(guion: Guion, opciones: { dir?: string; sitio?: Partial<AccesoSi
     editar: () => "ok",
     agregarFotos: (id, fotos) => (sumadas.push({ id, fotos }), `ok: el aviso ${id} tiene ${fotos.length} fotos más`),
     estadisticas: () => ({ enVivo: 3 }),
+    fotosDe: () => ({ fotos: ["data:image/jpeg;base64,/9j/AA=="], total: 1 }),
+    ordenarFotos: () => "ok",
     ...opciones.sitio,
   };
   const ag = crearAgente({
     tg: { getUpdates: async () => [], sendMessage: async (_c, t) => void dichos.push(t), descargar: async () => JPG },
     modelo: async (msgs) => {
       vistos.push(structuredClone(msgs));
-      const ultimo = [...msgs].reverse().find((m) => m.role === "user")?.content ?? "";
+      const ultimo = [...msgs].reverse().find((m) => m.role === "user" && typeof m.content === "string")?.content ?? "";
       // Solo cuentan las herramientas usadas en este turno (después del último mensaje de Felipe).
-      const desde = msgs.map((m) => m.role).lastIndexOf("user");
+      const desde = msgs.map((m) => (m.role === "user" && typeof m.content === "string" ? "user" : "otro")).lastIndexOf("user");
       const enEsteTurno = msgs.slice(desde).flatMap((m) => (m.role === "assistant" && m.tool_calls ? m.tool_calls.map((t) => t.function.name) : []));
       return guion(msgs, String(ultimo), enEsteTurno);
     },
@@ -251,7 +253,7 @@ test("notas de voz: se pasan a texto y el agente las lee como un mensaje más", 
       tg: { getUpdates: async () => [], sendMessage: async (_c, t) => void dichos.push(t), descargar: async () => JPG },
       transcribir,
       modelo: async (msgs) => (vistos.push(msgs.map((m) => ("content" in m ? String(m.content) : "")).join("\n")), decirIA("ok")),
-      sitio: { publicar: () => 1, buscar: () => ({}), ver: () => ({}), editar: () => "ok", agregarFotos: () => "ok", estadisticas: () => ({}) },
+      sitio: { publicar: () => 1, buscar: () => ({}), ver: () => ({}), editar: () => "ok", agregarFotos: () => "ok", estadisticas: () => ({}), fotosDe: () => ({ error: "x" }), ordenarFotos: () => "ok" },
       permitidos: new Set([FELIPE]), propio: { nombre: "Felipe", telefono: "1" }, urlSitio: "", dir: mkdtempSync(join(base, "voz-")), esperaTextoMs: 5,
     });
   const voz = { update_id: 1, message: { message_id: 1, from: { id: FELIPE }, chat: { id: FELIPE, type: "private" }, voice: { file_id: "v", duration: 8, mime_type: "audio/ogg" } } };
@@ -270,4 +272,38 @@ test("notas de voz: se pasan a texto y el agente las lee como un mensaje más", 
   const larga = { ...voz, message: { ...voz.message, voice: { file_id: "v", duration: 900 } } };
   await con.manejar(larga);
   assert.match(dichos[dichos.length - 1] ?? "", /muy largo/);
+});
+
+test("el agente puede mirar las fotos de un aviso publicado y reordenarlas", async () => {
+  const ordenadas: number[][] = [];
+  const t = montar(
+    (msgs, _u, hechas) => {
+      if (!hechas.length) return usar("ver_fotos_de_aviso", { id: 15 });
+      if (hechas.length === 1) return usar("ordenar_fotos_de_aviso", { id: 15, orden: [3, 1, 2] });
+      const vioFotos = msgs.some((m) => m.role === "user" && Array.isArray(m.content) && m.content.some((c) => c.type === "image_url"));
+      return decirIA(vioFotos ? "Puse la 3 de tapa: es la más nítida." : "no vi nada");
+    },
+    { sitio: { ordenarFotos: (_id, orden) => (ordenadas.push(orden), "ok: reordenadas") } },
+  );
+  await t.enviar("mejorá las fotos del Punto, el 15");
+  await t.esperar();
+  assert.deepEqual(ordenadas, [[3, 1, 2]]);
+  assert.equal(t.dichos[t.dichos.length - 1], "Puse la 3 de tapa: es la más nítida.");
+});
+
+test("acceso real: lee y reordena las fotos de un aviso", () => {
+  const sitio = crearAccesoSitio("https://vidrierachabas.ar");
+  const tmp = mkdtempSync(join(base, "o-"));
+  const rutas = Array.from({ length: 3 }, (_, i) => {
+    const r = join(tmp, `${i}.jpg`);
+    writeFileSync(r, Buffer.from([0xff, 0xd8, 0xff, 0xe0, i, 2, 3, 4, 5, 6]));
+    return r;
+  });
+  const id = sitio.publicar({ rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Gol 2012", precio: 5000, moneda: "USD", pueblo: "Chabás", anunciante: "", quien: "dueno", zona: "", descripcion: "", datos: [], permuta: false, financia: false, nombre: "A", telefono: "3464111222", fotos: [], condiciones: null, lat: null, lng: null }, rutas);
+  const antes = datos.archivosDe(id);
+  const v = sitio.fotosDe(id);
+  assert.ok("fotos" in v && v.fotos.length === 3 && v.fotos[0]?.startsWith("data:image/jpeg;base64,"));
+  assert.match(sitio.ordenarFotos(id, [3, 1]), /^ok/);
+  assert.deepEqual(datos.archivosDe(id), [antes[2], antes[0], antes[1]]);
+  assert.match(sitio.ordenarFotos(id, [9]), /^error/);
 });

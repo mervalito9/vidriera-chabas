@@ -24,6 +24,7 @@ export interface LlamadaHerramienta {
 }
 export type MensajeIA =
   | { role: "system" | "user"; content: string }
+  | { role: "user"; content: ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } })[] }
   | { role: "assistant"; content: string | null; tool_calls?: LlamadaHerramienta[] }
   | { role: "tool"; tool_call_id: string; content: string };
 export interface RespuestaIA {
@@ -93,6 +94,10 @@ export interface AccesoSitio {
   /** Devuelve un texto con el resultado (o el error, para que el agente lo explique). */
   editar(id: number, cambios: CambiosAviso): string;
   agregarFotos(id: number, fotos: string[], alPrincipio: boolean): string;
+  /** Las fotos de un aviso como data URL, en orden (hasta 12), o un error. */
+  fotosDe(id: number): { fotos: string[]; total: number } | { error: string };
+  /** Reordena las fotos de un aviso. `orden` son posiciones actuales (1 = la primera). */
+  ordenarFotos(id: number, orden: number[]): string;
   estadisticas(): unknown;
 }
 
@@ -202,6 +207,8 @@ PUBLICAR
 
 AVISOS DEL SITIO
 - buscar_avisos y ver_aviso para encontrar y mirar avisos (publicados, pendientes de vecinos, vendidos).
+- ver_fotos_de_aviso te deja MIRAR las fotos de un aviso (hasta 12). Usala cuando Felipe pida mejorar u ordenar un aviso: juzgá cuál es la mejor tapa (nítida, bien iluminada, que muestre el frente o lo principal), si hay fotos borrosas, oscuras o repetidas, y reordenalas con ordenar_fotos_de_aviso. No borra fotos: las malas van al final. Contale en una línea qué cambiaste y por qué.
+- Para "mejorá este aviso": mirá las fotos, revisá título y descripción, y proponele a Felipe los cambios antes de aplicarlos (el reorden de fotos podés hacerlo directo porque se puede deshacer).
 - editar_aviso cambia datos de un aviso existente (precio, título, descripción, reservado, marcarlo vendido, aprobar un pendiente con estado "publicado"). Antes de cambiar el estado de un aviso de un vecino, confirmalo con Felipe.
 - No podés borrar ni rechazar avisos: eso se hace en el panel (vidrierachabas.ar/#admin).
 
@@ -253,6 +260,8 @@ export const HERRAMIENTAS = [
     reservado: { type: "boolean" }, estado: { type: "string", enum: ["publicado", "vendido"] },
   }, ["id"]),
   fn("agregar_fotos_a_aviso", "Suma las fotos que están en el borrador a un aviso que ya existe (después el borrador queda sin fotos).", { id: { type: "integer" }, alPrincipio: { type: "boolean", description: "true = van primero (la primera pasa a ser la tapa)" } }, ["id"]),
+  fn("ver_fotos_de_aviso", "Mira las fotos de un aviso que ya existe (hasta 12) para juzgarlas: cuál es la mejor para la tapa, si hay fotos borrosas, oscuras o repetidas. Después de llamarla, las imágenes te llegan en el mensaje siguiente.", { id: { type: "integer" } }, ["id"]),
+  fn("ordenar_fotos_de_aviso", "Cambia el orden de las fotos de un aviso que ya existe. Los números son las posiciones actuales (1 = la primera = la tapa). Las que no nombres quedan al final, no se borran.", { id: { type: "integer" }, orden: { type: "array", items: { type: "integer" } } }, ["id", "orden"]),
   fn("ver_estadisticas", "Estado del sitio ahora: gente en vivo, visitas de hoy/7/30 días, avisos que más rinden, búsquedas, pendientes, errores, dólar."),
 ];
 
@@ -428,6 +437,8 @@ export function crearAgente(deps: DepsAgente) {
     e: EstadoChat;
     cambioBorrador: boolean;
     hechas: string[];
+    /** Fotos que la IA pidió ver: se le mandan en el mensaje que sigue a la herramienta. */
+    imagenes: string[];
   }
 
   function ejecutar(t: Turno, nombre: string, args: Record<string, unknown>): string {
@@ -499,6 +510,18 @@ export function crearAgente(deps: DepsAgente) {
         }
         return r;
       }
+      case "ver_fotos_de_aviso": {
+        const r = deps.sitio.fotosDe(Number(args.id));
+        if ("error" in r) return JSON.stringify({ ok: false, error: r.error });
+        t.imagenes = r.fotos;
+        return JSON.stringify({ ok: true, total: r.total, mostradas: r.fotos.length, nota: "Las fotos van en el mensaje siguiente, en el orden del aviso (la primera es la tapa actual)." });
+      }
+      case "ordenar_fotos_de_aviso": {
+        const orden = Array.isArray(args.orden) ? args.orden.map(Number).filter((n) => Number.isInteger(n) && n >= 1) : [];
+        const r = deps.sitio.ordenarFotos(Number(args.id), orden);
+        if (r.startsWith("ok")) t.hechas.push(`reordené las fotos del aviso n.º ${args.id}`);
+        return r;
+      }
       case "ver_estadisticas":
         return JSON.stringify(deps.sitio.estadisticas());
       default:
@@ -513,7 +536,7 @@ export function crearAgente(deps: DepsAgente) {
     for (const l of nuevos) delete l.nuevo;
     guardar(chat);
 
-    const t: Turno = { chat, e, cambioBorrador: false, hechas: [] };
+    const t: Turno = { chat, e, cambioBorrador: false, hechas: [], imagenes: [] };
     const msgs = mensajesParaIA(e, nuevos);
     let final = "";
     void deps.tg.escribiendo?.(chat);
@@ -544,6 +567,10 @@ export function crearAgente(deps: DepsAgente) {
             res = JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "error" });
           }
           msgs.push({ role: "tool", tool_call_id: ll.id, content: res.slice(0, 12_000) });
+        }
+        if (t.imagenes.length) {
+          msgs.push({ role: "user", content: [{ type: "text", text: `Fotos del aviso, en orden (1 a ${t.imagenes.length}):` }, ...t.imagenes.flatMap((url, i) => [{ type: "text" as const, text: `Foto ${i + 1}:` }, { type: "image_url" as const, image_url: { url } }])] });
+          t.imagenes = [];
         }
         guardar(chat);
         void deps.tg.escribiendo?.(chat);
