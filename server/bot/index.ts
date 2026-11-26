@@ -1,12 +1,15 @@
 // Conecta el asistente de Telegram con el sitio. Corre dentro del mismo servidor: publica directo en la base,
 // sin un acceso nuevo al panel. Si falta alguna variable, no arranca y el sitio funciona igual.
 import { WA_NUMERO } from "../../shared/config.ts";
+import { join } from "node:path";
+import { crearAgente, crearModeloOpenRouter } from "./agente.ts";
 import { crearAsistente } from "./asistente.ts";
+import { crearAccesoSitio } from "./sitio.ts";
 import { crearClaude, crearOpenRouter } from "./claude.ts";
 import { crearConsultasClaude, crearConsultasOpenRouter } from "./consultas.ts";
 import { fotoDelSitio } from "./datosSitio.ts";
 import { crearTelegram } from "./telegram.ts";
-import { crearAviso } from "../db.ts";
+import { crearAviso, DATA_DIR } from "../db.ts";
 import { guardarFotos } from "../imagenes.ts";
 import { tokenDe } from "../notificar.ts";
 
@@ -31,7 +34,22 @@ export function iniciarBot(): boolean {
   }
 
   const tg = crearTelegram(token);
-  const asistente = crearAsistente({
+  const urlSitio = (process.env.SITE_URL ?? "https://vidrierachabas.ar").replace(/\/$/, "");
+  const propio = { nombre: process.env.BOT_NOMBRE_PROPIO || "Felipe", telefono: process.env.BOT_TELEFONO_PROPIO || WA_NUMERO };
+  // Con OpenRouter: el agente completo (charla con memoria y herramientas). Solo con la clave de Claude: el asistente simple.
+  const agente = claveOR
+    ? crearAgente({
+        tg,
+        modelo: crearModeloOpenRouter(claveOR, process.env.BOT_MODEL || process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined),
+        sitio: crearAccesoSitio(urlSitio),
+        permitidos,
+        propio,
+        urlSitio,
+        dir: join(DATA_DIR, "bot"),
+      })
+    : null;
+  agente?.retomar();
+  const asistente = agente ?? crearAsistente({
     tg,
     armar: claveOR
       ? crearOpenRouter(claveOR, process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-5.5", fetch, process.env.OPENROUTER_BASE_URL || undefined)
