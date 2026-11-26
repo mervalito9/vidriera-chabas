@@ -28,9 +28,9 @@ const cola = ASISTENTE_ACTIVO
   : null;
 
 /** Pide que el asistente ordene un aviso (en segundo plano: no frena al que publica). */
-export function mejorarEnSegundoPlano(id: number): boolean {
+export function mejorarEnSegundoPlano(id: number, pedidoPorFelipe = false): boolean {
   if (!cola) return false;
-  cola.encolar(id);
+  cola.encolar(id, pedidoPorFelipe);
   return true;
 }
 

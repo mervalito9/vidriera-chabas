@@ -108,3 +108,29 @@ test("por OpenRouter: si rechaza la función (400) prueba con JSON en el texto, 
   const siempre400 = (async () => new Response('{"error":{"message":"anthropic/x is not a valid model ID"}}', { status: 400 })) as unknown as typeof fetch;
   await assert.rejects(crearMejoradorOpenRouter("k", "anthropic/x", siempre400)(aviso, []), /400: anthropic\/x is not a valid model ID/);
 });
+
+test("revisión: datos sin comas, tope diario (salvo pedido de Felipe) y sin reintentos inútiles", async () => {
+  const { sinComas } = await import("../server/mejorar.ts");
+  assert.equal(sinComas("12,5 × 40 m"), "12.5 × 40 m");
+  assert.equal(sinComas("Luz, agua"), "Luz · agua");
+  assert.deepEqual(normalizarPropuesta({ ...salida, datos: ["12,5 × 40 m", "500 m²"] }, aviso).datos, ["12.5 × 40 m", "500 m²"]);
+
+  const estados: string[] = [];
+  let llamadas = 0;
+  const cola = crearCola({ mejorar: async () => { llamadas++; return normalizarPropuesta(salida, aviso); }, leer: () => ({ aviso, fotos: [] }), guardar: (_i, m) => estados.push(m.estado), topeDiario: 1, hoy: () => "2026-11-26" });
+  cola.encolar(1); cola.encolar(2);
+  while (cola.ocupada()) await new Promise((r) => setTimeout(r, 5));
+  assert.equal(llamadas, 1);
+  assert.equal(estados.at(-1), "error"); // el segundo, por el tope
+  cola.encolar(2, true); // Felipe toca «Probar de nuevo»
+  while (cola.ocupada()) await new Promise((r) => setTimeout(r, 5));
+  assert.equal(llamadas, 2);
+
+  let intentos = 0;
+  const sinCredito = crearCola({ mejorar: async () => { intentos++; throw new Error("OpenRouter respondió con error 402 (sin crédito)"); }, leer: () => ({ aviso, fotos: [] }), guardar: () => {} });
+  const original = console.error; console.error = () => {};
+  sinCredito.encolar(3);
+  while (sinCredito.ocupada()) await new Promise((r) => setTimeout(r, 5));
+  console.error = original;
+  assert.equal(intentos, 1);
+});

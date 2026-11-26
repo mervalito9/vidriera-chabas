@@ -1,7 +1,7 @@
 // Editar un aviso y cargar avisos nuevos (de a uno o varios con el .zip), con vista previa en vivo.
 import { textoPublica, type Cliente } from "../components/form/Cliente.tsx";
 import { CONDICIONES_VACIAS, limpiarCondiciones } from "../../../shared/alquiler.ts";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { OTRO_PUEBLO, PUEBLOS } from "../../../shared/config.ts";
 import { fmtFecha, soloDigitos } from "../../../shared/texto.ts";
 import type { AvisoAdmin, AvisoPublico, ErrorCampo, NuevoAviso, RubroId } from "../../../shared/tipos.ts";
@@ -59,6 +59,17 @@ export function Editor({ a, accion, onListo, clientes }: { a: AvisoAdmin; accion
   const m = useMejora(a);
   const usar = () => { if (m.mejora?.propuesta) { setV(conPropuesta(valoresDe(a), a, m.mejora.propuesta)); setUsando(true); } };
   const original = () => { setV(valoresDe(a)); setUsando(false); };
+  // Si la propuesta llega con el aviso abierto y Felipe no cambió nada todavía, se carga sola.
+  // Se recuerda qué propuesta ya se mostró (por su fecha), así elegir «Original» no se pisa con la próxima actualización.
+  const vista = useRef(propuestaInicial ? (a.mejora?.fecha ?? "") : "");
+  const sinTocar = JSON.stringify(v) === JSON.stringify(valoresDe(a));
+  const fechaNueva = m.mejora?.estado === "lista" && m.mejora.propuesta ? m.mejora.fecha : "";
+  useEffect(() => {
+    if (!fechaNueva || fechaNueva === vista.current) return;
+    vista.current = fechaNueva;
+    if (m.mejora?.propuesta && sinTocar && a.estado === "pendiente") { setV(conPropuesta(valoresDe(a), a, m.mejora.propuesta)); setUsando(true); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fechaNueva]);
   const sumar = (frase: string) => setV((x) => ({ ...x, descripcion: `${x.descripcion.trim()}${x.descripcion.trim() ? "\n" : ""}${frase}` }));
   const [enviando, setEnviando] = useState(false);
   const [errores, setErrores] = useState<ErrorCampo[]>([]);

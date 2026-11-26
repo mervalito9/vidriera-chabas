@@ -65,7 +65,7 @@ export function PanelMejora({ a, activo, mejora, usando, onUsar, onOriginal, onS
   if (!mejora && a.estado !== "pendiente") return null;
   if (!mejora) {
     if (activo === false)
-      return <section className="pn-caja pn-mejora pn-gris">El asistente que ordena los avisos está apagado: falta cargar la clave (<code>OPENROUTER_API_KEY</code>) en Railway.</section>;
+      return <section className="pn-caja pn-mejora pn-gris">El asistente que ordena los avisos está apagado: falta cargar la clave <b>OPENROUTER_API_KEY</b> en Railway.</section>;
     if (activo) return <section className="pn-caja pn-mejora"><p>Este aviso todavía no lo ordenó el asistente.</p><button type="button" className="pn-btn" onClick={rehacer}>Ordenarlo ahora</button>{error && <p className="form-err">{error}</p>}</section>;
     return null;
   }

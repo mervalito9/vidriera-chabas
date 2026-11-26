@@ -24,7 +24,7 @@ REGLAS
 1. No inventes nada sobre el bien. Todo dato del aviso (precio, medidas, año, km, estado, dirección, equipamiento) sale de lo que escribió el vecino o de lo que se ve sin duda en las fotos. Si no está, no lo pongas: anotalo en "faltan".
 2. Título claro y concreto, máximo ${LIMITES.titulo} caracteres, sin mayúsculas gritadas ni "VENDO". Ejemplos: "Terreno de 12,5 × 40 m en Chabás", "Casa de 2 dormitorios con patio", "Volkswagen Amarok V6 Highline". No pongas año ni km en el título si van en "datos".
 3. Corregí ortografía y redacción. Tono sobrio, rioplatense, en tercera persona o neutro. Nada de "oportunidad única", "imperdible", emojis ni signos de más. La descripción (2 a 5 líneas, máximo ${LIMITES.descripcion} caracteres) cuenta lo útil para decidir.
-4. "datos": hasta 8 datos cortos (máximo 40 caracteres) que hoy están escondidos en el texto: medidas, m², dormitorios, baños, año, km, combustible, servicios, esquina, etc. Solo los que dijo el vecino.
+4. "datos": hasta 8 datos cortos (máximo 40 caracteres, SIN comas: usá punto decimal, por ejemplo "12.5 × 40 m") que hoy están escondidos en el texto: medidas, m², dormitorios, baños, año, km, combustible, servicios, esquina, etc. Solo los que dijo el vecino.
 5. "zona": si el vecino dio una dirección, calle o barrio, ponelo acá tal como lo dio (el vecino eligió hacerlo público). No lo repitas en el título.
 6. "tipo" tiene que ser exactamente uno de estos según el rubro:
 ${tiposPorRubro}
@@ -64,6 +64,8 @@ const ESQUEMA = {
 
 const texto = (x: unknown, max = 2000): string => (typeof x === "string" ? x.trim().slice(0, max) : "");
 const lista = (v: unknown, max: number, largo = 200): string[] => (Array.isArray(v) ? v.map((x) => texto(x, largo)).filter(Boolean).slice(0, max) : []);
+/** En el panel los datos destacados se separan con comas: un dato no puede tener comas adentro ("12,5 m" → "12.5 m"). */
+export const sinComas = (d: string): string => d.replace(/(\d),(\d)/g, "$1.$2").replace(/\s*,\s*/g, " · ").trim();
 
 /** Deja la salida con los tipos correctos pase lo que pase. El orden de fotos siempre es una permutación completa. */
 export function normalizarPropuesta(x: unknown, a: AvisoAdmin): Propuesta {
@@ -84,7 +86,7 @@ export function normalizarPropuesta(x: unknown, a: AvisoAdmin): Propuesta {
     pueblo: texto(e.pueblo, 40) || a.pueblo,
     zona: texto(e.zona, 60),
     descripcion: texto(e.descripcion, LIMITES.descripcion),
-    datos: lista(e.datos, 8, 40),
+    datos: lista(e.datos, 8, 40).map(sinComas).filter(Boolean),
     permuta: e.permuta === true || a.permuta,
     financia: e.financia === true || a.financia,
     ordenFotos: orden,
@@ -243,7 +245,8 @@ export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeo
     }
     if (!r.ok) {
       const m = motivo(r.detalle);
-      throw new Error(`OpenRouter respondió con error ${r.estado}${/credit|insufficient|balance/i.test(r.detalle) ? " (sin crédito)" : ""}${m ? `: ${m}` : ""}`);
+      const pista = r.estado === 401 ? " (la clave no es válida)" : r.estado === 402 || /credit|insufficient|balance/i.test(r.detalle) ? " (sin crédito)" : r.estado === 429 ? " (demasiados pedidos, probá en un rato)" : "";
+      throw new Error(`OpenRouter respondió con error ${r.estado}${pista}${m ? `: ${m}` : ""}`);
     }
     const datos = leer(r.j);
     if (typeof datos !== "object" || datos === null) throw new Error("La IA no devolvió la propuesta");
@@ -260,9 +263,17 @@ export function crearCola(o: {
   leer: (id: number) => { aviso: AvisoAdmin; fotos: (FotoParaClaude | null)[] } | null;
   guardar: (id: number, m: Mejora) => void;
   avisar?: (a: AvisoAdmin, p: Propuesta) => void;
-}): { encolar: (id: number) => void; ocupada: () => boolean } {
+  /** Tope de avisos por día, para que nadie pueda gastar el crédito mandando avisos en cantidad. */
+  topeDiario?: number;
+  hoy?: () => string;
+}): { encolar: (id: number, forzar?: boolean) => void; ocupada: () => boolean } {
   const fila: number[] = [];
   let trabajando = false;
+  const tope = o.topeDiario ?? 40;
+  const hoy = o.hoy ?? (() => new Date().toISOString().slice(0, 10));
+  let dia = "";
+  let usados = 0;
+  const forzados = new Set<number>();
   async function siguiente(): Promise<void> {
     if (trabajando) return;
     const id = fila.shift();
@@ -270,18 +281,26 @@ export function crearCola(o: {
     trabajando = true;
     try {
       const leido = o.leer(id);
-      if (leido) {
+      if (hoy() !== dia) { dia = hoy(); usados = 0; }
+      const forzado = forzados.delete(id);
+      if (leido && usados >= tope && !forzado) {
+        o.guardar(id, { estado: "error", propuesta: null, error: `se llegó al tope de ${tope} avisos por día; tocá «Probar de nuevo» si querés ordenarlo igual`, fecha: new Date().toISOString() });
+      } else if (leido) {
+        usados++;
         o.guardar(id, { estado: "trabajando", propuesta: null, error: "", fecha: new Date().toISOString() });
         let ultimoError = "";
         for (let intento = 0; intento < 2; intento++) {
           try {
             const p = await o.mejorar(leido.aviso, leido.fotos);
             o.guardar(id, { estado: "lista", propuesta: p, error: "", fecha: new Date().toISOString() });
-            o.avisar?.(leido.aviso, p);
+            // Solo se avisa si Felipe no lo publicó o borró mientras tanto.
+            if (o.leer(id)?.aviso.estado === "pendiente") o.avisar?.(leido.aviso, p);
             ultimoError = "";
             break;
           } catch (err) {
             ultimoError = err instanceof Error ? err.message : "error";
+            // Clave mal o sin crédito: reintentar no sirve.
+            if (/\b40[123]\b|sin crédito/.test(ultimoError)) break;
           }
         }
         if (ultimoError) {
@@ -295,7 +314,8 @@ export function crearCola(o: {
     }
   }
   return {
-    encolar: (id) => {
+    encolar: (id, forzar = false) => {
+      if (forzar) forzados.add(id);
       if (!fila.includes(id)) fila.push(id);
       void siguiente();
     },
