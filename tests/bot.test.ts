@@ -150,7 +150,7 @@ test("/cancelar borra el borrador", async () => {
   await t.enviar("datos");
   await t.enviar("/cancelar");
   await t.enviar("/listo");
-  assert.match(t.ultimo(), /Primero mandame/);
+  assert.match(t.ultimo(), /Mandame los datos del aviso/);
 });
 
 test("rechaza archivos que no son imagen y respeta el tope de fotos", async () => {
