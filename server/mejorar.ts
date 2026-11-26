@@ -31,7 +31,7 @@ ${tiposPorRubro}
    Si el vecino eligió mal el tipo (por ejemplo puso Casa y es un terreno), corregilo y anotalo en "cambios".
 7. "pueblo": uno de ${PUEBLOS.join(", ")} o el que haya escrito. No lo cambies salvo que el texto diga claramente otro.
 8. Precio: si el vecino no puso precio, poné precio 0 y agregá a "faltan" el pedido de precio (los avisos con precio reciben muchas más consultas). Si puso precio en el texto pero no en el campo, pasalo al campo. Moneda USD o ARS según lo que dijo; si es ambiguo, no adivines.
-9. Fotos: vas a ver las fotos en el orden en que las subió, numeradas desde 0. En "ordenFotos" devolvé TODOS esos números en el mejor orden: primero la que mejor muestra el bien completo, clara y de día. No saques ninguna. En "notasFotos" contá en una o dos frases qué fotos conviene rehacer y por qué (oscura, movida, basura a la vista, de costado, captura de pantalla). Si están bien, dejalo vacío.
+9. Fotos: vas a ver las fotos en el orden en que las subió, numeradas desde 0 (si son muchas, solo las primeras). En "ordenFotos" devolvé TODOS los números que viste, en el mejor orden: primero la que mejor muestra el bien completo, clara y de día. No saques ninguna. En "notasFotos" contá en una o dos frases qué fotos conviene rehacer y por qué (oscura, movida, basura a la vista, de costado, captura de pantalla). Si están bien, dejalo vacío.
 10. "faltan": lo que le conviene agregar al aviso y solo el dueño sabe (precio, medidas, año, km, dormitorios, si acepta permuta…). Cada uno con "que" (2 a 4 palabras) y "pregunta" (cómo preguntárselo al dueño).
 11. "mensajeDueno": un mensaje de WhatsApp corto y amable de parte de Felipe para el dueño, pidiéndole lo que falta (y fotos mejores si hace falta). Empezá con "Hola {nombre}!" y presentate como Felipe de Vidriera Chabás. Si no falta nada, dejalo vacío.
 12. "sugerencias": información general que podría sumar al aviso y que NO dijo el vecino (por ejemplo, características conocidas de ese modelo de auto o de esa zona). Máximo 4 frases cortas, solo si estás seguro. Felipe las confirma antes de usarlas; no las pongas en la descripción.
@@ -61,6 +61,9 @@ const ESQUEMA = {
   },
   required: ["tipo", "operacion", "titulo", "precio", "moneda", "pueblo", "zona", "descripcion", "datos", "permuta", "financia", "ordenFotos", "notasFotos", "faltan", "mensajeDueno", "sugerencias", "cambios"],
 } as const;
+
+/** La IA mira hasta 12 fotos: alcanza para elegir la tapa y avisar de fotos malas, sin gastar de más. */
+export const FOTOS_PARA_IA = 12;
 
 const texto = (x: unknown, max = 2000): string => (typeof x === "string" ? x.trim().slice(0, max) : "");
 const lista = (v: unknown, max: number, largo = 200): string[] => (Array.isArray(v) ? v.map((x) => texto(x, largo)).filter(Boolean).slice(0, max) : []);
@@ -120,7 +123,8 @@ export function armarPedido(a: AvisoAdmin): string {
     nombreDelDueno: a.nombre.split(/\s+/)[0] ?? "",
     cantidadDeFotos: a.fotos.length,
   };
-  return `Aviso que mandó el vecino (JSON):\n<aviso>\n${JSON.stringify(original, null, 1)}\n</aviso>\n\nLas fotos vienen a continuación, en el orden en que las subió (0, 1, 2…).`;
+  const vistas = Math.min(a.fotos.length, FOTOS_PARA_IA);
+  return `Aviso que mandó el vecino (JSON):\n<aviso>\n${JSON.stringify(original, null, 1)}\n</aviso>\n\nLas fotos vienen a continuación, en el orden en que las subió (0, 1, 2…)${a.fotos.length > vistas ? `. Subió ${a.fotos.length}: te muestro las primeras ${vistas}` : ""}.`;
 }
 
 const MEDIA: Record<string, FotoParaClaude["media_type"]> = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };
@@ -142,7 +146,7 @@ export function leerFotos(dir: string, archivos: string[]): (FotoParaClaude | nu
 export function crearMejorador(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://api.anthropic.com"): Mejorador {
   return async (a, fotos) => {
     const contenido: unknown[] = [{ type: "text", text: armarPedido(a) }];
-    fotos.forEach((foto, i) => {
+    fotos.slice(0, FOTOS_PARA_IA).forEach((foto, i) => {
       contenido.push({ type: "text", text: `Foto ${i}:` });
       contenido.push(foto ? { type: "image", source: { type: "base64", media_type: foto.media_type, data: foto.data } } : { type: "text", text: "(no se pudo leer esta foto)" });
     });
@@ -221,7 +225,7 @@ export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeo
 
   return async (a, fotos) => {
     const contenido: unknown[] = [{ type: "text", text: armarPedido(a) }];
-    fotos.forEach((foto, i) => {
+    fotos.slice(0, FOTOS_PARA_IA).forEach((foto, i) => {
       contenido.push({ type: "text", text: `Foto ${i}:` });
       contenido.push(foto ? { type: "image_url", image_url: { url: `data:${foto.media_type};base64,${foto.data}` } } : { type: "text", text: "(no se pudo leer esta foto)" });
     });

@@ -158,11 +158,11 @@ test("rechaza archivos que no son imagen y respeta el tope de fotos", async () =
   await t.foto();
   assert.match(t.ultimo(), /JPG, PNG o WebP/);
   const u = montar();
-  for (let i = 0; i < 11; i++) await u.foto();
-  assert.equal(u.dichos.filter((x) => /8 fotos/.test(x)).length, 1);
+  for (let i = 0; i < 53; i++) await u.foto();
+  assert.equal(u.dichos.filter((x) => /50 fotos/.test(x)).length, 1);
   await u.enviar("datos");
   await u.enviar("/listo");
-  assert.match(u.ultimo(), /Fotos: 8/);
+  assert.match(u.ultimo(), /Fotos: 50/);
 });
 
 test("tope de pedidos a Claude por hora", async () => {

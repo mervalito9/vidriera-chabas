@@ -207,7 +207,8 @@ details.mas-filtros[open] > summary::after { content: "–"; }
 .visor-cerrar:hover, .visor-flecha:hover { background: rgba(251,248,241,.28); }
 .visor-pie { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,.8); font: 600 .9rem var(--sans); margin: 0; pointer-events: none; }
 @media (max-width: 600px) { .visor-flecha { width: 44px; height: 44px; } .foto-lupa { display: none; } }
-.thumbs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.thumbs { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.thumbs button { flex: none; scroll-snap-align: start; }
 .thumbs button { padding: 0; border: 3px solid transparent; border-radius: 12px; overflow: hidden; width: 96px; cursor: pointer; background: none; }
 .thumbs button[aria-current=true] { border-color: var(--terra); }
 .aviso-info h1 { font-size: clamp(1.8rem, 2.4vw + 1.1rem, 2.6rem); margin: 6px 0 10px; }

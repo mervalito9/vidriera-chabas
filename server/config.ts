@@ -14,7 +14,9 @@ export const DOLAR_FIJO = Math.round(Number(process.env.DOLAR_REFERENCIA)) || 0;
 
 /** Tamaños máximos de lo que se recibe. */
 export const MAX_JSON = 1_000_000;
-export const MAX_CON_FOTOS = LIMITES.fotos * Math.ceil(LIMITES.fotoBytes * 1.4) + MAX_JSON;
+// Hasta 50 fotos por aviso. El celular las achica antes de subirlas (unos 300 KB cada una), así que un aviso con
+// 50 fotos pesa ~20 MB. El tope por pedido queda en 40 MB para que nadie pueda llenar la memoria del servidor.
+export const MAX_CON_FOTOS = Math.min(LIMITES.fotos * Math.ceil(LIMITES.fotoBytes * 1.4) + MAX_JSON, 40_000_000);
 
 /** Topes para que nadie pueda llenar el disco o la memoria mandando avisos falsos. */
 export const MAX_PENDIENTES = 100;
