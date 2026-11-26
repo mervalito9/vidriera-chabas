@@ -92,3 +92,19 @@ test("por OpenRouter: fotos como image_url, respuesta como función, y avisa si 
   const sinCredito = (async () => new Response('{"error":{"message":"Insufficient credits"}}', { status: 402 })) as unknown as typeof fetch;
   await assert.rejects(crearMejoradorOpenRouter("k", "m", sinCredito)(aviso, []), /402 \(sin crédito\)/);
 });
+
+test("por OpenRouter: si rechaza la función (400) prueba con JSON en el texto, y muestra el motivo", async () => {
+  const pedidos: Record<string, unknown>[] = [];
+  const f = (async (_u: string, init: { body: string }) => {
+    const b = JSON.parse(init.body) as Record<string, unknown>; pedidos.push(b);
+    if (b.tools) return new Response('{"error":{"message":"Provider returned error","metadata":{"raw":"tools: input_schema invalid"}}}', { status: 400 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: "```json\n" + JSON.stringify(salida) + "\n```" } }] }), { status: 200 });
+  }) as unknown as typeof fetch;
+  const p = await crearMejoradorOpenRouter("k", "m", f)(aviso, []);
+  assert.equal(p.titulo, salida.titulo);
+  assert.equal(pedidos.length, 2);
+  assert.equal(pedidos[1]!.tools, undefined);
+
+  const siempre400 = (async () => new Response('{"error":{"message":"anthropic/x is not a valid model ID"}}', { status: 400 })) as unknown as typeof fetch;
+  await assert.rejects(crearMejoradorOpenRouter("k", "anthropic/x", siempre400)(aviso, []), /400: anthropic\/x is not a valid model ID/);
+});

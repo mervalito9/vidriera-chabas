@@ -30,7 +30,7 @@ REGLAS
 ${tiposPorRubro}
    Si el vecino eligió mal el tipo (por ejemplo puso Casa y es un terreno), corregilo y anotalo en "cambios".
 7. "pueblo": uno de ${PUEBLOS.join(", ")} o el que haya escrito. No lo cambies salvo que el texto diga claramente otro.
-8. Precio: si el vecino no puso precio, dejá precio null y agregá a "faltan" el pedido de precio (los avisos con precio reciben muchas más consultas). Si puso precio en el texto pero no en el campo, pasalo al campo. Moneda USD o ARS según lo que dijo; si es ambiguo, no adivines.
+8. Precio: si el vecino no puso precio, poné precio 0 y agregá a "faltan" el pedido de precio (los avisos con precio reciben muchas más consultas). Si puso precio en el texto pero no en el campo, pasalo al campo. Moneda USD o ARS según lo que dijo; si es ambiguo, no adivines.
 9. Fotos: vas a ver las fotos en el orden en que las subió, numeradas desde 0. En "ordenFotos" devolvé TODOS esos números en el mejor orden: primero la que mejor muestra el bien completo, clara y de día. No saques ninguna. En "notasFotos" contá en una o dos frases qué fotos conviene rehacer y por qué (oscura, movida, basura a la vista, de costado, captura de pantalla). Si están bien, dejalo vacío.
 10. "faltan": lo que le conviene agregar al aviso y solo el dueño sabe (precio, medidas, año, km, dormitorios, si acepta permuta…). Cada uno con "que" (2 a 4 palabras) y "pregunta" (cómo preguntárselo al dueño).
 11. "mensajeDueno": un mensaje de WhatsApp corto y amable de parte de Felipe para el dueño, pidiéndole lo que falta (y fotos mejores si hace falta). Empezá con "Hola {nombre}!" y presentate como Felipe de Vidriera Chabás. Si no falta nada, dejalo vacío.
@@ -44,7 +44,7 @@ const ESQUEMA = {
     tipo: { type: "string" },
     operacion: { type: "string", enum: ["venta", "alquiler"] },
     titulo: { type: "string" },
-    precio: { type: ["integer", "null"], description: "Solo el número entero. null si el vecino no lo dijo." },
+    precio: { type: "integer", description: "Solo el número entero. 0 si el vecino no lo dijo." },
     moneda: { type: "string", enum: ["USD", "ARS"] },
     pueblo: { type: "string" },
     zona: { type: "string" },
@@ -175,41 +175,77 @@ export function crearMejorador(clave: string, modelo: string, f: typeof fetch = 
  * las fotos van como image_url y la respuesta llega como una llamada a función con los argumentos en JSON.
  */
 export function crearMejoradorOpenRouter(clave: string, modelo: string, f: typeof fetch = fetch, base = "https://openrouter.ai/api/v1"): Mejorador {
+  /** Saca el motivo del error que devuelve OpenRouter (sin datos sensibles, corto). */
+  const motivo = (texto: string): string => {
+    try {
+      const j = JSON.parse(texto) as { error?: { message?: string; metadata?: { raw?: string } } };
+      const m = `${j.error?.message ?? ""} ${typeof j.error?.metadata?.raw === "string" ? j.error.metadata.raw : ""}`;
+      return m.replace(/sk-or-[\w-]+/g, "").replace(/\s+/g, " ").trim().slice(0, 160);
+    } catch {
+      return "";
+    }
+  };
+  async function pedir(cuerpo: Record<string, unknown>): Promise<{ ok: true; j: unknown } | { ok: false; estado: number; detalle: string }> {
+    let r: Response;
+    try {
+      r = await f(`${base}/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${clave}`, "x-title": "Vidriera Chabas" },
+        body: JSON.stringify(cuerpo),
+        signal: AbortSignal.timeout(120_000),
+      });
+    } catch {
+      throw new Error("OpenRouter no respondió a tiempo");
+    }
+    if (r.ok) return { ok: true, j: await r.json() };
+    return { ok: false, estado: r.status, detalle: await r.text().catch(() => "") };
+  }
+  const leer = (j: unknown): unknown => {
+    const m = (j as { choices?: { message?: { tool_calls?: { function?: { name?: string; arguments?: string } }[]; content?: string } }[] }).choices?.[0]?.message;
+    const crudo = m?.tool_calls?.find((t) => t.function?.name === "proponer_aviso")?.function?.arguments ?? m?.content ?? "";
+    const texto = crudo.replace(/^```(?:json)?\s*|\s*```$/g, "");
+    try {
+      return JSON.parse(texto);
+    } catch {
+      const desde = texto.indexOf("{");
+      const hasta = texto.lastIndexOf("}");
+      try {
+        return desde >= 0 ? JSON.parse(texto.slice(desde, hasta + 1)) : null;
+      } catch {
+        return null;
+      }
+    }
+  };
+
   return async (a, fotos) => {
     const contenido: unknown[] = [{ type: "text", text: armarPedido(a) }];
     fotos.forEach((foto, i) => {
       contenido.push({ type: "text", text: `Foto ${i}:` });
       contenido.push(foto ? { type: "image_url", image_url: { url: `data:${foto.media_type};base64,${foto.data}` } } : { type: "text", text: "(no se pudo leer esta foto)" });
     });
-    let r: Response;
-    try {
-      r = await f(`${base}/chat/completions`, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${clave}`, "x-title": "Vidriera Chabás" },
-        body: JSON.stringify({
-          model: modelo,
-          max_tokens: 2500,
-          messages: [{ role: "system", content: SISTEMA }, { role: "user", content: contenido }],
-          tools: [{ type: "function", function: { name: "proponer_aviso", description: "Devuelve la versión prolija del aviso y lo que falta.", parameters: ESQUEMA } }],
-          tool_choice: { type: "function", function: { name: "proponer_aviso" } },
-        }),
-        signal: AbortSignal.timeout(120_000),
+    // 1) Con función (lo más prolijo). 2) Si el modelo o el proveedor no la acepta (400), pidiendo un JSON en el texto.
+    let r = await pedir({
+      model: modelo,
+      max_tokens: 2500,
+      messages: [{ role: "system", content: SISTEMA }, { role: "user", content: contenido }],
+      tools: [{ type: "function", function: { name: "proponer_aviso", description: "Devuelve la versión prolija del aviso y lo que falta.", parameters: ESQUEMA } }],
+      tool_choice: { type: "function", function: { name: "proponer_aviso" } },
+    });
+    if (!r.ok && r.estado === 400) {
+      r = await pedir({
+        model: modelo,
+        max_tokens: 2500,
+        messages: [
+          { role: "system", content: `${SISTEMA}\n\nRespondé SOLO con un objeto JSON (sin texto antes ni después) con estas claves: ${Object.keys(ESQUEMA.properties).join(", ")}.` },
+          { role: "user", content: contenido },
+        ],
       });
-    } catch {
-      throw new Error("OpenRouter no respondió a tiempo");
     }
     if (!r.ok) {
-      const detalle = await r.text().catch(() => "");
-      throw new Error(`OpenRouter respondió con error ${r.status}${/credit|insufficient|balance/i.test(detalle) ? " (sin crédito)" : ""}`);
+      const m = motivo(r.detalle);
+      throw new Error(`OpenRouter respondió con error ${r.estado}${/credit|insufficient|balance/i.test(r.detalle) ? " (sin crédito)" : ""}${m ? `: ${m}` : ""}`);
     }
-    const j = (await r.json()) as { choices?: { message?: { tool_calls?: { function?: { name?: string; arguments?: string } }[]; content?: string } }[] };
-    const llamada = j.choices?.[0]?.message?.tool_calls?.find((t) => t.function?.name === "proponer_aviso");
-    let datos: unknown = null;
-    try {
-      datos = JSON.parse(llamada?.function?.arguments ?? j.choices?.[0]?.message?.content ?? "");
-    } catch {
-      datos = null;
-    }
+    const datos = leer(r.j);
     if (typeof datos !== "object" || datos === null) throw new Error("La IA no devolvió la propuesta");
     return normalizarPropuesta(datos, a);
   };
