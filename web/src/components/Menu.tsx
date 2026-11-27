@@ -6,7 +6,8 @@ import { ir } from "../router.ts";
 
 const SECCIONES: [string, [string, string][]][] = [
   ["Buscar", [["inmuebles--alquiler", "Alquileres"], ["inmuebles--venta", "Casas y terrenos en venta"], ["vehiculos", "Autos, camionetas y motos"], ["buscar", "Todos los avisos"]]],
-  ["Vidriera", [...(SE_BUSCAN_ACTIVO ? [["se-buscan", "Se buscan"] as [string, string]] : []), ["busco", "Avisame cuando aparezca"], ["como-funciona", "Cómo funciona"], ["preguntas", "Preguntas frecuentes"]]],
+  ["Se busca", [...(SE_BUSCAN_ACTIVO ? [["se-buscan", "Lo que busca la gente"] as [string, string]] : []), ["busco", "Dejar mi pedido"]]],
+  ["Vidriera", [["como-funciona", "Cómo funciona"], ["preguntas", "Preguntas frecuentes"]]],
 ];
 
 /** Botón ☰ y menú lateral con todas las secciones (el clásico de cualquier sitio en el celular). */

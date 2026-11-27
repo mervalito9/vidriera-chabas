@@ -174,6 +174,8 @@ export interface SeBusca {
   detalle: string;
   directo: boolean;
   cuantas: number;
+  /** Desde cuándo se muestra (la más nueva, si hay varias iguales). ISO 8601. */
+  desde: string;
 }
 
 /** Lo que Felipe carga o cambia desde el panel para mostrar una búsqueda. */

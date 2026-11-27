@@ -6,6 +6,7 @@ import { Novedades } from "./Novedades.tsx";
 const NAV = [
   ["inmuebles", "Inmuebles"],
   ["vehiculos", "Vehículos"],
+  ["se-buscan", "Se busca"],
   ["como-funciona", "Cómo funciona"],
 ] as const;
 
@@ -37,13 +38,13 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
           </nav>
           <span className="spacer" />
           <a className="btn btn-main" href={ir("publicar")}>Publicar gratis</a>
-          <Novedades ruta={ruta} />
           <Menu ruta={ruta} />
         </div>
         {!esInicio && (
           <nav className="subnav wrap" aria-label="Accesos rápidos">
             <a href={ir("inicio")}>Inicio</a>
             <a href={ir("buscar")} aria-current={ruta === "buscar" ? "page" : undefined}>Buscar</a>
+            <a href={ir("se-buscan")} aria-current={ruta === "se-buscan" ? "page" : undefined}>Se busca</a>
             <a href={ir("publicar")} aria-current={ruta === "publicar" ? "page" : undefined}>Publicar gratis</a>
           </nav>
         )}
@@ -56,6 +57,7 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
         )}
         {children}
       </main>
+      <Novedades ruta={ruta} />
       <footer>
         <div className="wrap">
           <a href={ir("inicio")}><img src="assets/img/logo-horizontal-oscuro.svg" alt="Vidriera Chabás" width={178} height={38} /></a>
@@ -64,7 +66,8 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
             <p>Vidriera Chabás es un tablón de avisos clasificados de Chabás y la zona. No intermedia en las operaciones ni cobra comisión sobre ventas o alquileres. Cada aviso es responsabilidad de quien lo publica.</p>
             <nav aria-label="Pie de página">
               <a href={ir("publicar")}>Publicar gratis</a>
-              <a href={ir("busco")}>Avisame cuando aparezca</a>
+              <a href={ir("se-buscan")}>Se busca</a>
+              <a href={ir("busco")}>Dejar un pedido</a>
               <a href={ir("como-funciona")}>Cómo funciona</a>
               <a href={ir("preguntas")}>Preguntas frecuentes</a>
               <a href={ir("terminos")}>Términos</a>

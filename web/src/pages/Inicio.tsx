@@ -158,15 +158,6 @@ export function Inicio() {
 
       {!soloEjemplos && avisosBloque}
 
-      {PORTADA_NUEVA && (
-        <section className="wrap" aria-label="Avisame cuando aparezca">
-          <aside className="busco busco-corto">
-            <div><h2>¿Buscás algo que no está?</h2><p>Dejanos tu WhatsApp y te avisamos apenas aparezca. Muchos buscan alquiler.</p></div>
-            <a className="btn" href={ir("busco")}>Avisame cuando aparezca</a>
-          </aside>
-        </section>
-      )}
-
       {PORTADA_NUEVA && <SeBuscanPortada />}
 
       <section className="wrap explorar" aria-labelledby="explorar" ref={rExplorar}>

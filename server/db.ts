@@ -454,11 +454,11 @@ export function cambiarBusqueda(id: number, c: { publica?: boolean; titulo?: str
 /** Lo que se ve en «Se buscan»: las que Felipe eligió y todavía no vencieron; las iguales se juntan en una sola. */
 export function listarSeBuscan(): SeBusca[] {
   const filas = db.prepare(
-    `SELECT rubro, titulo, detalle, directo, COUNT(*) AS cuantas FROM busquedas
+    `SELECT rubro, titulo, detalle, directo, COUNT(*) AS cuantas, MAX(publica_desde) AS desde FROM busquedas
      WHERE publica_desde IS NOT NULL AND titulo <> '' AND publica_desde >= strftime('%Y-%m-%dT%H:%M:%fZ','now','-${DIAS_SE_BUSCAN} days')
      GROUP BY rubro, titulo, detalle, directo ORDER BY MAX(publica_desde) DESC, MAX(id) DESC`,
   ).all() as Fila[];
-  return filas.map((f) => ({ rubro: str(f.rubro), titulo: str(f.titulo), detalle: str(f.detalle), directo: num(f.directo) === 1, cuantas: num(f.cuantas) }));
+  return filas.map((f) => ({ rubro: str(f.rubro), titulo: str(f.titulo), detalle: str(f.detalle), directo: num(f.directo) === 1, cuantas: num(f.cuantas), desde: str(f.desde) }));
 }
 
 export function borrarBusqueda(id: number): void {
