@@ -111,6 +111,15 @@ export function registrarPagina(req: IncomingMessage, d: { pagina?: string; entr
   }
 }
 
+const ACCIONES_NOTIF = new Set(["ve", "abre", "nuevos", "bajo", "busquedas", "publicar", "wa"]);
+
+/** La campanita de novedades: quién la vio con número, quién la abrió y qué tocó adentro. Una vez por persona, acción y día. */
+export function registrarNotif(req: IncomingMessage, accion: string): void {
+  if (!ACCIONES_NOTIF.has(accion)) return;
+  const fecha = hoy();
+  if (primeraVez(fecha, `${visitante(req, fecha)}:n${accion}`)) sumar(fecha, `notif:${accion}`);
+}
+
 /** Un clic en "Hablar por WhatsApp". Una vez por persona, aviso y día. Devuelve si contó. */
 export function registrarContacto(req: IncomingMessage, avisoId: number): boolean {
   const fecha = hoy();
@@ -192,6 +201,7 @@ export function resumen(dias: number): ResumenEstadisticas {
     pueblos: cruzar("p:"),
     avisosEstado: estados,
     portada: { entran: por(actual, "portada:entran"), siguen: por(actual, "portada:siguen") },
+    novedades: { ven: por(actual, "notif:ve"), abren: por(actual, "notif:abre"), toques: [...ACCIONES_NOTIF].filter((a) => a !== "ve" && a !== "abre").map((a) => ({ que: a, n: por(actual, `notif:${a}`) })).filter((x) => x.n > 0) },
     desde: primera.f,
   };
 }

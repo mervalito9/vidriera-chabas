@@ -230,6 +230,8 @@ export interface ResumenEstadisticas {
   avisosEstado: Record<string, number>;
   /** Gente que entró por la portada y, de esa, cuántos abrieron después otra pantalla (se mide desde el 25/11/2026). */
   portada: { entran: number; siguen: number };
+  /** Campanita de novedades (desde el 27/11/2026): cuántos la vieron con número, cuántos la abrieron y qué tocaron. */
+  novedades: { ven: number; abren: number; toques: { que: string; n: number }[] };
   desde: string | null;
 }
 

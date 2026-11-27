@@ -56,6 +56,25 @@ export function Estadisticas({ pendientes, irPendientes }: { pendientes: number;
         </section>
       )}
 
+      {d.novedades && d.novedades.ven + d.novedades.abren > 0 && (
+        <section className="estad-bloque estad-portada">
+          <h3>🔔 Campanita de novedades</h3>
+          <p>
+            <b>{fmtNum(d.novedades.ven)}</b> {d.novedades.ven === 1 ? "persona la vio" : "personas la vieron"} con novedades y <b>{fmtNum(d.novedades.abren)}</b> la{" "}
+            {d.novedades.abren === 1 ? "abrió" : "abrieron"}
+            {d.novedades.ven > 0 ? ` (${Math.round((d.novedades.abren / d.novedades.ven) * 100)}%)` : ""}.
+          </p>
+          {d.novedades.toques.length > 0 && (
+            <p className="small">
+              Adentro tocaron:{" "}
+              {d.novedades.toques
+                .map((t) => `${({ nuevos: "avisos nuevos", bajo: "bajó de precio", busquedas: "se buscan", publicar: "publicar", wa: "WhatsApp" } as Record<string, string>)[t.que] ?? t.que} (${t.n})`)
+                .join(" · ")}
+            </p>
+          )}
+        </section>
+      )}
+
       {sinDatos ? (
         <p className="estad-vacio">Todavía no hay visitas medidas en este período. Se empiezan a contar desde ahora: volvé en unos días.</p>
       ) : (

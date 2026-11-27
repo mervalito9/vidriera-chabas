@@ -23,8 +23,8 @@ export function fotoDelSitio(): unknown {
   return {
     ahora: horaAR(),
     enVivo: vivo.enVivo,
-    hoy: { ...hoy.total, portada: hoy.portada },
-    ultimos7dias: { total: semana.total, semanaAnterior: semana.anterior, porDia: semana.serie, avisosQueMasRinden: semana.avisos.slice(0, 5), deDondeVienen: semana.origenes.slice(0, 6), loQueBuscan: semana.busquedas.slice(0, 8), buscaronYNoEncontraron: semana.sinResultados.slice(0, 8), portada: semana.portada },
+    hoy: { ...hoy.total, portada: hoy.portada, campanitaDeNovedades: hoy.novedades },
+    ultimos7dias: { total: semana.total, campanitaDeNovedades: semana.novedades, semanaAnterior: semana.anterior, porDia: semana.serie, avisosQueMasRinden: semana.avisos.slice(0, 5), deDondeVienen: semana.origenes.slice(0, 6), loQueBuscan: semana.busquedas.slice(0, 8), buscaronYNoEncontraron: semana.sinResultados.slice(0, 8), portada: semana.portada },
     ultimos30dias: { total: mes.total, mesAnterior: mes.anterior, avisosQueMasRinden: mes.avisos.slice(0, 10), rubros: mes.rubros, pueblos: mes.pueblos, deDondeVienen: mes.origenes.slice(0, 6) },
     medicionDesde: mes.desde,
     avisos: {
