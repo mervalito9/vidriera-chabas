@@ -10,6 +10,12 @@ export type Quien = "dueno" | "inmobiliaria" | "agencia" | "";
 export type Estado = "pendiente" | "publicado" | "rechazado" | "vendido";
 
 /** Lo que ve cualquier visitante. Nunca incluye el teléfono ni el nombre del dueño. */
+/** Punto de la foto de tapa que tiene que quedar a la vista cuando se recorta (0 a 100, desde arriba a la izquierda). */
+export interface Foco {
+  x: number;
+  y: number;
+}
+
 export interface AvisoPublico {
   id: number;
   rubro: RubroId;
@@ -47,6 +53,8 @@ export interface AvisoPublico {
   /** Ubicación exacta en el mapa (opcional) */
   lat: number | null;
   lng: number | null;
+  /** Encuadre de la foto de tapa al recortarla. null = centrada. */
+  foco: Foco | null;
 }
 
 /** Lo que ve el administrador en el panel. */
@@ -133,6 +141,8 @@ export interface NuevoAviso {
   /** Ubicación exacta en el mapa (opcional) */
   lat: number | null;
   lng: number | null;
+  /** Encuadre de la foto de tapa (opcional; sin esto, se deja como estaba o centrada). */
+  foco?: Foco | null;
 }
 
 export interface NuevaBusqueda {

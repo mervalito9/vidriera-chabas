@@ -2,7 +2,7 @@
 import { CONDICIONES_VACIAS, renglonesCondiciones, limpiarCondiciones, type CondicionesAlquiler } from "../../../../shared/alquiler.ts";
 import { OTRO_PUEBLO, RUBROS } from "../../../../shared/config.ts";
 import { fmtNum, soloDigitos } from "../../../../shared/texto.ts";
-import type { Quien, RubroId } from "../../../../shared/tipos.ts";
+import type { Foco, Quien, RubroId } from "../../../../shared/tipos.ts";
 
 export interface ValoresForm {
   rubro: RubroId | "";
@@ -32,10 +32,12 @@ export interface ValoresForm {
   /** Ubicación exacta (se marca tocando el mapa) */
   lat: number | null;
   lng: number | null;
+  /** Encuadre de la foto de tapa (solo se elige en el panel) */
+  foco: Foco | null;
 }
 
 export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
-  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "", quien: "dueno", condiciones: CONDICIONES_VACIAS, lat: null, lng: null,
+  rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "", quien: "dueno", condiciones: CONDICIONES_VACIAS, lat: null, lng: null, foco: null,
 });
 
 /** Moneda que se usa en la zona para cada cosa (casas en venta y maquinaria en dólares; autos y alquileres en pesos).

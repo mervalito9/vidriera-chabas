@@ -16,7 +16,7 @@ import { Titulo, mensajeError, type Accion } from "./comunes.tsx";
 export const valoresDe = (a: AvisoAdmin): ValoresForm => ({
   rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio === null ? "" : String(a.precio), moneda: a.moneda,
   permuta: a.permuta, financia: a.financia, descripcion: a.descripcion, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, zona: a.zona, datos: a.datos.join(", "), anunciante: a.anunciante, quien: a.quien || (a.anunciante ? "inmobiliaria" : "dueno"),
-  condiciones: a.condiciones ?? CONDICIONES_VACIAS, lat: a.lat, lng: a.lng,
+  condiciones: a.condiciones ?? CONDICIONES_VACIAS, lat: a.lat, lng: a.lng, foco: a.foco,
   pueblo: PUEBLOS.includes(a.pueblo) ? a.pueblo : OTRO_PUEBLO, puebloOtro: PUEBLOS.includes(a.pueblo) ? "" : a.pueblo,
 });
 
@@ -28,7 +28,7 @@ export function vistaPrevia(v: ValoresForm, id = 0): AvisoPublico {
     id, rubro: (v.rubro || "inmuebles") as RubroId, tipo: v.tipo || "Tipo", operacion: v.operacion || "venta", titulo: v.titulo || "Título del aviso",
     precio, precioAnterior: null, moneda: v.moneda, pueblo, zona: v.zona, descripcion: v.descripcion,
     datos: v.datos.split(",").map((x) => x.trim()).filter(Boolean), permuta: v.permuta, financia: v.financia, fotos: v.fotos,
-    anunciante: v.anunciante, quien: v.quien, publica: textoPublica(v), condiciones: v.operacion === "alquiler" ? limpiarCondiciones(v.condiciones) : null, lat: v.lat, lng: v.lng, ejemplo: false, reservado: false, destacado: false, publicadoEn: new Date().toISOString(), venceEn: new Date().toISOString(),
+    anunciante: v.anunciante, quien: v.quien, publica: textoPublica(v), condiciones: v.operacion === "alquiler" ? limpiarCondiciones(v.condiciones) : null, lat: v.lat, lng: v.lng, foco: v.foco, ejemplo: false, reservado: false, destacado: false, publicadoEn: new Date().toISOString(), venceEn: new Date().toISOString(),
   } as AvisoPublico;
 }
 

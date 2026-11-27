@@ -307,3 +307,26 @@ test("acceso real: lee y reordena las fotos de un aviso", () => {
   assert.deepEqual(datos.archivosDe(id), [antes[2], antes[0], antes[1]]);
   assert.match(sitio.ordenarFotos(id, [9]), /^error/);
 });
+
+test("encuadre de la foto de tapa: se limpia, se guarda y no se pierde al editar otra cosa", async () => {
+  const { limpiarFoco } = await import("../shared/validar.ts");
+  assert.deepEqual(limpiarFoco({ x: 30.4, y: 140 }), { x: 30, y: 100 });
+  assert.equal(limpiarFoco({ x: "a", y: 1 }), undefined);
+  assert.equal(limpiarFoco(null), null);
+  const sitio = crearAccesoSitio("https://vidrierachabas.ar");
+  const f = join(mkdtempSync(join(base, "e-")), "a.jpg");
+  writeFileSync(f, JPG);
+  const id = sitio.publicar({ rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Corsa 2008", precio: 4000, moneda: "USD", pueblo: "Chabás", anunciante: "", quien: "dueno", zona: "", descripcion: "", datos: [], permuta: false, financia: false, nombre: "A", telefono: "3464111222", fotos: [], condiciones: null, lat: null, lng: null, foco: { x: 20, y: 80 } }, [f]);
+  assert.deepEqual(datos.obtenerAdmin(id)?.foco, { x: 20, y: 80 });
+  assert.match(sitio.editar(id, { precio: 3900 }), /^ok/);
+  assert.deepEqual(datos.obtenerAdmin(id)?.foco, { x: 20, y: 80 }, "editar el precio no borra el encuadre");
+  const a = datos.obtenerAdmin(id)!;
+  datos.editarAviso(id, { ...a, foco: null } as never, datos.archivosDe(id));
+  assert.equal(datos.obtenerAdmin(id)?.foco, null, "null lo vuelve a centrar");
+});
+
+test("las 5 búsquedas iniciales son de inmuebles y tienen título", async () => {
+  const { BUSQUEDAS_INICIALES } = await import("../server/semillas.ts");
+  assert.equal(BUSQUEDAS_INICIALES.length, 5);
+  assert.ok(BUSQUEDAS_INICIALES.every((b) => b.rubro === "inmuebles" && b.titulo.length > 3 && b.directo));
+});

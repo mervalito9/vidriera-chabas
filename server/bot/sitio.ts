@@ -35,7 +35,7 @@ function aNuevo(a: AvisoAdmin): NuevoAviso {
   return {
     rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio, moneda: a.moneda, pueblo: a.pueblo,
     anunciante: a.anunciante, quien: a.quien, zona: a.zona, descripcion: a.descripcion, datos: a.datos, permuta: a.permuta,
-    financia: a.financia, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, condiciones: a.condiciones, lat: a.lat, lng: a.lng,
+    financia: a.financia, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, condiciones: a.condiciones, lat: a.lat, lng: a.lng, foco: a.foco,
   };
 }
 

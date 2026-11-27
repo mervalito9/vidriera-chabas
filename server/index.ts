@@ -22,6 +22,7 @@ import { rutasMedicion } from "./rutas/medicion.ts";
 import { rutasPublicas } from "./rutas/publicas.ts";
 import { iniciarBot } from "./bot/index.ts";
 import { retomarMejoras } from "./mejoras.ts";
+import { cargarBusquedasIniciales } from "./semillas.ts";
 
 const RUTAS: Rutas[] = [rutasPublicas, rutasMedicion, rutasAdmin];
 
@@ -61,5 +62,6 @@ servidor.listen(PUERTO, () => {
   if (!process.env.ADMIN_PASSWORD_HASH) console.warn("Ojo: falta ADMIN_PASSWORD_HASH, el panel no va a dejar entrar. Generalo con: npm run clave");
   seguirDolar();
   retomarMejoras();
+  cargarBusquedasIniciales();
   iniciarBot();
 });

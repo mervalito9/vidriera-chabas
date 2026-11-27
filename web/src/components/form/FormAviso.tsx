@@ -10,6 +10,7 @@ import { ElegirCliente, QUIENES, textoPublica, type Cliente } from "./Cliente.ts
 import { CondicionesAlquiler } from "./CondicionesAlquiler.tsx";
 import { DatosGuiados } from "./DatosGuiados.tsx";
 import { ElegirFotos } from "./ElegirFotos.tsx";
+import { Encuadre } from "./Encuadre.tsx";
 import { aNuevoAviso, monedaSugerida, type ValoresForm } from "./valores.ts";
 
 /** Tipos de inmueble donde no se pregunta por mascotas ni muebles. */
@@ -159,6 +160,7 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
       </div>
 
       <ElegirFotos fotos={v.fotos} exigir={exigirFotos} error={err("fotos")} onCambio={(f) => set("fotos", f)} onProcesando={setProcesando} />
+      {avanzado && v.fotos[0] && <Encuadre foto={v.fotos[0]} foco={v.foco} onCambio={(f) => set("foco", f)} />}
 
       {avanzado && (
         <div className="dos-col">

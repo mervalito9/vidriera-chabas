@@ -4,7 +4,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { limpiarCondiciones, type CondicionesAlquiler } from "../shared/alquiler.ts";
 import { DIAS_SE_BUSCAN, DIAS_VIGENCIA, OTRO_PUEBLO, PUEBLOS, RUBROS } from "../shared/config.ts";
-import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, Estado, Filtros, ListaAvisos, NuevaBusqueda, NuevoAviso, Quien, RubroId, SeBusca, Mejora } from "../shared/tipos.ts";
+import type { AvisoAdmin, AvisoPublico, Busqueda, BusquedaPublica, Estado, Filtros, Foco, ListaAvisos, NuevaBusqueda, NuevoAviso, Quien, RubroId, SeBusca, Mejora } from "../shared/tipos.ts";
 import { slug } from "../shared/texto.ts";
 import { dolar } from "./dolar.ts";
 
@@ -91,6 +91,7 @@ for (const [col, def] of [
   ["destacado", "INTEGER NOT NULL DEFAULT 0"],
   ["anunciante", "TEXT NOT NULL DEFAULT ''"],
   ["condiciones", "TEXT NOT NULL DEFAULT ''"],
+  ["foco", "TEXT NOT NULL DEFAULT ''"],
   ["quien", "TEXT NOT NULL DEFAULT ''"],
   ["lat", "REAL"],
   ["lng", "REAL"],
@@ -137,6 +138,12 @@ function nombrePublico(quien: string, anunciante: string, nombre: string): strin
   if (anunciante && quien !== "dueno") return anunciante;
   return quien === "dueno" ? (nombre.trim().split(/\s+/)[0] ?? "") : anunciante;
 }
+
+function leerFoco(texto: string): Foco | null {
+  const [x, y] = texto.split(",").map(Number);
+  return texto && Number.isFinite(x) && Number.isFinite(y) ? { x: Math.min(100, Math.max(0, x as number)), y: Math.min(100, Math.max(0, y as number)) } : null;
+}
+const textoFoco = (f: Foco | null | undefined): string => (f ? `${f.x},${f.y}` : "");
 
 /** Las condiciones de un alquiler se guardan como JSON; si algo no cierra, se ignora. */
 function leerCondiciones(texto: string): CondicionesAlquiler | null {
@@ -185,6 +192,7 @@ function aPublico(f: Fila): AvisoPublico {
     venceEn: vence,
     precioAnterior: precioAnterior(id, precio),
     condiciones: f.operacion === "alquiler" ? leerCondiciones(str(f.condiciones)) : null,
+    foco: leerFoco(str(f.foco)),
     lat: f.lat === null || f.lat === undefined ? null : Number(f.lat),
     lng: f.lng === null || f.lng === undefined ? null : Number(f.lng),
   };
@@ -289,13 +297,13 @@ export function crearAviso(a: NuevoAviso, archivos: string[], opciones: { estado
   db.exec("BEGIN");
   try {
     const r = db
-      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en, condiciones, lat, lng, quien)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .prepare(`INSERT INTO avisos (estado, rubro, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, zona, descripcion, datos, permuta, financia, nombre, telefono, ejemplo, publicado_en, condiciones, lat, lng, quien, foco)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
       .run(
         opciones.estado, a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos),
         a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, opciones.ejemplo ? 1 : 0,
         opciones.estado === "publicado" ? (opciones.publicadoEn ?? new Date().toISOString()) : null,
-        a.condiciones ? JSON.stringify(a.condiciones) : "", a.lat, a.lng, a.quien,
+        a.condiciones ? JSON.stringify(a.condiciones) : "", a.lat, a.lng, a.quien, textoFoco(a.foco),
       );
     const id = Number(r.lastInsertRowid);
     archivos.forEach((archivo, i) => db.prepare("INSERT INTO fotos (aviso_id, archivo, orden) VALUES (?,?,?)").run(id, archivo, i));
@@ -383,8 +391,8 @@ export function editarAviso(id: number, a: NuevoAviso, archivosFinal: string[]):
   try {
     db.prepare(
       `UPDATE avisos SET rubro = ?, tipo = ?, operacion = ?, titulo = ?, precio = ?, moneda = ?, pueblo = ?, anunciante = ?, zona = ?, descripcion = ?, datos = ?,
-         permuta = ?, financia = ?, nombre = ?, telefono = ?, condiciones = ?, lat = ?, lng = ?, quien = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
-    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, a.condiciones ? JSON.stringify(a.condiciones) : "", a.lat, a.lng, a.quien, id);
+         permuta = ?, financia = ?, nombre = ?, telefono = ?, condiciones = ?, lat = ?, lng = ?, quien = ?, foco = ?, actualizado_en = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`,
+    ).run(a.rubro, a.tipo, a.operacion, a.titulo, a.precio, a.moneda, a.pueblo, a.anunciante, a.zona, a.descripcion, JSON.stringify(a.datos), a.permuta ? 1 : 0, a.financia ? 1 : 0, a.nombre, a.telefono, a.condiciones ? JSON.stringify(a.condiciones) : "", a.lat, a.lng, a.quien, a.foco === undefined ? textoFoco(actual.foco) : textoFoco(a.foco), id);
     if (a.precio !== actual.precio || a.moneda !== actual.moneda) {
       db.prepare("INSERT INTO precios (aviso_id, precio, moneda) VALUES (?,?,?)").run(id, a.precio, a.moneda);
     }
@@ -448,7 +456,7 @@ export function listarSeBuscan(): SeBusca[] {
   const filas = db.prepare(
     `SELECT rubro, titulo, detalle, directo, COUNT(*) AS cuantas FROM busquedas
      WHERE publica_desde IS NOT NULL AND titulo <> '' AND publica_desde >= strftime('%Y-%m-%dT%H:%M:%fZ','now','-${DIAS_SE_BUSCAN} days')
-     GROUP BY rubro, titulo, detalle, directo ORDER BY MAX(publica_desde) DESC`,
+     GROUP BY rubro, titulo, detalle, directo ORDER BY MAX(publica_desde) DESC, MAX(id) DESC`,
   ).all() as Fila[];
   return filas.map((f) => ({ rubro: str(f.rubro), titulo: str(f.titulo), detalle: str(f.detalle), directo: num(f.directo) === 1, cuantas: num(f.cuantas) }));
 }

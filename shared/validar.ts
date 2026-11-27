@@ -2,7 +2,7 @@
 // y el backend la usa SIEMPRE antes de guardar (nunca se confía en el navegador).
 import { limpiarCondiciones } from "./alquiler.ts";
 import { RUBROS, LIMITES, PUEBLOS, OTRO_PUEBLO } from "./config.ts";
-import type { BusquedaPublica, ErrorCampo, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
+import type { BusquedaPublica, ErrorCampo, Foco, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
 import { recortar, slug, soloDigitos } from "./texto.ts";
 import { telefonoArgentino } from "./whatsapp.ts";
 
@@ -23,6 +23,17 @@ export interface Resultado<T> {
 }
 
 /** Valida y limpia un aviso nuevo. Devuelve el valor normalizado y la lista de errores. */
+/** Encuadre de la foto: dos números de 0 a 100. Si no son válidos, undefined (no se toca). */
+export function limpiarFoco(x: unknown): Foco | null | undefined {
+  if (x === null) return null;
+  if (!x || typeof x !== "object") return undefined;
+  const { x: a, y: b } = x as { x?: unknown; y?: unknown };
+  const nx = Number(a), ny = Number(b);
+  if (typeof a !== "number" || typeof b !== "number" || !Number.isFinite(nx) || !Number.isFinite(ny)) return undefined;
+  const cl = (n: number) => Math.min(100, Math.max(0, Math.round(n)));
+  return { x: cl(nx), y: cl(ny) };
+}
+
 /** Un punto dentro de Argentina (con margen), con 6 decimales (~10 cm). Si no, sin ubicación. */
 export function ubicacion(lat: unknown, lng: unknown): { lat: number | null; lng: number | null } {
   const a = Number(lat), o = Number(lng);
@@ -53,6 +64,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
   const condiciones = operacion === "alquiler" ? limpiarCondiciones(e.condiciones) : null;
   const { lat, lng } = ubicacion(e.lat, e.lng);
+  const foco = limpiarFoco(e.foco);
   const quien = e.quien === "dueno" || e.quien === "inmobiliaria" || e.quien === "agencia" ? e.quien : "";
   const fotos = (Array.isArray(e.fotos) ? e.fotos : []).filter((f): f is string => typeof f === "string").slice(0, LIMITES.fotos);
 
@@ -68,7 +80,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, quien, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, quien, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng, ...(foco !== undefined ? { foco } : {}) },
   };
 }
 

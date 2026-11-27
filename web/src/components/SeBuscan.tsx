@@ -3,7 +3,7 @@ import { RUBROS, WA_NUMERO } from "../../../shared/config.ts";
 import type { RubroId, SeBusca } from "../../../shared/tipos.ts";
 import { linkWA, numeroWA } from "../../../shared/whatsapp.ts";
 import { seBuscan } from "../api.ts";
-import { useCarga } from "../hooks.ts";
+import { useAparecer, useCarga } from "../hooks.ts";
 import { ir } from "../router.ts";
 import { IconoRubro } from "./Iconos.tsx";
 
@@ -44,17 +44,26 @@ export function SeBuscan({ cuantas }: { cuantas?: number }) {
   );
 }
 
+const EN_PORTADA = 6;
+
+function SeccionPortada({ total }: { total: number }) {
+  // El hook va acá (y no arriba) porque la sección recién existe cuando llegaron las búsquedas.
+  const ref = useAparecer<HTMLElement>();
+  return (
+    <section className="wrap sb-seccion" aria-labelledby="se-buscan-t" ref={ref}>
+      <div className="sec-h"><h2 id="se-buscan-t">Se buscan en Chabás y la zona</h2>{total > EN_PORTADA && <a href={ir("se-buscan")}>Ver todas</a>}</div>
+      <p className="sb-vivo"><span className="sb-punto" aria-hidden="true" />Búsquedas activas ahora</p>
+      <SeBuscan cuantas={EN_PORTADA} />
+      <p className="sb-pie">¿Tenés alguno? <a href={ir("publicar")}>Publicalo gratis</a> o escribime y te ayudo.</p>
+    </section>
+  );
+}
+
 /** Sección de la portada: arriba de «Sé de los primeros», que es donde se invita a publicar. */
 export function SeBuscanPortada() {
   const c = useCarga(() => seBuscan(), []);
   if (c.estado !== "listo" || c.datos.length === 0) return null;
-  return (
-    <section className="wrap" aria-labelledby="se-buscan-t">
-      <div className="sec-h"><h2 id="se-buscan-t">Se buscan en Chabás y la zona</h2>{c.datos.length > 3 && <a href={ir("se-buscan")}>Ver todas</a>}</div>
-      <SeBuscan cuantas={3} />
-      <p className="sb-pie">¿Tenés alguno? <a href={ir("publicar")}>Publicalo gratis</a> o escribime y te ayudo.</p>
-    </section>
-  );
+  return <SeccionPortada total={c.datos.length} />;
 }
 
 export function SeBuscanPagina() {

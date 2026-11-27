@@ -3,6 +3,7 @@ import { Mapa } from "../mapa/Mapa.tsx";
 import { renglonesCondiciones } from "../../../shared/alquiler.ts";
 import { useEffect, useRef, useState, type PointerEvent as PE, type RefObject } from "react";
 import { RUBROS } from "../../../shared/config.ts";
+import { posicionFoco } from "../components/form/Encuadre.tsx";
 import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ErrorApi, avisoConocido, linkContacto, listarAvisos, obtenerAviso } from "../api.ts";
@@ -69,7 +70,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
             {fotos[foto] ? (
               <>
                 <button type="button" className="foto-abrir" aria-label="Ver la foto en grande" onClick={() => setGrande(true)}>
-                  <img src={fotos[foto]} alt={`Foto ${foto + 1} de ${fotos.length}: ${a.titulo}`} />
+                  <img src={fotos[foto]} alt={`Foto ${foto + 1} de ${fotos.length}: ${a.titulo}`} style={foto === 0 ? { objectPosition: posicionFoco(a.foco) } : undefined} />
                 </button>
                 <span className="foto-lupa" aria-hidden="true">Tocá para verla entera</span>
                 {fotos.length > 1 && <>

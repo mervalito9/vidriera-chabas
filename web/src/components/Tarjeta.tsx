@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { etiquetasCondiciones } from "../../../shared/alquiler.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
+import { posicionFoco } from "./form/Encuadre.tsx";
 import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
 
 /** Si la foto ya estaba bajada (por ejemplo al volver atrás), se muestra sin esperar. */
@@ -19,7 +20,7 @@ export function Tarjeta({ aviso: a, previa, nuevo }: { aviso: AvisoPublico; prev
   return (
     <Caja className="card" {...(previa ? {} : { href: ir("aviso", a.id) })}>
       <div className="card-ph">
-        {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" className="foto-entra" ref={fotoLista} onLoad={(e) => e.currentTarget.classList.add("lista")} /> : <div className="sin-foto">Sin foto</div>}
+        {foto ? <img src={foto} alt="" width={640} height={420} loading="lazy" decoding="async" className="foto-entra" style={{ objectPosition: posicionFoco(a.foco) }} ref={fotoLista} onLoad={(e) => e.currentTarget.classList.add("lista")} /> : <div className="sin-foto">Sin foto</div>}
         {a.fotos.length > 1 && <span className="n-fotos">{a.fotos.length} fotos</span>}
         <div className="tags">
           {a.ejemplo && <span className="tag tag-ej">Ejemplo</span>}

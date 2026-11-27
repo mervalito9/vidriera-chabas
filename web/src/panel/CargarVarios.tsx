@@ -43,7 +43,7 @@ function revalidar(f: Fila, b: Fila["borrador"]): Fila {
 const aValores = (b: Fila["borrador"], fotos: string[]): ValoresForm => ({
   rubro: b.rubro, tipo: b.tipo, operacion: b.operacion, titulo: b.titulo, precio: b.precio === null ? "" : String(b.precio), moneda: b.moneda,
   permuta: b.permuta, financia: b.financia, descripcion: b.descripcion, nombre: b.nombre, telefono: b.telefono, fotos, zona: b.zona,
-  datos: b.datos.join(", "), anunciante: b.anunciante, quien: b.quien || (b.anunciante ? "inmobiliaria" : "dueno"), condiciones: CONDICIONES_VACIAS, lat: null, lng: null,
+  datos: b.datos.join(", "), anunciante: b.anunciante, quien: b.quien || (b.anunciante ? "inmobiliaria" : "dueno"), condiciones: CONDICIONES_VACIAS, lat: null, lng: null, foco: null,
   pueblo: !b.pueblo ? "" : PUEBLOS.includes(b.pueblo) ? b.pueblo : OTRO_PUEBLO, puebloOtro: !b.pueblo || PUEBLOS.includes(b.pueblo) ? "" : b.pueblo,
 });
 

@@ -882,3 +882,34 @@ html { -webkit-tap-highlight-color: transparent; }
 .como-publicar ol { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; }
 .como-publicar p { margin: 0; font-size: .95rem; }
 .como-publicar a { color: var(--wa); font-weight: 700; }
+
+/* ---------- más movimiento (27/11) ---------- */
+/* Se buscan: las tarjetas entran de a una, y "Tengo uno" llama la atención cada tanto */
+.sb-vivo { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; color: var(--tinta-2); font-weight: 600; font-size: .95rem; }
+.sb-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--terra); animation: vivo 1.8s ease-out infinite; }
+.sb-seccion .sb-item { opacity: 0; transform: translateX(-18px); transition: opacity .5s ease, transform .55s cubic-bezier(.2,.7,.2,1), box-shadow .2s ease; }
+.sb-seccion.in .sb-item { opacity: 1; transform: none; }
+.sb-seccion.in .sb-item:nth-child(2) { transition-delay: .1s; } .sb-seccion.in .sb-item:nth-child(3) { transition-delay: .2s; }
+.sb-seccion.in .sb-item:nth-child(4) { transition-delay: .3s; } .sb-seccion.in .sb-item:nth-child(5) { transition-delay: .4s; } .sb-seccion.in .sb-item:nth-child(6) { transition-delay: .5s; }
+.sb-tengo { transition: transform .15s ease; }
+.sb-tengo:active { transform: scale(.94); }
+.sb-seccion.in .sb-item .sb-tengo { animation: latido 5s ease-in-out 2s infinite; }
+.sb-seccion.in .sb-item:nth-child(2) .sb-tengo { animation-delay: 2.6s; } .sb-seccion.in .sb-item:nth-child(3) .sb-tengo { animation-delay: 3.2s; }
+.sb-seccion.in .sb-item:nth-child(4) .sb-tengo { animation-delay: 3.8s; } .sb-seccion.in .sb-item:nth-child(5) .sb-tengo { animation-delay: 4.4s; }
+@keyframes latido { 0%, 14%, 100% { transform: scale(1); } 5% { transform: scale(1.09); } 9% { transform: scale(.98); } }
+.sb-ico { transition: transform .3s ease; }
+.sb-item:hover .sb-ico { transform: rotate(-8deg) scale(1.08); }
+/* Avisos: entran en cascada y se levantan al tocar */
+.grid .card { animation: subir .55s cubic-bezier(.2,.7,.2,1) both; }
+.grid .card:nth-child(2) { animation-delay: .06s; } .grid .card:nth-child(3) { animation-delay: .12s; } .grid .card:nth-child(4) { animation-delay: .18s; }
+.grid .card:nth-child(5) { animation-delay: .24s; } .grid .card:nth-child(6) { animation-delay: .3s; } .grid .card:nth-child(n+7) { animation-delay: .34s; }
+.card { transition: transform .2s ease, box-shadow .2s ease; }
+.card:active { transform: scale(.985); }
+@media (hover: hover) { .card:hover { transform: translateY(-3px); } .card:hover .card-ph img { transform: scale(1.04); } }
+.card-ph img { transition: transform .5s ease, opacity .4s ease; }
+/* Categorías: la flecha se corre y el icono salta al tocar */
+@media (hover: hover) { .cat:hover span { transform: translateX(4px); } }
+.cat:active { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) {
+  .sb-seccion .sb-item { opacity: 1 !important; transform: none !important; }
+}
