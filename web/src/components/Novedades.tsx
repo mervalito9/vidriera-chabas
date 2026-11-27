@@ -18,9 +18,21 @@ const CALLADO = "vidriera-notif-callado"; // cerró el globito en esta visita (s
 
 export type Accion = "ve" | "abre" | "nuevos" | "bajo" | "busquedas" | "publicar" | "wa";
 
+export type Icono = "busca" | "nuevo" | "bajo" | "publicar" | "wa";
+
+/** Íconos de línea propios (los emojis se ven distintos en cada celular y abaratan todo). */
+export function IconoNovedad({ tipo }: { tipo: Icono }) {
+  const p = { viewBox: "0 0 24 24", width: 22, height: 22, fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  if (tipo === "busca") return <svg {...p}><circle cx="10.5" cy="10.5" r="6.5" /><path d="m20 20-4.6-4.6" /></svg>;
+  if (tipo === "nuevo") return <svg {...p}><path d="M12 3.5 13.9 9l5.6 1-4.2 3.8 1.2 5.7L12 16.7l-4.5 2.8 1.2-5.7L4.5 10l5.6-1z" /></svg>;
+  if (tipo === "bajo") return <svg {...p}><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="7.5" cy="7.5" r="1.3" /><path d="M12 9v6m0 0-2.2-2.2M12 15l2.2-2.2" /></svg>;
+  if (tipo === "publicar") return <svg {...p}><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" /><circle cx="12" cy="12.5" r="3.4" /></svg>;
+  return <svg {...p}><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5Z" /></svg>;
+}
+
 interface Item {
   clave: Exclude<Accion, "ve" | "abre">;
-  icono: string;
+  icono: Icono;
   titulo: string;
   texto: string;
   href: string;
@@ -67,7 +79,7 @@ export function armarItems(avisos: AvisoPublico[], buscan: SeBusca[], desde: num
     const n = nuevos.length;
     items.push({
       clave: "nuevos",
-      icono: "🆕",
+      icono: "nuevo",
       titulo: desde ? (n === 1 ? "1 aviso nuevo desde tu última visita" : `${n} avisos nuevos desde tu última visita`) : n === 1 ? "Entró 1 aviso esta semana" : `Entraron ${n} avisos esta semana`,
       texto: n === 1 ? `${primero.titulo} · ${hace(primero.publicadoEn)}` : `El último: ${primero.titulo}`,
       href: n === 1 ? ir("aviso", primero.id) : ir("buscar"),
@@ -79,13 +91,13 @@ export function armarItems(avisos: AvisoPublico[], buscan: SeBusca[], desde: num
     .filter((a) => a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior && !a.reservado)
     .sort((a, b) => b.publicadoEn.localeCompare(a.publicadoEn))[0];
   if (bajo) {
-    items.push({ clave: "bajo", icono: "💸", titulo: "Bajó de precio", texto: bajo.titulo, href: ir("aviso", bajo.id), firma: `b:${bajo.id}:${bajo.precio}` });
+    items.push({ clave: "bajo", icono: "bajo", titulo: "Bajó de precio", texto: bajo.titulo, href: ir("aviso", bajo.id), firma: `b:${bajo.id}:${bajo.precio}` });
   }
 
   if (buscan.length) {
     items.push({
       clave: "busquedas",
-      icono: "🔎",
+      icono: "busca",
       titulo: buscan.length === 1 ? "Alguien busca algo en la zona" : `Se buscan ${buscan.length} cosas en la zona`,
       texto: `${buscan[0]?.titulo ?? ""}${buscan.length > 1 ? " y más" : ""}. ¿Tenés alguna?`,
       href: ir("se-buscan"),
@@ -93,11 +105,11 @@ export function armarItems(avisos: AvisoPublico[], buscan: SeBusca[], desde: num
     });
   }
 
-  items.push({ clave: "publicar", icono: "📸", titulo: "¿Vendés o alquilás algo?", texto: "Publicalo gratis en 3 pasos, desde el celular.", href: ir("publicar"), firma: null });
+  items.push({ clave: "publicar", icono: "publicar", titulo: "¿Vendés o alquilás algo?", texto: "Publicalo gratis en 3 pasos, desde el celular.", href: ir("publicar"), firma: null });
   if (numeroWA(WA_NUMERO)) {
     items.push({
       clave: "wa",
-      icono: "💬",
+      icono: "wa",
       titulo: "¿Dudas? Escribime",
       texto: "Te respondo por WhatsApp y te ayudo a publicar.",
       href: linkWA(WA_NUMERO, "Hola Felipe! Tengo una consulta sobre Vidriera Chabás."),
@@ -110,7 +122,9 @@ export function armarItems(avisos: AvisoPublico[], buscan: SeBusca[], desde: num
 
 
 export interface Mensaje {
-  icono: string;
+  icono: Icono;
+  /** Rótulo corto arriba ("Se busca", "Nuevo en Casilda", "Bajó de precio"). */
+  etiqueta: string;
   texto: string;
 }
 
@@ -120,14 +134,14 @@ export function armarMensajes(avisos: AvisoPublico[], buscan: SeBusca[], desde: 
   const m: Mensaje[] = [];
   for (const b of buscan.slice(0, 3)) {
     const plata = b.detalle.split(/\s*·\s*/).find((p) => /^hasta/i.test(p));
-    m.push({ icono: "🔎", texto: `Se busca: ${b.titulo}${plata ? ` · ${plata.toLowerCase()}` : ""}. ¿Tenés uno?` });
+    m.push({ icono: "busca", etiqueta: "Se busca · ¿tenés uno?", texto: `${b.titulo}${plata ? ` · ${plata.toLowerCase()}` : ""}` });
   }
   const corte = desde || ahora - SEMANA;
-  for (const a of reales.filter((x) => Date.parse(x.publicadoEn) > corte).slice(0, 2)) m.push({ icono: "🆕", texto: `Nuevo: ${a.titulo} · ${a.pueblo}` });
+  for (const a of reales.filter((x) => Date.parse(x.publicadoEn) > corte).slice(0, 2)) m.push({ icono: "nuevo", etiqueta: `Nuevo en ${a.pueblo}`, texto: a.titulo });
   const bajo = reales.find((a) => a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior && !a.reservado);
-  if (bajo) m.push({ icono: "💸", texto: `Bajó de precio: ${bajo.titulo}` });
+  if (bajo) m.push({ icono: "bajo", etiqueta: "Bajó de precio", texto: bajo.titulo });
   // Intercalar: búsqueda, aviso, búsqueda… para que no pase todo lo mismo seguido.
-  const bus = m.filter((x) => x.icono === "🔎"), resto = m.filter((x) => x.icono !== "🔎");
+  const bus = m.filter((x) => x.icono === "busca"), resto = m.filter((x) => x.icono !== "busca");
   const mezcla: Mensaje[] = [];
   for (let i = 0; i < Math.max(bus.length, resto.length); i++) {
     if (bus[i]) mezcla.push(bus[i] as Mensaje);
@@ -254,27 +268,28 @@ export function Novedades({ ruta }: { ruta: string }) {
 
   return (
     <>
-      <div className={`burbuja${oculta && !abierto ? " oculta" : ""}`}>
-        {globito && msj && !abierto && (
-          <div className="burbuja-globo">
-            <button type="button" className="burbuja-msj" onClick={abrir} aria-label={`${msj.texto}. Ver novedades`}>
-              <span key={n} className="burbuja-rueda"><span aria-hidden="true">{msj.icono}</span> {msj.texto}</span>
-            </button>
-            <button type="button" className="burbuja-x" aria-label="Cerrar el globito" onClick={callar}>×</button>
-          </div>
-        )}
+      <div className={`burbuja${oculta && !abierto ? " oculta" : ""}${globito && msj && !abierto ? " abierta" : ""}`}>
         <button
           type="button"
           ref={boton}
-          className={cuenta ? "burbuja-btn hay" : "burbuja-btn"}
-          aria-label={cuenta ? `Novedades de Vidriera: ${cuenta} sin ver` : "Novedades de Vidriera"}
+          className="burbuja-pill"
+          aria-label={msj && globito ? `${msj.etiqueta}: ${msj.texto}. Ver novedades` : cuenta ? `Novedades de Vidriera: ${cuenta} sin ver` : "Novedades de Vidriera"}
           aria-expanded={abierto}
           aria-controls="burbuja-hoja"
           onClick={() => (abierto ? cerrar() : abrir())}
         >
-          <img src="assets/img/isotipo-claro.svg" alt="" width="30" height="30" />
-          {cuenta > 0 && <span className="burbuja-n" aria-hidden="true">{cuenta}</span>}
+          <span className="burbuja-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g fill="#F7EFE2"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" opacity=".55" /></g></svg>
+            {cuenta > 0 && <span className="burbuja-n">{cuenta}</span>}
+          </span>
+          {globito && msj && (
+            <span className="burbuja-txt" key={n} aria-hidden="true">
+              <small><IconoNovedad tipo={msj.icono} />{msj.etiqueta}</small>
+              <b>{msj.texto}</b>
+            </span>
+          )}
         </button>
+        {globito && msj && !abierto && <button type="button" className="burbuja-x" aria-label="Achicar el aviso" onClick={callar}>×</button>}
       </div>
 
       {abierto && (
@@ -296,7 +311,7 @@ export function Novedades({ ruta }: { ruta: string }) {
                       setAbierto(false);
                     }}
                   >
-                    <span className="notif-ico" aria-hidden="true">{i.icono}</span>
+                    <span className="notif-ico" aria-hidden="true"><IconoNovedad tipo={i.icono} /></span>
                     <span className="notif-txt"><b>{i.titulo}</b><span>{i.texto}</span></span>
                   </a>
                 </li>
