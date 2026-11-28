@@ -7,6 +7,29 @@ type ConDatos = Pick<AvisoPublico, "rubro" | "operacion" | "precio" | "datos">;
 
 const POR = /^precio por (noche|semana|quincena|mes)$/i;
 const DUENOS = /^dueños de (.+)$/i;
+const LIBRE = /^libre: (.+)$/i;
+
+/** Fechas libres que marcó el dueño ("1ª quincena de enero"…), en el orden de la temporada. */
+export function fechasLibres(a: Pick<AvisoPublico, "rubro" | "datos">): string[] {
+  if (a.rubro !== "vacaciones") return [];
+  return a.datos.map((d) => LIBRE.exec(d.trim())?.[1] ?? "").filter(Boolean);
+}
+
+/** "1ª quincena de enero" → "1ª ene" (para la tarjeta, donde no hay lugar). */
+export const fechaCorta = (f: string): string => f.replace(/quincena de /i, "").replace(/enero/i, "ene").replace(/febrero/i, "feb").replace(/diciembre/i, "dic").replace(/marzo/i, "mar");
+
+/** Región de un destino conocido, para filtrar. Los que no están en la lista van a "Otros destinos". */
+const REGIONES: [string, RegExp][] = [
+  ["Costa Atlántica", /gesell|mar del plata|pinamar|san bernardo|mar de aj[oó]|santa teresita|miramar|necochea|monte hermoso|san clemente|costa (del este|esmeralda|azul)|cariló|valeria|las toninas|mar de las pampas|claromec[oó]|orense|reta/i],
+  ["Sierras de Córdoba", /carlos paz|general belgrano|calamuchita|mina clavero|la cumbre|capilla del monte|la falda|cosqu[ií]n|nono|alta gracia|los reartes|tanti|c[oó]rdoba/i],
+  ["Entre Ríos", /federaci[oó]n|col[oó]n|gualeguaych[uú]|concordia|chajar[ií]|victoria|paran[aá]|diamante|entre r[ií]os/i],
+  ["San Luis y Mendoza", /merlo|potrero de los funes|san luis|mendoza|uspallata|malarg[uü]e/i],
+  ["Patagonia", /bariloche|san mart[ií]n de los andes|villa la angostura|el bols[oó]n|las grutas|puerto madryn|esquel/i],
+  ["Santa Fe", /rosario|santa fe|funes|rold[aá]n|granadero baigorria|melincu[eé]/i],
+];
+export function regionDe(destino: string): string {
+  return REGIONES.find(([, re]) => re.test(destino))?.[0] ?? "Otros destinos";
+}
 
 /** "por noche", "por mes"… o "" si no corresponde. */
 export function sufijoPrecio(a: ConDatos): string {
@@ -23,8 +46,8 @@ export function duenosDe(a: Pick<AvisoPublico, "rubro" | "datos">): string {
   return t ? (DUENOS.exec(t.trim())?.[1] ?? "").trim() : "";
 }
 
-/** Los datos para mostrar como chips (sin el precio-por ni los dueños, que van aparte). */
+/** Los datos para mostrar como chips (sin el precio-por, los dueños ni las fechas libres, que van aparte). */
 export function datosVisibles(a: Pick<AvisoPublico, "rubro" | "datos">): string[] {
   if (a.rubro !== "vacaciones") return a.datos;
-  return a.datos.filter((d) => !POR.test(d.trim()) && !DUENOS.test(d.trim()));
+  return a.datos.filter((d) => !POR.test(d.trim()) && !DUENOS.test(d.trim()) && !LIBRE.test(d.trim()));
 }

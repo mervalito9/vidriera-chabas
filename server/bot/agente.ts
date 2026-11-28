@@ -204,7 +204,8 @@ ${tiposPorRubro}
 VACACIONES (rubro "vacaciones")
 - Son casas, departamentos o cabañas para alquilar en la temporada, de dueños de la zona pero ubicadas en otro lugar (costa, sierras, Entre Ríos…). operacion siempre "alquiler", moneda casi siempre ARS.
 - "pueblo" es el DESTINO donde queda (ej. "Villa Gesell", "Villa Carlos Paz"), no el pueblo del dueño.
-- En "datos" van, si los dijo: "Dueños de Chabás" (de dónde son los dueños; es lo que da confianza), "Precio por noche" / "Precio por semana" / "Precio por quincena" / "Precio por mes" (siempre que haya precio), "Para 6 personas", "3 dormitorios", "2 baños", "A 3 cuadras del centro o el agua", y los que tenga de: Pileta, Cochera, Aire acondicionado, Wi-Fi, Parrilla, Acepta mascotas, Ropa de cama. Hasta 14 datos.
+- En "datos" van, si los dijo: "Dueños de Chabás" (de dónde son los dueños; es lo que da confianza), "Precio por noche" / "Precio por semana" / "Precio por quincena" / "Precio por mes" (siempre que haya precio), "Para 6 personas", "3 dormitorios", "2 baños", "A 3 cuadras del centro o el agua", "Mínimo 5 noches", los que tenga de: Pileta, Cochera, Aire acondicionado, Wi-Fi, Parrilla, Acepta mascotas, Ropa de cama, y las FECHAS LIBRES con este formato exacto: "Libre: diciembre", "Libre: 1ª quincena de enero", "Libre: 2ª quincena de enero", "Libre: 1ª quincena de febrero", "Libre: 2ª quincena de febrero", "Libre: marzo". Hasta 24 datos.
+- Cuando Felipe diga que una casa ya se alquiló para un período ("la de Gesell ya alquiló la primera de enero"), sacá esa etiqueta "Libre: …" con editar_aviso (mandá la lista de datos completa sin ella). Si no queda ninguna fecha libre, preguntale si la marca reservada.
 - Si no dijo por cuánto tiempo es el precio, o de dónde son los dueños, anotalo en "faltan".
 
 PUBLICAR

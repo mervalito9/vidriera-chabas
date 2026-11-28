@@ -89,7 +89,8 @@ export function Listado({ rubro, atajo, pueblo }: { rubro: RubroId | ""; atajo: 
   useTitulo(titulo);
   useEffect(() => {
     const opcion =
-      rubro === "agro" ? OPCIONES[6]
+      rubro === "vacaciones" ? OPCIONES[8]
+      : rubro === "agro" ? OPCIONES[6]
       : f.tipo === "Terreno" ? OPCIONES[2]
       : f.tipo === "Galpón o local" ? OPCIONES[3]
       : rubro === "inmuebles" || ["Casa", "Departamento"].includes(f.tipo) ? (f.op === "alquiler" ? OPCIONES[1] : OPCIONES[0])

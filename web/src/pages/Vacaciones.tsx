@@ -3,7 +3,7 @@
 // del pueblo. Mientras haya pocos avisos, la página le habla sobre todo a los dueños para que publiquen.
 import { useMemo, useState } from "react";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
-import { duenosDe } from "../../../shared/vacaciones.ts";
+import { duenosDe, regionDe } from "../../../shared/vacaciones.ts";
 import { listarAvisos } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
@@ -34,16 +34,20 @@ function Sol() {
 export function Vacaciones() {
   useTitulo("Vacaciones");
   const c = useCarga(() => listarAvisos({ rubro: "vacaciones" }, 120), []);
+  const [region, setRegion] = useState("");
   const [destino, setDestino] = useState("");
   const [minimo, setMinimo] = useState(0);
 
   const avisos = c.estado === "listo" && !c.datos.soloEjemplos ? c.datos.avisos.filter((a) => a.rubro === "vacaciones") : [];
-  const destinos = useMemo(() => {
+  const contar = (claves: string[]) => {
     const cuenta = new Map<string, number>();
-    for (const a of avisos) cuenta.set(a.pueblo, (cuenta.get(a.pueblo) ?? 0) + 1);
+    for (const k of claves) cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
     return [...cuenta.entries()].sort((x, y) => y[1] - x[1]);
-  }, [avisos]);
-  const lista = avisos.filter((a) => (!destino || a.pueblo === destino) && (!minimo || personas(a) >= minimo));
+  };
+  const regiones = useMemo(() => contar(avisos.map((a) => regionDe(a.pueblo))), [avisos]);
+  const enRegion = avisos.filter((a) => !region || regionDe(a.pueblo) === region);
+  const destinos = contar(enRegion.map((a) => a.pueblo));
+  const lista = enRegion.filter((a) => (!destino || a.pueblo === destino) && (!minimo || personas(a) >= minimo));
   const deLaZona = avisos.filter((a) => duenosDe(a)).length;
 
   return (
@@ -73,6 +77,14 @@ export function Vacaciones() {
 
         {avisos.length > 0 && (
           <>
+            {regiones.length > 1 && (
+              <div className="chips vac-filtros" role="group" aria-label="Región">
+                <button type="button" className="chip" aria-pressed={!region} onClick={() => { setRegion(""); setDestino(""); }}>Todas las regiones</button>
+                {regiones.map(([r, n]) => (
+                  <button key={r} type="button" className="chip" aria-pressed={region === r} onClick={() => { setRegion(r); setDestino(""); }}>{r} ({n})</button>
+                ))}
+              </div>
+            )}
             {destinos.length > 1 && (
               <div className="chips vac-filtros" role="group" aria-label="Destino">
                 <button type="button" className="chip" aria-pressed={!destino} onClick={() => setDestino("")}>Todos los destinos</button>
@@ -92,7 +104,7 @@ export function Vacaciones() {
             {lista.length > 0 ? (
               <div className="grid reales">{lista.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
             ) : (
-              <p className="sb-baja">No hay alquileres con esos filtros. <button type="button" className="linkbtn" onClick={() => { setDestino(""); setMinimo(0); }}>Ver todos</button></p>
+              <p className="sb-baja">No hay alquileres con esos filtros. <button type="button" className="linkbtn" onClick={() => { setRegion(""); setDestino(""); setMinimo(0); }}>Ver todos</button></p>
             )}
           </>
         )}

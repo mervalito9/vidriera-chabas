@@ -13,7 +13,7 @@ let sugerida: Partial<NuevaBusqueda> = {};
 /** El listado deja preparada la búsqueda con lo que la persona estaba filtrando, así no lo escribe de nuevo. */
 export function prepararBusqueda(b: Partial<NuevaBusqueda>): void { sugerida = b; }
 
-export const OPCIONES = ["Casa o departamento para comprar", "Casa o departamento para alquilar", "Terreno", "Galpón o local", "Auto o camioneta", "Moto", "Maquinaria agro o herramientas", "Otra cosa"];
+export const OPCIONES = ["Casa o departamento para comprar", "Casa o departamento para alquilar", "Terreno", "Galpón o local", "Auto o camioneta", "Moto", "Maquinaria agro o herramientas", "Otra cosa", "Alquiler para vacaciones"];
 
 const mensaje = (b: NuevaBusqueda): string =>
   ["Hola! Estoy buscando esto en Chabás y la zona:", "", `Rubro: ${b.rubro || "-"}`, `Busco: ${b.que || "-"}`, `Presupuesto: ${b.presupuesto || "-"}`, `Nombre: ${b.nombre || "-"}`, "", "Si aparece algo así, avisame por acá."].join("\n");
@@ -78,7 +78,7 @@ export function Busco() {
             <label className="lbl" htmlFor="b-rubro">¿Qué buscás?</label>
             <select id="b-rubro" value={b.rubro} aria-invalid={!!err("rubro") || undefined} onChange={(e) => set("rubro", e.target.value)}>
               <option value="">Elegí una opción</option>
-              {OPCIONES.map((o) => <option key={o}>{o}</option>)}
+              {[...OPCIONES.slice(0, 7), OPCIONES[8], OPCIONES[7]].map((o) => <option key={o}>{o}</option>)}
             </select>
             {err("rubro") && <p className="err">{err("rubro")}</p>}
           </div>

@@ -1059,3 +1059,12 @@ footer { padding-bottom: 90px; }
 .vac-filtros { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; margin-right: calc(-1 * var(--pad, 16px)); }
 .vac-filtros::-webkit-scrollbar { display: none; }
 .vac-filtros .chip { flex: none; }
+.libres { margin: 0 0 6px; font-size: .86rem; color: #2F6E73; }
+.libres b { font-weight: 800; }
+.fechas-libres { margin: 6px 0 12px; }
+.fechas-libres ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.fechas-libres li { padding: 7px 12px; border-radius: 999px; background: #E3F0EE; color: #17332F; font-weight: 700; font-size: .9rem; }
+.fechas-libres li::before { content: "✓ "; color: #2F6E73; }
+.seguro-linea { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0 10px; font-size: .9rem; color: var(--tinta-2); }
+.antes-senar .small { margin: 0 0 8px; color: var(--tinta-2); }
+.antes-senar ul + .small { margin: 10px 0 0; }

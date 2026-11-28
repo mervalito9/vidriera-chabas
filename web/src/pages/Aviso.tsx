@@ -8,7 +8,7 @@ import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ErrorApi, avisoConocido, linkContacto, listarAvisos, obtenerAviso } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
-import { datosVisibles, duenosDe } from "../../../shared/vacaciones.ts";
+import { datosVisibles, duenosDe, fechasLibres } from "../../../shared/vacaciones.ts";
 import { fotoSegura, precioTexto, sufijo } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
@@ -112,6 +112,13 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           {bajo && a.precioAnterior !== null && (
             <p className="baja">Bajó de precio: antes {a.moneda === "ARS" ? "$" : "USD"} {fmtNum(a.precioAnterior)}</p>
           )}
+          {a.rubro === "vacaciones" && fechasLibres(a).length > 0 && (
+            <div className="fechas-libres">
+              <p className="lbl">Fechas libres</p>
+              <ul>{fechasLibres(a).map((f) => <li key={f}>{f}</li>)}</ul>
+            </div>
+          )}
+          {a.rubro === "vacaciones" && <p className="seguro-linea"><span aria-hidden="true">🔒</span> Transferí solo a nombre del dueño y nunca el total antes de entrar.</p>}
           <Contacto a={a} c={contacto} refBoton={refBoton} />
           {a.publica && (
             <p className="publica">
@@ -300,11 +307,15 @@ function AntesDeSenar() {
   return (
     <aside className="antes-senar" aria-labelledby="senar-t">
       <h2 id="senar-t">Antes de señar</h2>
+      <p className="small">En temporada hay estafas con fotos robadas y señas a cuentas falsas. Aunque el dueño sea de la zona, cuidate:</p>
       <ul>
-        <li>Pedí una videollamada o fotos nuevas de la casa, con algo que pidas vos.</li>
-        <li>Transferí solo a una cuenta a nombre del dueño, y pedí recibo de la seña.</li>
-        <li>Acordá por escrito fechas, precio total, seña y qué pasa si se cancela.</li>
+        <li>Pedí una videollamada mostrando la casa.</li>
+        <li>Transferí solo a una cuenta a nombre del dueño. No pagues el total antes de entrar.</li>
+        <li>Pedí recibo de la seña con fechas, monto y dirección.</li>
+        <li>Desconfiá del apuro y de los precios muy bajos.</li>
+        <li>¿Lo conocés? Confirmá por otro lado que el número es suyo.</li>
       </ul>
+      <p className="small">Acordá todo por escrito y consultá las normas del destino. Vidriera Chabás no cobra ni intermedia pagos. Si te estafan, avisá a tu banco y denunciá en UFECI: denunciasufeci@mpf.gov.ar.</p>
     </aside>
   );
 }

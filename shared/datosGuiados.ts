@@ -31,6 +31,12 @@ const opcion = (opciones: readonly string[]) => ({
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 const ANIO = new Date().getFullYear() + 1;
 
+/** Períodos de la temporada, para marcar fechas libres en los avisos de vacaciones. */
+export const PERIODOS = [
+  ["dic", "diciembre"], ["ene1", "1ª quincena de enero"], ["ene2", "2ª quincena de enero"],
+  ["feb1", "1ª quincena de febrero"], ["feb2", "2ª quincena de febrero"], ["mar", "marzo"],
+] as const;
+
 const COMBUSTIBLES = ["Nafta", "Diésel", "GNC", "Nafta y GNC", "Híbrido", "Eléctrico"] as const;
 const CAJAS = ["Manual", "Automática"] as const;
 
@@ -54,10 +60,14 @@ export const CAMPOS_GUIADOS: Record<RubroId, CampoGuiado[]> = {
     { id: "personas", etiqueta: "¿Para cuántas personas?", tipo: "numero", placeholder: "Ej: 6", reconoce: /^para \d+ personas?$/i, ...numero((n) => `Para ${plural(n, "persona", "personas")}`, 1, 40) },
     { id: "dorm", etiqueta: "Dormitorios", tipo: "opciones", opciones: ["1", "2", "3", "4", "5"], reconoce: /^\d+\s+dormitorios?$/i, armar: (v) => (v ? plural(Number(v), "dormitorio", "dormitorios") : ""), leer: (e) => soloDigitos(e) },
     { id: "banos", etiqueta: "Baños", tipo: "opciones", opciones: ["1", "2", "3", "4"], reconoce: /^\d+\s+baños?$/i, armar: (v) => (v ? plural(Number(v), "baño", "baños") : ""), leer: (e) => soloDigitos(e) },
+    { id: "minimo", etiqueta: "Estadía mínima (noches)", tipo: "numero", placeholder: "Ej: 5", reconoce: /^mínimo \d+ noches?$/i, ...numero((n) => `Mínimo ${plural(n, "noche", "noches")}`, 1, 60) },
     { id: "cuadras", etiqueta: "Cuadras al mar, río o centro", tipo: "numero", placeholder: "Ej: 3", reconoce: /^a \d+ cuadras? de/i, ...numero((n) => `A ${plural(n, "cuadra", "cuadras")} del centro o el agua`, 1, 99) },
     ...([["pileta", "Pileta"], ["cochera", "Cochera"], ["aire", "Aire acondicionado"], ["wifi", "Wi-Fi"], ["parrilla", "Parrilla"], ["mascotas", "Acepta mascotas"], ["ropa", "Ropa de cama"]] as const).map(
       ([id, nombre]): CampoGuiado => ({ id, etiqueta: nombre, tipo: "si", reconoce: new RegExp(`^${nombre}$`, "i"), armar: (v) => (v === "si" ? nombre : ""), leer: () => "si" }),
     ),
+    // Fechas libres: lo primero que pregunta quien alquila. Se marcan las que están libres; el dueño (o Felipe, o el
+    // bot) las saca cuando se alquilan.
+    ...PERIODOS.map(([id, nombre]): CampoGuiado => ({ id, etiqueta: `Libre: ${nombre}`, tipo: "si", reconoce: new RegExp(`^libre: ${nombre}$`, "i"), armar: (v) => (v === "si" ? `Libre: ${nombre}` : ""), leer: () => "si" })),
   ],
   agro: [
     { id: "anio", etiqueta: "Año", tipo: "numero", placeholder: "Ej: 2010", reconoce: /^(19|20)\d{2}$/, ...numero(String, 1940, ANIO) },

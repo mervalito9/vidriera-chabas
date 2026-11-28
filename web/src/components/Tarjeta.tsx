@@ -3,7 +3,7 @@ import { etiquetasCondiciones } from "../../../shared/alquiler.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
 import { posicionFoco } from "./form/Encuadre.tsx";
-import { datosVisibles, duenosDe } from "../../../shared/vacaciones.ts";
+import { datosVisibles, duenosDe, fechaCorta, fechasLibres } from "../../../shared/vacaciones.ts";
 import { fotoSegura, hace, precioTexto, sufijo } from "../formato.ts";
 
 /** Si la foto ya estaba bajada (por ejemplo al volver atrás), se muestra sin esperar. */
@@ -41,6 +41,7 @@ export function Tarjeta({ aviso: a, previa, nuevo }: { aviso: AvisoPublico; prev
         </p>
         <h3>{a.titulo}</h3>
         {duenos && <p className="duenos-de"><span aria-hidden="true">🤝</span> Dueños de {duenos}</p>}
+        {fechasLibres(a).length > 0 && <p className="libres"><b>Libre:</b> {fechasLibres(a).map(fechaCorta).join(" · ")}</p>}
         {(datos.length > 0 || cond.length > 0) && (
           <ul className="chips-datos">
             {datos.slice(0, 4 - cond.length).map((d) => <li key={d}>{d}</li>)}

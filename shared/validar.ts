@@ -60,7 +60,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const datos = (Array.isArray(e.datos) ? e.datos : [])
     .map((d) => recortar(d, 40))
     .filter(Boolean)
-    .slice(0, 14);
+    .slice(0, 24);
   const nombre = recortar(e.nombre, LIMITES.nombre);
   const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
   const condiciones = operacion === "alquiler" && rubro !== "vacaciones" ? limpiarCondiciones(e.condiciones) : null;
