@@ -52,7 +52,26 @@ export const RUBROS: Record<RubroId, Rubro> = {
     tipos: ["Tractor", "Cosechadora", "Sembradora", "Pulverizadora", "Tolva o acoplado", "Herramientas", "Otra máquina"],
     placeholder: "Ej: Tractor 110 HP 2016 con pala",
   },
+  vacaciones: {
+    id: "vacaciones",
+    nombre: "Vacaciones",
+    ruta: "vacaciones",
+    descripcion: "Casas, departamentos y cabañas para vacaciones, de dueños de Chabás y la zona: en la costa, las sierras o donde estén.",
+    resumen: "Costa, sierras, cabañas",
+    tipos: ["Casa", "Departamento", "Cabaña", "Dúplex", "Quinta o casa de campo"],
+    placeholder: "Ej: Casa en Villa Gesell a 3 cuadras del mar",
+  },
 };
+
+/**
+ * Destinos que se sugieren al publicar un aviso de vacaciones (se puede escribir cualquier otro).
+ * Son a donde suele ir la gente de la zona.
+ */
+export const DESTINOS: readonly string[] = [
+  "Villa Gesell", "Mar del Plata", "Pinamar", "San Bernardo", "Mar de Ajó", "Santa Teresita", "Miramar", "Necochea", "Monte Hermoso", "Las Grutas",
+  "Villa Carlos Paz", "Villa General Belgrano", "Santa Rosa de Calamuchita", "Mina Clavero", "La Cumbre", "Capilla del Monte", "Merlo",
+  "Federación", "Colón", "Gualeguaychú", "Rosario", "Bariloche",
+];
 
 export const RUBRO_IDS = Object.keys(RUBROS) as RubroId[];
 
@@ -90,4 +109,5 @@ export const ATAJOS: Record<RubroId | "todo", ReadonlyArray<readonly [string, st
   inmuebles: [["alquiler", "Alquileres"], ["venta", "En venta"], ["casa", "Casas"], ["departamento", "Departamentos"], ["terreno", "Terrenos"], ["galpon-o-local", "Galpones y locales"]],
   vehiculos: [["auto", "Autos"], ["camioneta-o-utilitario", "Camionetas y utilitarios"], ["moto", "Motos"], ["camion-o-acoplado", "Camiones y acoplados"]],
   agro: [["tractor", "Tractores"], ["cosechadora", "Cosechadoras"], ["sembradora", "Sembradoras"], ["tolva-o-acoplado", "Tolvas y acoplados"], ["herramientas", "Herramientas"]],
+  vacaciones: [["casa", "Casas"], ["departamento", "Departamentos"], ["cabana", "Cabañas"]],
 };

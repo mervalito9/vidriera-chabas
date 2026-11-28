@@ -8,7 +8,8 @@ import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ErrorApi, avisoConocido, linkContacto, listarAvisos, obtenerAviso } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
-import { fotoSegura, porMes, precioTexto } from "../formato.ts";
+import { datosVisibles, duenosDe } from "../../../shared/vacaciones.ts";
+import { fotoSegura, precioTexto, sufijo } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
 
@@ -99,8 +100,14 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           {a.reservado && <p className="reservado"><b>Reservado.</b> El dueño ya lo tiene señado. Si querés quedar por si se cae, escribile igual.</p>}
           <p className="price big">
             {precioTexto(a)}
-            {porMes(a) && <span> por mes</span>}
+            {sufijo(a) && <span> {sufijo(a)}</span>}
           </p>
+          {duenosDe(a) && (
+            <p className="confianza">
+              <span className="confianza-ico" aria-hidden="true">🤝</span>
+              <span><b>Los dueños son de {duenosDe(a)}</b><small>Le alquilás a gente de la zona. Hablás directo con ellos por WhatsApp, sin intermediarios.</small></span>
+            </p>
+          )}
           {!!a.condiciones?.expensas && <p className="small expensas">+ $ {fmtNum(a.condiciones.expensas)} de expensas por mes</p>}
           {bajo && a.precioAnterior !== null && (
             <p className="baja">Bajó de precio: antes {a.moneda === "ARS" ? "$" : "USD"} {fmtNum(a.precioAnterior)}</p>
@@ -113,12 +120,13 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
             </p>
           )}
           <ul className="datos">
-            {a.datos.map((d) => <li key={d}>{d}</li>)}
+            {datosVisibles(a).map((d) => <li key={d}>{d}</li>)}
             {a.permuta && <li className="ok">Acepta permuta</li>}
             {a.financia && <li className="ok">Financia</li>}
           </ul>
-          {a.operacion === "alquiler" && <Condiciones a={a} />}
+          {a.operacion === "alquiler" && a.rubro !== "vacaciones" && <Condiciones a={a} />}
           {a.descripcion && <p className="desc">{a.descripcion}</p>}
+          {a.rubro === "vacaciones" && <AntesDeSenar />}
           {MAPA_ACTIVO && a.lat !== null && a.lng !== null && (
             <section className="ubicacion" aria-labelledby="ubi-t">
               <h2 id="ubi-t">Ubicación</h2>
@@ -223,7 +231,7 @@ function BarraContacto({ a, c, refBoton }: { a: AvisoPublico; c: EstadoContacto;
   if (a.ejemplo) return null;
   return (
     <div className={`barra-wa${visible ? " visible" : ""}`} aria-hidden={!visible} inert={!visible}>
-      <span className="barra-wa-precio"><b>{precioTexto(a)}</b>{porMes(a) && <small> por mes</small>}</span>
+      <span className="barra-wa-precio"><b>{precioTexto(a)}</b>{sufijo(a) && <small> {sufijo(a)}</small>}</span>
       <BotonWA c={c} quien={a.quien} corto />
     </div>
   );
@@ -284,5 +292,19 @@ function Visor({ fotos, inicial, onCerrar }: { fotos: string[]; inicial: number;
       </>}
       <p className="visor-pie">{i + 1} / {fotos.length} · {zoom > 1 ? "Tocá para alejar" : "Tocá la foto para acercar"}</p>
     </div>
+  );
+}
+
+/** Consejos cortos antes de señar un alquiler de vacaciones (las estafas con señas son comunes en temporada). */
+function AntesDeSenar() {
+  return (
+    <aside className="antes-senar" aria-labelledby="senar-t">
+      <h2 id="senar-t">Antes de señar</h2>
+      <ul>
+        <li>Pedí una videollamada o fotos nuevas de la casa, con algo que pidas vos.</li>
+        <li>Transferí solo a una cuenta a nombre del dueño, y pedí recibo de la seña.</li>
+        <li>Acordá por escrito fechas, precio total, seña y qué pasa si se cancela.</li>
+      </ul>
+    </aside>
   );
 }

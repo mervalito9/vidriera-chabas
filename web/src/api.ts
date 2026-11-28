@@ -103,7 +103,7 @@ export async function listarAvisos(f: Partial<Filtros>, limite: number, desde = 
     return pedido;
   }
   const res = filtrarAvisos(avisosDemo(), { ...FILTROS_VACIOS, ...f });
-  return { avisos: res.slice(desde, desde + limite), total: res.length, soloEjemplos: true, conteo: { inmuebles: 0, vehiculos: 0, agro: 0 }, dolar: DOLAR_VISTA_PREVIA };
+  return { avisos: res.slice(desde, desde + limite), total: res.length, soloEjemplos: true, conteo: { inmuebles: 0, vehiculos: 0, agro: 0, vacaciones: 0 }, dolar: DOLAR_VISTA_PREVIA };
 }
 
 export async function obtenerAviso(id: number): Promise<AvisoPublico | null> {

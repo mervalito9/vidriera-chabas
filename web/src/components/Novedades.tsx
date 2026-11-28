@@ -148,6 +148,12 @@ export function armarMensajes(avisos: AvisoPublico[], buscan: SeBusca[], desde: 
     if (bus[i]) mezcla.push(bus[i] as Mensaje);
     if (resto[i]) mezcla.push(resto[i] as Mensaje);
   }
+  // En temporada, la sección de vacaciones (va segunda para que se vea pronto).
+  const mes = new Date(ahora).getMonth();
+  if (mes >= 10 || mes <= 2) {
+    const n = reales.filter((a) => a.rubro === "vacaciones").length;
+    mezcla.splice(Math.min(1, mezcla.length), 0, { icono: "nuevo", etiqueta: "Temporada de vacaciones", texto: n ? `${n === 1 ? "1 casa" : `${n} casas`} de dueños de la zona` : "Casas de dueños de la zona", href: ir("vacaciones") });
+  }
   // Siempre hay algo que decir: la invitación a publicar cierra la vuelta (y es lo único si no hay novedades).
   mezcla.push({ icono: "publicar", etiqueta: "¿Vendés o alquilás algo?", texto: "Publicalo gratis acá", href: ir("publicar") });
   return mezcla;

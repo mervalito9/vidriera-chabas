@@ -1,6 +1,7 @@
 // Datos destacados guiados: el formulario pregunta año, km, dormitorios… y los guarda como etiquetas
 // ("2018", "98.000 km", "3 dormitorios") en la misma lista de datos del aviso. Así las tarjetas
 // muestran lo importante sin que el vendedor tenga que pensar qué escribir.
+import { PUEBLOS } from "./config.ts";
 import { fmtNum, soloDigitos } from "./texto.ts";
 import type { RubroId } from "./tipos.ts";
 
@@ -45,6 +46,18 @@ export const CAMPOS_GUIADOS: Record<RubroId, CampoGuiado[]> = {
     { id: "banos", etiqueta: "Baños", tipo: "opciones", opciones: ["1", "2", "3", "4"], reconoce: /^\d+\s+baños?$/i, armar: (v) => (v ? plural(Number(v), "baño", "baños") : ""), leer: (e) => soloDigitos(e) },
     { id: "m2", etiqueta: "Superficie (m²)", tipo: "numero", placeholder: "Ej: 180", reconoce: /^[\d.]+\s*m²$/i, ...numero((n) => `${fmtNum(n)} m²`, 1, 9_999_999) },
     { id: "cochera", etiqueta: "Cochera", tipo: "si", reconoce: /^cochera$/i, armar: (v) => (v === "si" ? "Cochera" : ""), leer: () => "si" },
+  ],
+  vacaciones: [
+    // Lo que da confianza: de dónde son los dueños. Se muestra aparte, en grande.
+    { id: "duenos", etiqueta: "Los dueños son de", tipo: "opciones", opciones: PUEBLOS, reconoce: /^dueños de .+$/i, armar: (v) => (v ? `Dueños de ${v}` : ""), leer: (e) => e.replace(/^dueños de\s+/i, "") },
+    { id: "por", etiqueta: "El precio es por", tipo: "opciones", opciones: ["noche", "semana", "quincena", "mes"], reconoce: /^precio por (noche|semana|quincena|mes)$/i, armar: (v) => (v ? `Precio por ${v}` : ""), leer: (e) => e.replace(/^precio por\s+/i, "").toLowerCase() },
+    { id: "personas", etiqueta: "¿Para cuántas personas?", tipo: "numero", placeholder: "Ej: 6", reconoce: /^para \d+ personas?$/i, ...numero((n) => `Para ${plural(n, "persona", "personas")}`, 1, 40) },
+    { id: "dorm", etiqueta: "Dormitorios", tipo: "opciones", opciones: ["1", "2", "3", "4", "5"], reconoce: /^\d+\s+dormitorios?$/i, armar: (v) => (v ? plural(Number(v), "dormitorio", "dormitorios") : ""), leer: (e) => soloDigitos(e) },
+    { id: "banos", etiqueta: "Baños", tipo: "opciones", opciones: ["1", "2", "3", "4"], reconoce: /^\d+\s+baños?$/i, armar: (v) => (v ? plural(Number(v), "baño", "baños") : ""), leer: (e) => soloDigitos(e) },
+    { id: "cuadras", etiqueta: "Cuadras al mar, río o centro", tipo: "numero", placeholder: "Ej: 3", reconoce: /^a \d+ cuadras? de/i, ...numero((n) => `A ${plural(n, "cuadra", "cuadras")} del centro o el agua`, 1, 99) },
+    ...([["pileta", "Pileta"], ["cochera", "Cochera"], ["aire", "Aire acondicionado"], ["wifi", "Wi-Fi"], ["parrilla", "Parrilla"], ["mascotas", "Acepta mascotas"], ["ropa", "Ropa de cama"]] as const).map(
+      ([id, nombre]): CampoGuiado => ({ id, etiqueta: nombre, tipo: "si", reconoce: new RegExp(`^${nombre}$`, "i"), armar: (v) => (v === "si" ? nombre : ""), leer: () => "si" }),
+    ),
   ],
   agro: [
     { id: "anio", etiqueta: "Año", tipo: "numero", placeholder: "Ej: 2010", reconoce: /^(19|20)\d{2}$/, ...numero(String, 1940, ANIO) },

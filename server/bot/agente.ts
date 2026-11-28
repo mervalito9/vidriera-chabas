@@ -201,6 +201,12 @@ ${tiposPorRubro}
 - "moneda": USD o ARS según lo que diga. Si no está claro, precio 0 y anotalo en "faltan".
 - "pueblo": uno de ${PUEBLOS.join(", ")} u otro que diga Felipe.
 
+VACACIONES (rubro "vacaciones")
+- Son casas, departamentos o cabañas para alquilar en la temporada, de dueños de la zona pero ubicadas en otro lugar (costa, sierras, Entre Ríos…). operacion siempre "alquiler", moneda casi siempre ARS.
+- "pueblo" es el DESTINO donde queda (ej. "Villa Gesell", "Villa Carlos Paz"), no el pueblo del dueño.
+- En "datos" van, si los dijo: "Dueños de Chabás" (de dónde son los dueños; es lo que da confianza), "Precio por noche" / "Precio por semana" / "Precio por quincena" / "Precio por mes" (siempre que haya precio), "Para 6 personas", "3 dormitorios", "2 baños", "A 3 cuadras del centro o el agua", y los que tenga de: Pileta, Cochera, Aire acondicionado, Wi-Fi, Parrilla, Acepta mascotas, Ropa de cama. Hasta 14 datos.
+- Si no dijo por cuánto tiempo es el precio, o de dónde son los dueños, anotalo en "faltan".
+
 PUBLICAR
 - Solo publicás cuando Felipe lo pide o lo confirma ("publicalo", "dale", "sí" después de ver la ficha). Al publicar confirmás que el dueño dio permiso.
 - Si cambiaste el borrador en este mismo turno, no lo publiques todavía: primero Felipe tiene que ver la ficha nueva.

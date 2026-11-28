@@ -9,6 +9,7 @@ import { Aviso } from "./pages/Aviso.tsx";
 import { Busco } from "./pages/Busco.tsx";
 import { Inicio } from "./pages/Inicio.tsx";
 import { Listado } from "./pages/Listado.tsx";
+import { Vacaciones } from "./pages/Vacaciones.tsx";
 import { Publicar } from "./pages/Publicar.tsx";
 import { ComoFunciona, NoEncontrado, PreguntasFrecuentes, Privacidad, Terminos } from "./pages/Textos.tsx";
 import { leerRuta, salirDePantalla, useRuta, type Ruta } from "./router.ts";
@@ -44,6 +45,7 @@ function Pagina({ ruta }: { ruta: Ruta }) {
   const { nombre, param } = ruta;
   if (nombre === "inicio") return <Inicio />;
   if (nombre === "buscar") return <Listado key="todo" rubro="" atajo={param} />;
+  if (nombre === "vacaciones") return <Vacaciones />;
   if (nombre in RUBROS) return <Listado key={nombre} rubro={nombre as RubroId} atajo={param} />;
   if (nombre === "aviso" && /^\d+$/.test(param)) return <Aviso key={param} id={Number(param)} />;
   if (nombre === "publicar") return <Publicar key={param} rubro={param} />;

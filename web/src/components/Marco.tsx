@@ -6,6 +6,7 @@ import { Novedades } from "./Novedades.tsx";
 const NAV = [
   ["inmuebles", "Inmuebles"],
   ["vehiculos", "Vehículos"],
+  ["vacaciones", "Vacaciones"],
   ["se-buscan", "Se busca"],
   ["como-funciona", "Cómo funciona"],
 ] as const;

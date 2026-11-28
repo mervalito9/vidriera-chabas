@@ -1,3 +1,4 @@
+import { sufijoPrecio } from "../../shared/vacaciones.ts";
 import type { AvisoPublico } from "../../shared/tipos.ts";
 import { fmtNum } from "../../shared/texto.ts";
 
@@ -6,7 +7,10 @@ export function precioTexto(a: Pick<AvisoPublico, "precio" | "moneda">): string 
   return `${a.moneda === "ARS" ? "$" : "USD"} ${fmtNum(a.precio)}`;
 }
 
-export const porMes = (a: Pick<AvisoPublico, "operacion" | "precio">): boolean => a.operacion === "alquiler" && a.precio !== null;
+/** Lo que va después del precio: "por mes" en alquileres, "por noche"/"por semana"… en vacaciones, "" en ventas. */
+export const sufijo = (a: Pick<AvisoPublico, "rubro" | "operacion" | "precio" | "datos">): string => sufijoPrecio(a);
+/** @deprecated usar sufijo(): queda para el panel (redes). */
+export const porMes = (a: Pick<AvisoPublico, "rubro" | "operacion" | "precio" | "datos">): boolean => sufijoPrecio(a) !== "";
 
 /** Solo se muestran fotos propias del sitio (nunca de otras páginas). */
 export function fotoSegura(ruta: string): string {

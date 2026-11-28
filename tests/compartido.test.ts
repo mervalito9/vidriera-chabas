@@ -116,3 +116,19 @@ test("errores del panel: se explican en criollo", async () => {
   assert.equal(e("/api/x", 500).importa, true);
   assert.equal(e("/#admin--actividad").importa, false);
 });
+
+test("vacaciones: siempre alquiler, precio por noche/semana y dueños de la zona aparte", async () => {
+  const { validarAviso } = await import("../shared/validar.ts");
+  const { sufijoPrecio, duenosDe, datosVisibles } = await import("../shared/vacaciones.ts");
+  const r = validarAviso({ rubro: "vacaciones", tipo: "Casa", operacion: "venta", titulo: "Casa en Villa Gesell a 3 cuadras del mar", precio: "120000", moneda: "ARS", pueblo: "Villa Gesell", quien: "dueno", nombre: "Marta", telefono: "3464401200", datos: ["Dueños de Chabás", "Precio por noche", "Para 6 personas", "Pileta"], condiciones: { garantias: ["recibo"] } }, { exigirFotos: false });
+  assert.equal(r.ok, true, JSON.stringify(r.errores));
+  assert.equal(r.valor.operacion, "alquiler");
+  assert.equal(r.valor.condiciones, null, "las condiciones de alquiler largo no van en vacaciones");
+  assert.equal(r.valor.pueblo, "Villa Gesell");
+  const a = { ...r.valor, rubro: "vacaciones" as const };
+  assert.equal(sufijoPrecio(a), "por noche");
+  assert.equal(duenosDe(a), "Chabás");
+  assert.deepEqual(datosVisibles(a), ["Para 6 personas", "Pileta"]);
+  assert.equal(sufijoPrecio({ rubro: "inmuebles", operacion: "alquiler", precio: 1, datos: [] }), "por mes");
+  assert.equal(sufijoPrecio({ rubro: "vehiculos", operacion: "venta", precio: 1, datos: [] }), "");
+});

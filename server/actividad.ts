@@ -110,7 +110,7 @@ function limpiar() {
   for (const [k, v] of enLinea) if (v.t < corte) enLinea.delete(k);
 }
 
-const NOMBRES: Record<string, string> = { inicio: "Portada", buscar: "Buscando", inmuebles: "Inmuebles", vehiculos: "Vehículos", agro: "Maquinaria agro", publicar: "Publicando un aviso", busco: "Avisame cuando aparezca", "como-funciona": "Cómo funciona", terminos: "Términos", privacidad: "Privacidad", pueblo: "Avisos de un pueblo" };
+const NOMBRES: Record<string, string> = { inicio: "Portada", buscar: "Buscando", inmuebles: "Inmuebles", vehiculos: "Vehículos", vacaciones: "Vacaciones", agro: "Maquinaria agro", publicar: "Publicando un aviso", busco: "Avisame cuando aparezca", "como-funciona": "Cómo funciona", terminos: "Términos", privacidad: "Privacidad", pueblo: "Avisos de un pueblo" };
 function nombrePagina(p: string): string {
   const [n, param] = p.split("--");
   if (n === "aviso" && /^\d+$/.test(param ?? "")) {

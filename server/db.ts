@@ -1,4 +1,5 @@
 // Base de datos: SQLite incorporado en Node 24 (node:sqlite). Un solo archivo, sin servidor aparte.
+import { liberarRubro } from "./migraciones.ts";
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -19,7 +20,7 @@ db.exec(`
 CREATE TABLE IF NOT EXISTS avisos (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   estado          TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente','publicado','rechazado','vendido')),
-  rubro           TEXT NOT NULL CHECK (rubro IN ('inmuebles','vehiculos','agro')),
+  rubro           TEXT NOT NULL,
   tipo            TEXT NOT NULL,
   operacion       TEXT NOT NULL CHECK (operacion IN ('venta','alquiler')),
   titulo          TEXT NOT NULL,
@@ -102,6 +103,9 @@ for (const [col, def] of [
   if (!hay) db.exec(`ALTER TABLE avisos ADD COLUMN ${col} ${def}`);
 }
 db.exec("CREATE INDEX IF NOT EXISTS avisos_pueblo ON avisos (pueblo);");
+// Bases creadas antes del 28/11/2026 tenían un CHECK que solo aceptaba tres rubros: se saca una sola vez
+// (con respaldo previo en DATA_DIR) para poder sumar Vacaciones. Ver server/migraciones.ts.
+if (liberarRubro(db, join(DATA_DIR, "respaldo-antes-de-vacaciones.db"))) console.log(new Date().toISOString(), "base: se migró la tabla avisos (rubros libres). Respaldo en respaldo-antes-de-vacaciones.db");
 // «Se buscan»: las búsquedas que Felipe elige mostrar en el sitio (sin nombre ni teléfono).
 for (const [col, def] of [
   ["publica_desde", "TEXT"],
@@ -270,7 +274,7 @@ export function listarPublicos(filtros: Filtros, limite: number, desde: number):
       return palabras.every((p) => texto.includes(p));
     });
   }
-  const conteo = { inmuebles: 0, vehiculos: 0, agro: 0 } as Record<RubroId, number>;
+  const conteo = { inmuebles: 0, vehiculos: 0, agro: 0, vacaciones: 0 } as Record<RubroId, number>;
   if (reales) {
     for (const f of db.prepare(`SELECT rubro, COUNT(*) AS n FROM avisos WHERE ${VIGENTE} AND ejemplo = 0 GROUP BY rubro`).all() as Fila[]) {
       const r = str(f.rubro) as RubroId;

@@ -92,7 +92,7 @@ export function fichaAAviso(f: Ficha): FichaLista {
   const errores: string[] = [];
   const faltan: string[] = [];
   const rubroTxt = norm(v("rubro"));
-  const rubro = (Object.keys(RUBROS) as RubroId[]).find((id) => rubroTxt === id || rubroTxt.includes(norm(RUBROS[id].nombre)) || (id === "agro" && /agro|maquinaria|campo/.test(rubroTxt)) || (id === "vehiculos" && /vehic/.test(rubroTxt)));
+  const rubro = (Object.keys(RUBROS) as RubroId[]).find((id) => rubroTxt === id || rubroTxt.includes(norm(RUBROS[id].nombre)) || (id === "agro" && /agro|maquinaria|campo/.test(rubroTxt)) || (id === "vehiculos" && /vehic/.test(rubroTxt)) || (id === "vacaciones" && /vacacion|temporad|veraneo/.test(rubroTxt)));
   if (!rubro) errores.push(`No entendí el rubro "${v("rubro") || "vacío"}".`);
   const tipo = rubro ? buscar(RUBROS[rubro].tipos, v("tipo")) ?? RUBROS[rubro].tipos.find((t) => norm(t).startsWith(norm(v("tipo")).split(" ")[0] ?? "§")) : undefined;
   if (rubro && !tipo) errores.push(`El tipo "${v("tipo") || "vacío"}" no es de ${RUBROS[rubro].nombre}.`);

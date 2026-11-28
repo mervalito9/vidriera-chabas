@@ -36,15 +36,21 @@ export interface ValoresForm {
   foco: Foco | null;
 }
 
-export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => ({
+const base = (rubro: RubroId | ""): ValoresForm => ({
   rubro, tipo: "", operacion: "venta", titulo: "", precio: "", moneda: "USD", permuta: false, financia: false, descripcion: "", nombre: "", telefono: "", fotos: [], pueblo: "", puebloOtro: "", zona: "", datos: "", anunciante: "", quien: "dueno", condiciones: CONDICIONES_VACIAS, lat: null, lng: null, foco: null,
 });
+export const valoresIniciales = (rubro: RubroId | ""): ValoresForm => {
+  const v = base(rubro);
+  // Vacaciones: siempre alquiler, en pesos, y el lugar se escribe (es un destino, no un pueblo de la zona).
+  return rubro === "vacaciones" ? { ...v, operacion: "alquiler", moneda: "ARS", pueblo: OTRO_PUEBLO } : v;
+};
+
 
 /** Moneda que se usa en la zona para cada cosa (casas en venta y maquinaria en dólares; autos y alquileres en pesos).
  * Si ya escribió un precio, no se la cambiamos. */
 export function monedaSugerida(rubro: RubroId | "", operacion: "venta" | "alquiler", v: Pick<ValoresForm, "precio" | "moneda">): "USD" | "ARS" {
   if (v.precio) return v.moneda;
-  return (rubro === "inmuebles" && operacion === "venta") || rubro === "agro" ? "USD" : "ARS";
+  return (rubro === "inmuebles" && operacion === "venta") || rubro === "agro" ? "USD" : "ARS"; // vacaciones: pesos
 }
 
 export const listaDatos = (texto: string) => texto.split(",").map((d) => d.trim()).filter(Boolean);

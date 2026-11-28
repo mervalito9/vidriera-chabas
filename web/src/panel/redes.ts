@@ -4,7 +4,7 @@
 // Nunca el teléfono ni el nombre del dueño (el contacto es por la página).
 import { leerGuiados } from "../../../shared/datosGuiados.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
-import { fotoSegura, porMes, precioTexto } from "../formato.ts";
+import { fotoSegura, precioTexto, sufijo } from "../formato.ts";
 
 export const FORMATOS = {
   historia: { w: 1080, h: 1920, nombre: "historia" },
@@ -28,7 +28,8 @@ export interface DatosRedes {
   /** Cinta del posteo: "VENTA", "ALQUILER", "VENTA · PERMUTA" */
   cinta: string;
   precio: string;
-  porMes: boolean;
+  /** "por mes", "por noche"… o "" */
+  sufijo: string;
   /** Hasta 3, solo los que el aviso tiene */
   datos: string[];
   pueblo: string;
@@ -56,7 +57,7 @@ export function datosRedes(a: AvisoPublico): DatosRedes {
     cinta: alquiler ? "ALQUILER" : permuta ? "VENTA · PERMUTA" : "VENTA",
     // precioTexto nunca devuelve 0 ni vacío: sin precio dice "Consultar precio"
     precio: a.precio && a.precio > 0 ? precioTexto(a) : "Consultar",
-    porMes: porMes(a) && !!a.precio,
+    sufijo: a.precio ? sufijo(a) : "",
     datos: datosClave(a),
     pueblo: a.pueblo,
     reservado: a.reservado,
@@ -79,7 +80,7 @@ const conQuien = (a: AvisoPublico) => (a.quien === "agencia" ? "con la agencia" 
 export function textoPosteo(a: AvisoPublico): string {
   const d = datosRedes(a);
   const op = a.operacion === "alquiler" ? "Alquiler" : d.cinta.includes("PERMUTA") ? "Venta o permuta" : "Venta";
-  const precio = d.precio === "Consultar" ? "Precio a consultar" : `${d.precio}${d.porMes ? " por mes" : ""}`;
+  const precio = d.precio === "Consultar" ? "Precio a consultar" : `${d.precio}${d.sufijo ? ` ${d.sufijo}` : ""}`;
   return `${d.titulo.replace(/[.\s]+$/, "")}. ${op} en ${d.pueblo}. ${precio}. Fotos y contacto directo ${conQuien(a)} en vidrierachabas.ar (link en la bio).`;
 }
 
@@ -201,22 +202,22 @@ function sello(ctx: CanvasRenderingContext2D, cx: number, cy: number, escala = 1
 
 /** Precio en terracota (con "por mes" chico si es alquiler), en un renglón. Devuelve el alto usado. */
 function precio(ctx: CanvasRenderingContext2D, d: DatosRedes, x: number, base: number, ancho: number, max: number, min: number): number {
-  const sufijo = d.porMes ? " por mes" : "";
+  const sufijoTxt = d.sufijo ? ` ${d.sufijo}` : "";
   let tam = max;
   for (; tam > min; tam -= 2) {
     ctx.font = fuente(800, tam);
     const w = ctx.measureText(d.precio).width;
     ctx.font = fuente(600, Math.round(tam * 0.42));
-    if (w + ctx.measureText(sufijo).width <= ancho) break;
+    if (w + ctx.measureText(sufijoTxt).width <= ancho) break;
   }
   ctx.font = fuente(800, tam);
   ctx.fillStyle = C.terra;
   ctx.fillText(d.precio, x, base);
-  if (sufijo) {
+  if (sufijoTxt) {
     const w = ctx.measureText(d.precio).width;
     ctx.font = fuente(600, Math.round(tam * 0.42));
     ctx.fillStyle = C.tinta2;
-    ctx.fillText(sufijo, x + w, base);
+    ctx.fillText(sufijoTxt, x + w, base);
   }
   return tam;
 }

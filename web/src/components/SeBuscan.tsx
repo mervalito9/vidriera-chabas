@@ -34,7 +34,7 @@ export function partirDetalle(detalle: string): { presupuesto: string; resto: st
   return { presupuesto, resto: partes.join(" · ") };
 }
 
-const RUBRO_CORTO: Record<string, string> = { inmuebles: "Inmuebles", vehiculos: "Vehículos", maquinaria: "Maquinaria agro" };
+const RUBRO_CORTO: Record<string, string> = { inmuebles: "Inmuebles", vehiculos: "Vehículos", agro: "Maquinaria agro", maquinaria: "Maquinaria agro", vacaciones: "Vacaciones" };
 
 function Item({ b, oscuro = false }: { b: SeBusca; oscuro?: boolean }) {
   const { presupuesto, resto } = partirDetalle(b.detalle);

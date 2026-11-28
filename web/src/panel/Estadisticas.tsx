@@ -108,7 +108,7 @@ export function Estadisticas({ pendientes, irPendientes }: { pendientes: number;
             <Lista titulo="De dónde llega la gente" filas={d.origenes.map((o) => [o.nombre, o.n])} nota="«Directo» incluye a quien escribe la dirección y muchos links de WhatsApp. Los links de «Compartir» y de la «Tarjeta para redes» ya vienen marcados." />
             <Lista titulo="Qué no encontraron" filas={d.sinResultados.map((b) => [b.texto, b.n])} nota="Búsquedas sin ningún resultado: avisos para salir a conseguir." vacio="Nadie se quedó sin resultados." />
             <Lista titulo="Qué busca la gente" filas={d.busquedas.map((b) => [b.texto, b.n])} vacio="Todavía nadie usó el buscador." />
-            <Cruce titulo="Por rubro" filas={d.rubros.map((x) => ({ ...x, nombre: x.nombre === "inmuebles" ? "Inmuebles" : x.nombre === "vehiculos" ? "Vehículos" : x.nombre === "agro" ? "Maquinaria agro" : x.nombre }))} />
+            <Cruce titulo="Por rubro" filas={d.rubros.map((x) => ({ ...x, nombre: x.nombre === "inmuebles" ? "Inmuebles" : x.nombre === "vehiculos" ? "Vehículos" : x.nombre === "agro" ? "Maquinaria agro" : x.nombre === "vacaciones" ? "Vacaciones" : x.nombre }))} />
             <Cruce titulo="Por pueblo" filas={d.pueblos} />
           </div>
         </>

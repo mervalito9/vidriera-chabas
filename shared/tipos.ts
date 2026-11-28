@@ -2,7 +2,7 @@
 // Solo sintaxis "borrable" de TypeScript: Node 24 los ejecuta sin compilar.
 import type { CondicionesAlquiler } from "./alquiler.ts";
 
-export type RubroId = "inmuebles" | "vehiculos" | "agro";
+export type RubroId = "inmuebles" | "vehiculos" | "agro" | "vacaciones";
 export type Operacion = "venta" | "alquiler";
 export type Moneda = "USD" | "ARS";
 /** Quién publica: el dueño, o un negocio que lo ofrece. "" = no se sabe (avisos viejos). */

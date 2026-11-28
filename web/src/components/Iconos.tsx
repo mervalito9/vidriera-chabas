@@ -11,6 +11,14 @@ export function IconoRubro({ rubro, color = "#F2ECDF" }: { rubro: RubroId; color
         <path d="M13.5 26v-7h5v7" />
       </svg>
     );
+  if (rubro === "vacaciones")
+    return (
+      <svg viewBox="0 0 32 32" stroke={color} {...base}>
+        <path d="M16 27V12" />
+        <path d="M4.5 13.5C6 8 10.5 5 16 5s10 3 11.5 8.5c-2.3-1.6-4.5-1.6-6.4 0-1.6-1.6-3.3-2.3-5.1-2.3s-3.5.7-5.1 2.3c-1.9-1.6-4.1-1.6-6.4 0Z" />
+        <path d="M5 27h22" />
+      </svg>
+    );
   if (rubro === "vehiculos")
     return (
       <svg viewBox="0 0 32 32" stroke={color} {...base}>

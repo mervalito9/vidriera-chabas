@@ -3,7 +3,8 @@ import { etiquetasCondiciones } from "../../../shared/alquiler.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ir } from "../router.ts";
 import { posicionFoco } from "./form/Encuadre.tsx";
-import { fotoSegura, hace, porMes, precioTexto } from "../formato.ts";
+import { datosVisibles, duenosDe } from "../../../shared/vacaciones.ts";
+import { fotoSegura, hace, precioTexto, sufijo } from "../formato.ts";
 
 /** Si la foto ya estaba bajada (por ejemplo al volver atrás), se muestra sin esperar. */
 const fotoLista = (img: HTMLImageElement | null): void => {
@@ -17,6 +18,9 @@ export function Tarjeta({ aviso: a, previa, nuevo }: { aviso: AvisoPublico; prev
   const Caja = previa ? "div" : "a";
   const cond = etiquetasCondiciones(a.condiciones);
   const extras = [a.permuta && "Acepta permuta", a.financia && "Financia"].filter(Boolean).join(" · ");
+  const datos = datosVisibles(a);
+  const duenos = duenosDe(a);
+  const suf = sufijo(a);
   return (
     <Caja className="card" {...(previa ? {} : { href: ir("aviso", a.id) })}>
       <div className="card-ph">
@@ -26,19 +30,20 @@ export function Tarjeta({ aviso: a, previa, nuevo }: { aviso: AvisoPublico; prev
           {a.ejemplo && <span className="tag tag-ej">Ejemplo</span>}
           {nuevo && <span className="tag tag-nuevo">Nuevo</span>}
           {a.reservado && <span className="tag tag-res">Reservado</span>}
-          <span className="tag">{a.operacion === "alquiler" ? "Alquiler" : "Venta"}</span>
+          <span className="tag">{a.rubro === "vacaciones" ? "Vacaciones" : a.operacion === "alquiler" ? "Alquiler" : "Venta"}</span>
           {a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior && <span className="tag tag-baja">Bajó de precio</span>}
         </div>
       </div>
       <div className="card-body">
         <p className={a.precio === null || a.precio <= 0 ? "price consultar" : "price"}>
           {precioTexto(a)}
-          {porMes(a) && <span> por mes</span>}
+          {suf && <span> {suf}</span>}
         </p>
         <h3>{a.titulo}</h3>
-        {(a.datos.length > 0 || cond.length > 0) && (
+        {duenos && <p className="duenos-de"><span aria-hidden="true">🤝</span> Dueños de {duenos}</p>}
+        {(datos.length > 0 || cond.length > 0) && (
           <ul className="chips-datos">
-            {a.datos.slice(0, 4 - cond.length).map((d) => <li key={d}>{d}</li>)}
+            {datos.slice(0, 4 - cond.length).map((d) => <li key={d}>{d}</li>)}
             {cond.map((d) => <li key={d} className="cond">{d}</li>)}
           </ul>
         )}

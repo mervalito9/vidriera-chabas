@@ -47,7 +47,8 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const errores: ErrorCampo[] = [];
   const rubro = (typeof e.rubro === "string" && e.rubro in RUBROS ? e.rubro : "") as RubroId | "";
   const tipo = recortar(e.tipo, 40);
-  const operacion = rubro === "inmuebles" && e.operacion === "alquiler" ? "alquiler" : "venta";
+  // Vacaciones siempre es alquiler (temporario); inmuebles elige; lo demás es venta.
+  const operacion = rubro === "vacaciones" || (rubro === "inmuebles" && e.operacion === "alquiler") ? "alquiler" : "venta";
   const titulo = recortar(e.titulo, LIMITES.titulo);
   const precioTxt = soloDigitos(e.precio).slice(0, 12);
   const precio = precioTxt ? Number(precioTxt) : null;
@@ -59,10 +60,10 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const datos = (Array.isArray(e.datos) ? e.datos : [])
     .map((d) => recortar(d, 40))
     .filter(Boolean)
-    .slice(0, 8);
+    .slice(0, 14);
   const nombre = recortar(e.nombre, LIMITES.nombre);
   const telefono = telefonoArgentino(typeof e.telefono === "string" ? e.telefono : "");
-  const condiciones = operacion === "alquiler" ? limpiarCondiciones(e.condiciones) : null;
+  const condiciones = operacion === "alquiler" && rubro !== "vacaciones" ? limpiarCondiciones(e.condiciones) : null;
   const { lat, lng } = ubicacion(e.lat, e.lng);
   const foco = limpiarFoco(e.foco);
   const quien = e.quien === "dueno" || e.quien === "inmobiliaria" || e.quien === "agencia" ? e.quien : "";

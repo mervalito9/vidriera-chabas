@@ -1014,3 +1014,48 @@ footer { padding-bottom: 90px; }
 @media (prefers-reduced-motion: reduce) { .burbuja, .burbuja-pill, .burbuja.abierta .burbuja-pill, .burbuja-n, .burbuja-n::after, .burbuja-ico.hay, .burbuja-txt, .burbuja-ir, .hoja { animation: none !important; transition: none !important; } }
 .sb-banda .sb-item { color: var(--tinta); }
 .sb-plata { font-family: var(--sans); }
+/* 4 rubros: 2 x 2 en el celular, 4 en fila en pantallas anchas */
+.rubro-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 620px) { .rubro-pick { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ---------- Vacaciones (28/11) ---------- */
+.vac-banda { position: relative; overflow: hidden; background: linear-gradient(180deg, #FBE7C9 0%, #F6D6AE 55%, #EFC294 100%); padding: 40px 0 44px; margin-bottom: 26px; }
+.vac-banda::after { content: ""; position: absolute; left: -10%; right: -10%; bottom: -46px; height: 90px; background: #2F6E73; border-radius: 50% 50% 0 0 / 100% 100% 0 0; opacity: .9; }
+.vac-banda .wrap { position: relative; z-index: 1; padding-bottom: 26px; }
+.vac-sol { position: absolute; right: -18px; top: 8px; width: 150px; height: 150px; opacity: .9; animation: girar 60s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.vac-temp { display: inline-block; margin: 0 0 8px; padding: 6px 12px; border-radius: 999px; background: rgba(23,21,15,.08); font-weight: 700; font-size: .9rem; }
+.vac-banda h1 { font-size: clamp(2.3rem, 9vw, 3.6rem); line-height: 1; margin: 4px 0 12px; max-width: 14ch; }
+.vac-banda h1 em { font-family: var(--serif); font-weight: 400; color: #2F6E73; }
+.vac-baja { max-width: 52ch; font-size: 1.05rem; color: #3A3227; margin: 0 0 14px; }
+.vac-cuenta { margin: 0 0 16px; color: #3A3227; }
+.vac-acc { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn-claro-oscuro { background: rgba(255,255,255,.55); color: var(--tinta); border-color: rgba(23,21,15,.35); }
+.vac-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.vac-filtros .chip { cursor: pointer; font-family: var(--sans); background: var(--papel); border: 1.5px solid #B9B1A0; }
+.vac-filtros .chip[aria-pressed=true] { background: #2F6E73; color: #fff; border-color: #2F6E73; }
+.vac-vacio { background: var(--papel); border-radius: 22px; padding: 22px; box-shadow: var(--sombra); margin-bottom: 10px; }
+.vac-vacio h2 { margin: 0 0 8px; font-size: 1.3rem; }
+.vac-vacio p { color: var(--tinta-2); margin: 0 0 16px; }
+/* Tarjeta y ficha: de dónde son los dueños (la confianza es lo que vende) */
+.duenos-de { margin: 2px 0 6px; font-weight: 700; font-size: .9rem; color: #2F6E73; }
+.confianza { display: flex; gap: 12px; align-items: center; margin: 14px 0; padding: 14px; border-radius: 18px; background: #E3F0EE; color: #17332F; }
+.confianza-ico { flex: none; width: 42px; height: 42px; display: grid; place-items: center; font-size: 1.3rem; border-radius: 50%; background: #fff; }
+.confianza b { display: block; }
+.confianza small { display: block; color: #3B5753; font-size: .92rem; margin-top: 2px; }
+.antes-senar { margin: 18px 0; padding: 16px 18px; border-radius: 18px; border: 1.5px solid #E8C9A8; background: #FFF7EC; }
+.antes-senar h2 { font-size: 1.05rem; margin: 0 0 8px; }
+.antes-senar ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--tinta-2); }
+@media (prefers-reduced-motion: reduce) { .vac-sol { animation: none; } }
+.vac-franja { display: flex; align-items: center; gap: 14px; margin: 26px 0 6px; padding: 16px 18px; border-radius: 22px; text-decoration: none; color: var(--tinta); background: linear-gradient(100deg, #FBE7C9, #F3CDA1 60%, #E9B78A); box-shadow: var(--sombra); position: relative; overflow: hidden; }
+.vac-franja::after { content: ""; position: absolute; right: -20px; bottom: -30px; width: 140px; height: 60px; border-radius: 50%; background: #2F6E73; opacity: .85; }
+.vac-franja-sol { flex: none; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #F7B26C 52%, transparent 54%), repeating-conic-gradient(#F0A35E 0 10deg, transparent 10deg 30deg); animation: girar 40s linear infinite; }
+.vac-franja-txt { display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
+.vac-franja-txt b { font-size: 1.1rem; }
+.vac-franja-txt span { color: #4A3F32; font-size: .93rem; }
+.vac-franja-ir { margin-left: auto; position: relative; z-index: 1; width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--tinta); color: var(--crema); font-weight: 800; }
+@media (prefers-reduced-motion: reduce) { .vac-franja-sol { animation: none; } }
+/* Filtros de vacaciones: una fila que se desliza, no tres renglones */
+.vac-filtros { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; margin-right: calc(-1 * var(--pad, 16px)); }
+.vac-filtros::-webkit-scrollbar { display: none; }
+.vac-filtros .chip { flex: none; }

@@ -158,6 +158,16 @@ export function Inicio() {
 
       {!soloEjemplos && avisosBloque}
 
+      {enTemporada() && (
+        <section className="wrap" aria-label="Vacaciones">
+          <a className="vac-franja" href={ir("vacaciones")}>
+            <span className="vac-franja-sol" aria-hidden="true" />
+            <span className="vac-franja-txt"><b>Vacaciones de confianza</b><span>Casas en la costa y las sierras, de dueños de Chabás y la zona</span></span>
+            <span className="vac-franja-ir" aria-hidden="true">→</span>
+          </a>
+        </section>
+      )}
+
       {PORTADA_NUEVA && <SeBuscanPortada />}
 
       <section className="wrap explorar" aria-labelledby="explorar" ref={rExplorar}>
@@ -253,3 +263,6 @@ function Telefono() {
     </div>
   );
 }
+
+/** Temporada de vacaciones: de noviembre a marzo se muestra la franja en la portada. */
+export const enTemporada = (d = new Date()): boolean => d.getMonth() >= 10 || d.getMonth() <= 2;

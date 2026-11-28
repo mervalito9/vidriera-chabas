@@ -1,6 +1,6 @@
 // Formulario de aviso: lo usan "Publicá gratis" (el vecino) y el panel (Felipe, con más campos: avanzado).
 import { useState, type FormEvent, type ReactNode } from "react";
-import { LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../../shared/config.ts";
+import { DESTINOS, LIMITES, OTRO_PUEBLO, PUEBLOS, RUBRO_IDS, RUBROS } from "../../../../shared/config.ts";
 import type { ErrorCampo, NuevoAviso } from "../../../../shared/tipos.ts";
 import { validarAviso } from "../../../../shared/validar.ts";
 import { IconoRubro } from "../Iconos.tsx";
@@ -67,10 +67,13 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
             <label key={r}>
               <input type="radio" name="rubro" id={`rubro-${r}`} value={r} checked={v.rubro === r}
                 onChange={() => {
-                  onCambio({ ...v, rubro: r, tipo: RUBROS[r].tipos.includes(v.tipo) ? v.tipo : "", operacion: r === "inmuebles" ? v.operacion : "venta", moneda: monedaSugerida(r, r === "inmuebles" ? v.operacion : "venta", v) });
+                  const op = r === "vacaciones" ? "alquiler" : r === "inmuebles" ? v.operacion : "venta";
+                  // Vacaciones: el lugar es un destino (se escribe); al volver a otro rubro, se elige de nuevo el pueblo.
+                  const lugar = r === "vacaciones" ? { pueblo: OTRO_PUEBLO, puebloOtro: v.rubro === "vacaciones" ? v.puebloOtro : "" } : v.rubro === "vacaciones" ? { pueblo: "", puebloOtro: "" } : {};
+                  onCambio({ ...v, ...lugar, rubro: r, tipo: RUBROS[r].tipos.includes(v.tipo) ? v.tipo : "", operacion: op, moneda: monedaSugerida(r, op, v), ...(r === "vacaciones" ? { permuta: false, financia: false } : {}) });
                   setErrores(errores.filter((x) => x.campo !== "rubro"));
                 }} />
-              <span><IconoRubro rubro={r} color="#17150F" />{r === "inmuebles" ? "Inmueble" : r === "vehiculos" ? "Vehículo" : "Maquinaria agro"}</span>
+              <span><IconoRubro rubro={r} color="#17150F" />{r === "inmuebles" ? "Inmueble" : r === "vehiculos" ? "Vehículo" : r === "vacaciones" ? "Vacaciones" : "Maquinaria agro"}</span>
             </label>
           ))}
         </div>
@@ -107,6 +110,16 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         )}
       </div>
 
+      {v.rubro === "vacaciones" ? (
+        <div className="donde">
+          <label className="lbl" htmlFor="f-pueblo-otro">¿Dónde queda?</label>
+          <p className="small">La ciudad o el lugar de veraneo. Ej: Villa Gesell, Carlos Paz, Federación.</p>
+          <input id="f-pueblo-otro" type="text" maxLength={40} autoComplete="off" list="destinos" placeholder="Ej: Villa Gesell" value={v.puebloOtro}
+            aria-invalid={!!err("pueblo") || undefined} onChange={(e) => { onCambio({ ...v, pueblo: OTRO_PUEBLO, puebloOtro: e.target.value }); setErrores(errores.filter((x) => x.campo !== "pueblo")); }} />
+          <datalist id="destinos">{DESTINOS.map((d) => <option key={d} value={d} />)}</datalist>
+          {err("pueblo") && <p className="err">Escribí dónde queda (la ciudad o el lugar).</p>}
+        </div>
+      ) : (
       <fieldset className="donde">
         <legend id="puebloL">¿Dónde está?</legend>
         <p className="small">El pueblo donde está lo que publicás, aunque vos vivas en otro.</p>
@@ -127,6 +140,7 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         )}
         {err("pueblo") && <p className="err">{err("pueblo")}</p>}
       </fieldset>
+      )}
 
       <div className="dos-col">
         <div>
@@ -143,10 +157,10 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
           </select>
         </div>
       </div>
-      <div>
+      {v.rubro !== "vacaciones" && <div>
         <label className="check"><input type="checkbox" checked={v.permuta} onChange={(e) => set("permuta", e.target.checked)} /> {avanzado ? "Acepta permuta" : "Acepto permuta"}</label>
         <label className="check"><input type="checkbox" checked={v.financia} onChange={(e) => set("financia", e.target.checked)} /> {avanzado ? "Financia" : "Ofrezco financiación"}</label>
-      </div>
+      </div>}
       {v.rubro && <DatosGuiados key={v.rubro} rubro={v.rubro} datos={v.datos} onCambio={(d) => set("datos", d)} />}
       {MAPA_ACTIVO && v.rubro === "inmuebles" && (
         <MarcarUbicacion lat={v.lat} lng={v.lng} pueblo={v.pueblo} onCambio={(lat, lng) => onCambio({ ...v, lat, lng })} />
@@ -156,7 +170,7 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
       )}
       <div>
         <label className="lbl" htmlFor="f-descripcion">Descripción <span className="opc">(opcional)</span></label>
-        <textarea id="f-descripcion" maxLength={LIMITES.descripcion} placeholder="Estado, medidas, año, kilómetros, qué incluye…" value={v.descripcion} onChange={(e) => set("descripcion", e.target.value)} />
+        <textarea id="f-descripcion" maxLength={LIMITES.descripcion} placeholder={v.rubro === "vacaciones" ? "Fechas libres, estadía mínima, horario de entrada y salida, qué hay cerca, seña…" : "Estado, medidas, año, kilómetros, qué incluye…"} value={v.descripcion} onChange={(e) => set("descripcion", e.target.value)} />
       </div>
 
       <ElegirFotos fotos={v.fotos} exigir={exigirFotos} error={err("fotos")} onCambio={(f) => set("fotos", f)} onProcesando={setProcesando} />

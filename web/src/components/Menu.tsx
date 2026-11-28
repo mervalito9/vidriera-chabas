@@ -5,7 +5,7 @@ import { SE_BUSCAN_ACTIVO } from "../seBuscan.ts";
 import { ir } from "../router.ts";
 
 const SECCIONES: [string, [string, string][]][] = [
-  ["Buscar", [["inmuebles--alquiler", "Alquileres"], ["inmuebles--venta", "Casas y terrenos en venta"], ["vehiculos", "Autos, camionetas y motos"], ["buscar", "Todos los avisos"]]],
+  ["Buscar", [["inmuebles--alquiler", "Alquileres"], ["inmuebles--venta", "Casas y terrenos en venta"], ["vehiculos", "Autos, camionetas y motos"], ["vacaciones", "Alquileres para vacaciones"], ["buscar", "Todos los avisos"]]],
   ["Se busca", [...(SE_BUSCAN_ACTIVO ? [["se-buscan", "Lo que busca la gente"] as [string, string]] : []), ["busco", "Dejar mi pedido"]]],
   ["Vidriera", [["como-funciona", "Cómo funciona"], ["preguntas", "Preguntas frecuentes"]]],
 ];
