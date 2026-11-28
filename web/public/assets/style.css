@@ -189,6 +189,9 @@ details.mas-filtros[open] > summary::after { content: "–"; }
 
 /* ---------- aviso ---------- */
 .aviso-grid { display: grid; gap: 22px; margin-top: 6px; }
+/* Que una fila larga de miniaturas no ensanche la columna (con 50 fotos la página se iba de costado) */
+.aviso-grid > * { min-width: 0; }
+.galeria { max-width: 100%; }
 .foto-main { position: relative; border-radius: 22px; overflow: hidden; box-shadow: var(--sombra); aspect-ratio: 4 / 3; background: #1d1b16; }
 .foto-abrir { position: absolute; inset: 0; padding: 0; border: 0; background: none; cursor: zoom-in; display: block; width: 100%; height: 100%; }
 /* En la ficha la foto llena el cuadro (recortada, como en la tarjeta); entera se ve tocándola, en el visor. */
