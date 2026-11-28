@@ -14,9 +14,8 @@ declare const __VISTA_PREVIA__: boolean;
 
 const VISTO = "vidriera-notif-visto"; // firmas de lo que ya vio
 const ULTIMA = "vidriera-notif-ultima"; // cuándo abrió la campanita por última vez
-const CALLADO = "vidriera-notif-callado"; // cerró el globito en esta visita (sessionStorage)
 
-export type Accion = "ve" | "abre" | "nuevos" | "bajo" | "busquedas" | "publicar" | "wa";
+export type Accion = "ve" | "abre" | "pill" | "nuevos" | "bajo" | "busquedas" | "publicar" | "wa";
 
 export type Icono = "busca" | "nuevo" | "bajo" | "publicar" | "wa";
 
@@ -126,6 +125,8 @@ export interface Mensaje {
   /** Rótulo corto arriba ("Se busca", "Nuevo en Casilda", "Bajó de precio"). */
   etiqueta: string;
   texto: string;
+  /** Adónde lleva tocar el mensaje: directo a lo que dice, sin pasos en el medio. */
+  href: string;
 }
 
 /** Lo que pasa el globito, de a uno: concreto y del pueblo (no "tenés 2 notificaciones"). */
@@ -134,12 +135,12 @@ export function armarMensajes(avisos: AvisoPublico[], buscan: SeBusca[], desde: 
   const m: Mensaje[] = [];
   for (const b of buscan.slice(0, 3)) {
     const plata = b.detalle.split(/\s*·\s*/).find((p) => /^hasta/i.test(p));
-    m.push({ icono: "busca", etiqueta: "Se busca · ¿tenés uno?", texto: `${b.titulo}${plata ? ` · ${plata.toLowerCase()}` : ""}` });
+    m.push({ icono: "busca", etiqueta: "Se busca · ¿tenés uno?", texto: `${b.titulo}${plata ? ` · ${plata.toLowerCase()}` : ""}`, href: ir("se-buscan") });
   }
   const corte = desde || ahora - SEMANA;
-  for (const a of reales.filter((x) => Date.parse(x.publicadoEn) > corte).slice(0, 2)) m.push({ icono: "nuevo", etiqueta: `Nuevo en ${a.pueblo}`, texto: a.titulo });
+  for (const a of reales.filter((x) => Date.parse(x.publicadoEn) > corte).slice(0, 2)) m.push({ icono: "nuevo", etiqueta: `Nuevo en ${a.pueblo}`, texto: a.titulo, href: ir("aviso", a.id) });
   const bajo = reales.find((a) => a.precioAnterior !== null && a.precio !== null && a.precio < a.precioAnterior && !a.reservado);
-  if (bajo) m.push({ icono: "bajo", etiqueta: "Bajó de precio", texto: bajo.titulo });
+  if (bajo) m.push({ icono: "bajo", etiqueta: "Bajó de precio", texto: bajo.titulo, href: ir("aviso", bajo.id) });
   // Intercalar: búsqueda, aviso, búsqueda… para que no pase todo lo mismo seguido.
   const bus = m.filter((x) => x.icono === "busca"), resto = m.filter((x) => x.icono !== "busca");
   const mezcla: Mensaje[] = [];
@@ -147,6 +148,8 @@ export function armarMensajes(avisos: AvisoPublico[], buscan: SeBusca[], desde: 
     if (bus[i]) mezcla.push(bus[i] as Mensaje);
     if (resto[i]) mezcla.push(resto[i] as Mensaje);
   }
+  // Siempre hay algo que decir: la invitación a publicar cierra la vuelta (y es lo único si no hay novedades).
+  mezcla.push({ icono: "publicar", etiqueta: "¿Vendés o alquilás algo?", texto: "Publicalo gratis acá", href: ir("publicar") });
   return mezcla;
 }
 
@@ -158,15 +161,7 @@ export function Novedades({ ruta }: { ruta: string }) {
   const [vistas, setVistas] = useState<Set<string>>(() => new Set(leer(VISTO).split("\n").filter(Boolean)));
   const [abierto, setAbierto] = useState(false);
   const [globito, setGlobito] = useState(false);
-  const [callado, setCallado] = useState(() => {
-    try {
-      return window.sessionStorage.getItem(CALLADO) === "1";
-    } catch {
-      return false;
-    }
-  });
   const [n, setN] = useState(0);
-  const [oculta, setOculta] = useState(false);
   const hoja = useRef<HTMLDivElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
   const medido = useRef(false);
@@ -188,10 +183,12 @@ export function Novedades({ ruta }: { ruta: string }) {
   const cuenta = nuevos.length;
   const visible = !SIN_BURBUJA.has(ruta) && items.length > 0;
 
-  // El globito aparece a los 3 s y va pasando los mensajes cada 4,5 s.
+  // En «Se busca» no repite las búsquedas que ya están en pantalla.
+  const lista = ruta === "se-buscan" ? mensajes.filter((m) => m.icono !== "busca") : mensajes;
+
+  // El mensaje aparece a los 2 s y cambia cada 6 s (tiempo para leerlo y tocarlo). Se queda siempre a la vista.
   useEffect(() => {
-    // En «Se busca» el globito repetiría lo que ya está en pantalla.
-    if (!visible || callado || !mensajes.length || ruta === "se-buscan") {
+    if (!visible || !lista.length) {
       setGlobito(false);
       return;
     }
@@ -199,33 +196,13 @@ export function Novedades({ ruta }: { ruta: string }) {
       medido.current = true;
       medir("ve");
     }
-    const t = window.setTimeout(() => setGlobito(true), 3000);
-    const rueda = window.setInterval(() => setN((x) => x + 1), 4500);
+    const t = window.setTimeout(() => setGlobito(true), 2000);
+    const rueda = window.setInterval(() => setN((x) => x + 1), 6000);
     return () => {
       window.clearTimeout(t);
       window.clearInterval(rueda);
     };
-  }, [visible, callado, mensajes.length, ruta]);
-
-  // Mientras se baja leyendo, se corre para no tapar; al parar o subir, vuelve.
-  useEffect(() => {
-    if (!visible) return;
-    let y = window.scrollY;
-    let quieto = 0;
-    const alMover = () => {
-      const ny = window.scrollY;
-      if (ny > y + 6 && ny > 120) setOculta(true);
-      else if (ny < y - 6) setOculta(false);
-      y = ny;
-      window.clearTimeout(quieto);
-      quieto = window.setTimeout(() => setOculta(false), 700);
-    };
-    window.addEventListener("scroll", alMover, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", alMover);
-      window.clearTimeout(quieto);
-    };
-  }, [visible]);
+  }, [visible, lista.length]);
 
   // Hoja abierta: Escape cierra y el foco vuelve a la burbuja.
   useEffect(() => {
@@ -254,42 +231,42 @@ export function Novedades({ ruta }: { ruta: string }) {
     window.setTimeout(() => setVistas(new Set(firmas)), 1200);
   };
 
-  const callar = () => {
-    setCallado(true);
-    try {
-      window.sessionStorage.setItem(CALLADO, "1");
-    } catch {
-      /* nada */
-    }
-  };
-
   if (!visible) return null;
-  const msj = mensajes.length ? mensajes[n % mensajes.length] : undefined;
+  const msj = lista.length ? lista[n % lista.length] : undefined;
 
   return (
     <>
-      <div className={`burbuja${oculta && !abierto ? " oculta" : ""}${globito && msj && !abierto ? " abierta" : ""}`}>
-        <button
-          type="button"
-          ref={boton}
-          className="burbuja-pill"
-          aria-label={msj && globito ? `${msj.etiqueta}: ${msj.texto}. Ver novedades` : cuenta ? `Novedades de Vidriera: ${cuenta} sin ver` : "Novedades de Vidriera"}
-          aria-expanded={abierto}
-          aria-controls="burbuja-hoja"
-          onClick={() => (abierto ? cerrar() : abrir())}
-        >
-          <span className="burbuja-ico" aria-hidden="true">
+      <div className={`burbuja${globito && msj && !abierto ? " abierta" : ""}`}>
+        <div className="burbuja-pill">
+          <button
+            type="button"
+            ref={boton}
+            className="burbuja-ico"
+            aria-label={cuenta ? `Novedades de Vidriera: ${cuenta} sin ver` : "Novedades de Vidriera"}
+            aria-expanded={abierto}
+            aria-controls="burbuja-hoja"
+            onClick={() => (abierto ? cerrar() : abrir())}
+          >
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g fill="#F7EFE2"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" opacity=".55" /></g></svg>
-            {cuenta > 0 && <span className="burbuja-n">{cuenta}</span>}
-          </span>
+            {cuenta > 0 && <span className="burbuja-n" aria-hidden="true">{cuenta}</span>}
+          </button>
           {globito && msj && (
-            <span className="burbuja-txt" key={n} aria-hidden="true">
-              <small><IconoNovedad tipo={msj.icono} />{msj.etiqueta}</small>
-              <b>{msj.texto}</b>
-            </span>
+            <a
+              className="burbuja-msj"
+              href={msj.href}
+              key={n}
+              onClick={() => medir("pill")}
+            >
+              <span className="burbuja-txt">
+                <small><IconoNovedad tipo={msj.icono} />{msj.etiqueta}</small>
+                <b>{msj.texto}</b>
+              </span>
+              <span className="burbuja-ir" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m9 5 7 7-7 7" /></svg>
+              </span>
+            </a>
           )}
-        </button>
-        {globito && msj && !abierto && <button type="button" className="burbuja-x" aria-label="Achicar el aviso" onClick={callar}>×</button>}
+        </div>
       </div>
 
       {abierto && (

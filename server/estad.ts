@@ -111,7 +111,7 @@ export function registrarPagina(req: IncomingMessage, d: { pagina?: string; entr
   }
 }
 
-const ACCIONES_NOTIF = new Set(["ve", "abre", "nuevos", "bajo", "busquedas", "publicar", "wa"]);
+const ACCIONES_NOTIF = new Set(["ve", "abre", "pill", "nuevos", "bajo", "busquedas", "publicar", "wa"]);
 
 /** La campanita de novedades: quién la vio con número, quién la abrió y qué tocó adentro. Una vez por persona, acción y día. */
 export function registrarNotif(req: IncomingMessage, accion: string): void {
