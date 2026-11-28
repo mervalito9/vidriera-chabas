@@ -1068,3 +1068,19 @@ footer { padding-bottom: 90px; }
 .seguro-linea { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0 10px; font-size: .9rem; color: var(--tinta-2); }
 .antes-senar .small { margin: 0 0 8px; color: var(--tinta-2); }
 .antes-senar ul + .small { margin: 10px 0 0; }
+/* Almanaque de la temporada (ficha de vacaciones) */
+.almanaque { margin: 8px 0 14px; padding: 14px; border-radius: 20px; background: var(--papel); box-shadow: var(--sombra); }
+.almanaque-cab { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.almanaque-cab h2 { margin: 0; font-size: 1.05rem; }
+.almanaque-ref { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--tinta-2); }
+.almanaque-ref i { width: 12px; height: 12px; border-radius: 4px; background: repeating-linear-gradient(135deg, #E4DDD0 0 4px, #EFE9DE 4px 8px); display: inline-block; }
+.almanaque-ref i.ok { background: #2F6E73; }
+.almanaque-ref i + i, .almanaque-ref i:nth-of-type(2) { margin-left: 6px; }
+.almanaque-meses { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.almanaque-mes b { display: block; font-size: .82rem; margin-bottom: 4px; text-align: center; }
+.almanaque-celdas { display: grid; gap: 4px; }
+.celda { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 52px; padding: 6px 2px; border-radius: 10px; font-size: .78rem; font-weight: 700; color: #8A8170; background: repeating-linear-gradient(135deg, #E9E2D5 0 6px, #F1EBE1 6px 12px); text-align: center; }
+.celda small { font-weight: 600; font-size: .68rem; opacity: .85; }
+.celda.ok { background: #2F6E73; color: #fff; }
+.almanaque-mes:first-child .celda, .almanaque-mes:last-child .celda { min-height: 108px; }
+.almanaque .small { margin: 10px 0 0; color: var(--tinta-2); }

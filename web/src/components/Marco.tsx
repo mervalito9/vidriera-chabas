@@ -1,3 +1,4 @@
+import { enTemporada } from "../../../shared/vacaciones.ts";
 import { useRef, type ReactNode } from "react";
 import { ir, navegar, salirDePantalla } from "../router.ts";
 import { Menu } from "./Menu.tsx";
@@ -45,6 +46,7 @@ export function Marco({ ruta, soloEjemplos, children }: { ruta: string; soloEjem
           <nav className="subnav wrap" aria-label="Accesos rápidos">
             <a href={ir("inicio")}>Inicio</a>
             <a href={ir("buscar")} aria-current={ruta === "buscar" ? "page" : undefined}>Buscar</a>
+            {enTemporada() && <a href={ir("vacaciones")} aria-current={ruta === "vacaciones" ? "page" : undefined}>☀️ Vacaciones</a>}
             <a href={ir("se-buscan")} aria-current={ruta === "se-buscan" ? "page" : undefined}>Se busca</a>
             <a href={ir("publicar")} aria-current={ruta === "publicar" ? "page" : undefined}>Publicar gratis</a>
           </nav>

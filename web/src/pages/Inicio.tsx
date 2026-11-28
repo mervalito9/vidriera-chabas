@@ -1,3 +1,4 @@
+import { enTemporada } from "../../../shared/vacaciones.ts";
 import { useState, type FormEvent } from "react";
 import { PUEBLOS, RUBROS, WA_NUMERO } from "../../../shared/config.ts";
 import { linkWA } from "../../../shared/whatsapp.ts";
@@ -156,8 +157,6 @@ export function Inicio() {
         </div>
       </section>
 
-      {!soloEjemplos && avisosBloque}
-
       {enTemporada() && (
         <section className="wrap" aria-label="Vacaciones">
           <a className="vac-franja" href={ir("vacaciones")}>
@@ -167,6 +166,9 @@ export function Inicio() {
           </a>
         </section>
       )}
+
+      {!soloEjemplos && avisosBloque}
+
 
       {PORTADA_NUEVA && <SeBuscanPortada />}
 
@@ -263,6 +265,3 @@ function Telefono() {
     </div>
   );
 }
-
-/** Temporada de vacaciones: de noviembre a marzo se muestra la franja en la portada. */
-export const enTemporada = (d = new Date()): boolean => d.getMonth() >= 10 || d.getMonth() <= 2;

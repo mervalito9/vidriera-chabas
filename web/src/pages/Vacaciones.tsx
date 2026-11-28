@@ -3,7 +3,7 @@
 // del pueblo. Mientras haya pocos avisos, la página le habla sobre todo a los dueños para que publiquen.
 import { useMemo, useState } from "react";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
-import { duenosDe, regionDe } from "../../../shared/vacaciones.ts";
+import { ALMANAQUE, duenosDe, fechasLibres, regionDe } from "../../../shared/vacaciones.ts";
 import { listarAvisos } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
@@ -37,6 +37,7 @@ export function Vacaciones() {
   const [region, setRegion] = useState("");
   const [destino, setDestino] = useState("");
   const [minimo, setMinimo] = useState(0);
+  const [cuando, setCuando] = useState("");
 
   const avisos = c.estado === "listo" && !c.datos.soloEjemplos ? c.datos.avisos.filter((a) => a.rubro === "vacaciones") : [];
   const contar = (claves: string[]) => {
@@ -47,7 +48,9 @@ export function Vacaciones() {
   const regiones = useMemo(() => contar(avisos.map((a) => regionDe(a.pueblo))), [avisos]);
   const enRegion = avisos.filter((a) => !region || regionDe(a.pueblo) === region);
   const destinos = contar(enRegion.map((a) => a.pueblo));
-  const lista = enRegion.filter((a) => (!destino || a.pueblo === destino) && (!minimo || personas(a) >= minimo));
+  const libreEn = (a: AvisoPublico, p: string) => fechasLibres(a).some((f) => f.toLowerCase() === p.toLowerCase());
+  const periodos = ALMANAQUE.flatMap((m) => m.periodos.map((p) => ({ ...p, etiqueta: m.periodos.length > 1 ? `${p.corto.startsWith("1 ") ? "1ª" : "2ª"} ${m.mes.slice(0, 3).toLowerCase()}` : m.mes }))).filter((p) => avisos.some((a) => libreEn(a, p.nombre)));
+  const lista = enRegion.filter((a) => (!destino || a.pueblo === destino) && (!minimo || personas(a) >= minimo) && (!cuando || libreEn(a, cuando)));
   const deLaZona = avisos.filter((a) => duenosDe(a)).length;
 
   return (
@@ -93,6 +96,14 @@ export function Vacaciones() {
                 ))}
               </div>
             )}
+            {periodos.length > 0 && (
+              <div className="chips vac-filtros" role="group" aria-label="¿Cuándo te vas?">
+                <button type="button" className="chip" aria-pressed={!cuando} onClick={() => setCuando("")}>Cualquier fecha</button>
+                {periodos.map((p) => (
+                  <button key={p.nombre} type="button" className="chip" aria-pressed={cuando === p.nombre} onClick={() => setCuando(p.nombre)}>Libre {p.etiqueta}</button>
+                ))}
+              </div>
+            )}
             {avisos.some((a) => personas(a) > 0) && (
               <div className="chips vac-filtros" role="group" aria-label="Personas">
                 <button type="button" className="chip" aria-pressed={!minimo} onClick={() => setMinimo(0)}>Cualquier cantidad</button>
@@ -104,7 +115,7 @@ export function Vacaciones() {
             {lista.length > 0 ? (
               <div className="grid reales">{lista.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
             ) : (
-              <p className="sb-baja">No hay alquileres con esos filtros. <button type="button" className="linkbtn" onClick={() => { setRegion(""); setDestino(""); setMinimo(0); }}>Ver todos</button></p>
+              <p className="sb-baja">No hay alquileres con esos filtros. <button type="button" className="linkbtn" onClick={() => { setRegion(""); setDestino(""); setMinimo(0); setCuando(""); }}>Ver todos</button></p>
             )}
           </>
         )}

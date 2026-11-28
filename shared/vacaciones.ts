@@ -51,3 +51,14 @@ export function datosVisibles(a: Pick<AvisoPublico, "rubro" | "datos">): string[
   if (a.rubro !== "vacaciones") return a.datos;
   return a.datos.filter((d) => !POR.test(d.trim()) && !DUENOS.test(d.trim()) && !LIBRE.test(d.trim()));
 }
+
+/** Temporada de vacaciones: de noviembre a marzo la sección se destaca en la portada y en la barra del celular. */
+export const enTemporada = (d = new Date()): boolean => d.getMonth() >= 10 || d.getMonth() <= 2;
+
+/** Los períodos de la temporada, para el almanaque y el filtro «¿Cuándo te vas?». */
+export const ALMANAQUE: { mes: string; periodos: { nombre: string; corto: string }[] }[] = [
+  { mes: "Diciembre", periodos: [{ nombre: "diciembre", corto: "Todo el mes" }] },
+  { mes: "Enero", periodos: [{ nombre: "1ª quincena de enero", corto: "1 al 15" }, { nombre: "2ª quincena de enero", corto: "16 al 31" }] },
+  { mes: "Febrero", periodos: [{ nombre: "1ª quincena de febrero", corto: "1 al 15" }, { nombre: "2ª quincena de febrero", corto: "16 al 28" }] },
+  { mes: "Marzo", periodos: [{ nombre: "marzo", corto: "Todo el mes" }] },
+];
