@@ -940,6 +940,26 @@ html { -webkit-tap-highlight-color: transparent; }
 @keyframes burbuja-entra { from { opacity: 0; transform: translateY(24px) scale(.9); } }
 @keyframes notif-pop { 0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
 @keyframes rueda { from { opacity: 0; transform: translateY(8px); } }
+/* Tarjeta grande que sube sola (28/11, v6) */
+.tarjeta-nov { position: fixed; left: 12px; right: 12px; bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 46; max-width: 430px; margin-left: auto; padding: 14px 14px 12px; border-radius: 24px; background: rgba(23,21,15,.97); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); color: var(--crema); border: 1px solid rgba(242,236,223,.1); box-shadow: 0 24px 50px -10px rgba(23,21,15,.6), 0 6px 14px rgba(23,21,15,.25); animation: tarjeta-sube .55s cubic-bezier(.2,1.25,.35,1) both, tarjeta-tiembla 1s ease .6s both; }
+@keyframes tarjeta-sube { from { opacity: 0; transform: translateY(40px) scale(.92); } }
+@keyframes tarjeta-tiembla { 0%, 100% { transform: none; } 15% { transform: translateX(-6px) rotate(-1deg); } 30% { transform: translateX(5px) rotate(1deg); } 45% { transform: translateX(-4px); } 60% { transform: translateX(3px); } 75% { transform: translateX(-1px); } }
+.tarjeta-cab { display: flex; align-items: center; gap: 8px; font: 600 .8rem/1 var(--sans); color: rgba(242,236,223,.65); }
+.tarjeta-app { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: linear-gradient(160deg, #D46A3F, #B24A25); }
+.tarjeta-n { margin-left: auto; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: #FF3B30; color: #fff; font: 800 .78rem/22px var(--sans); text-align: center; animation: notif-pop .45s cubic-bezier(.3,1.7,.5,1) .3s both; }
+.tarjeta-cuerpo { display: block; margin: 12px 2px 14px; color: inherit; text-decoration: none; }
+.tarjeta-cuerpo small { display: flex; align-items: center; gap: 6px; color: #E9A07A; font: 600 .85rem/1.2 var(--sans); }
+.tarjeta-cuerpo small svg { width: 15px; height: 15px; flex: none; }
+.tarjeta-cuerpo b { display: block; margin-top: 4px; font: 750 1.22rem/1.25 var(--sans); }
+.tarjeta-acc { display: flex; gap: 10px; }
+.tarjeta-tarde, .tarjeta-ver { flex: 1; height: 48px; border-radius: 999px; font: 700 1rem/1 var(--sans); display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-decoration: none; }
+.tarjeta-tarde { border: 1px solid rgba(242,236,223,.25); background: transparent; color: rgba(242,236,223,.85); }
+.tarjeta-ver { flex: 1.4; border: 0; background: var(--terra); color: #fff; box-shadow: 0 6px 16px rgba(196,87,47,.45); }
+.tarjeta-ver:active, .tarjeta-tarde:active { transform: scale(.97); }
+.tarjeta-ver:focus-visible, .tarjeta-tarde:focus-visible, .tarjeta-cuerpo:focus-visible { outline: 3px solid var(--terra); outline-offset: 3px; }
+.burbuja.con-tarjeta .burbuja-pill { width: 62px; padding-right: 9px; }
+.burbuja.con-tarjeta .burbuja-msj { display: none; }
+@media (prefers-reduced-motion: reduce) { .tarjeta-nov, .tarjeta-n { animation: none !important; } }
 .hoja-fondo { position: fixed; inset: 0; z-index: 60; background: rgba(23,21,15,.45); display: flex; align-items: flex-end; justify-content: center; animation: menu-fondo .25s ease both; }
 .hoja { width: min(520px, 100%); max-height: 86vh; overflow: auto; background: var(--papel); border-radius: 26px 26px 0 0; padding: 10px 10px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(0,0,0,.25); animation: hoja-sube .38s cubic-bezier(.2,.8,.2,1) both; outline: none; }
 .hoja::before { content: ""; display: block; width: 44px; height: 5px; border-radius: 3px; background: rgba(23,21,15,.18); margin: 4px auto 8px; }

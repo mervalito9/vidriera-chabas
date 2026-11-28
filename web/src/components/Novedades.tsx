@@ -15,7 +15,7 @@ declare const __VISTA_PREVIA__: boolean;
 const VISTO = "vidriera-notif-visto"; // firmas de lo que ya vio
 const ULTIMA = "vidriera-notif-ultima"; // cuándo abrió la campanita por última vez
 
-export type Accion = "ve" | "abre" | "pill" | "nuevos" | "bajo" | "busquedas" | "publicar" | "wa";
+export type Accion = "ve" | "abre" | "pill" | "tarjeta" | "tarde" | "nuevos" | "bajo" | "busquedas" | "publicar" | "wa";
 
 export type Icono = "busca" | "nuevo" | "bajo" | "publicar" | "wa";
 
@@ -211,6 +211,63 @@ export function Novedades({ ruta }: { ruta: string }) {
     };
   }, [visible, lista.length]);
 
+  // La tarjeta grande: sube sola a los 5 s, se achica a la pastilla si no la tocan (9 s) y vuelve cada 40 s;
+  // con «Más tarde» espera 90 s. Hasta 4 veces por visita. No tapa la página (se puede seguir usando) ni sale
+  // mientras alguien escribe en un campo.
+  const [tarjeta, setTarjeta] = useState<Mensaje | null>(null);
+  const veces = useRef(0);
+  const reloj = useRef(0);
+  const programarTarjeta = useRef<(ms: number) => void>(() => {});
+  programarTarjeta.current = (ms: number) => {
+    window.clearTimeout(reloj.current);
+    if (veces.current >= 4) return;
+    reloj.current = window.setTimeout(() => {
+      const escribiendo = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName ?? "");
+      if (escribiendo || document.hidden) return programarTarjeta.current(10_000);
+      const m = lista[(veces.current * 2) % Math.max(1, lista.length)];
+      if (!m) return;
+      veces.current += 1;
+      setTarjeta(m);
+      reloj.current = window.setTimeout(() => {
+        setTarjeta(null);
+        programarTarjeta.current(40_000);
+      }, 9000);
+    }, ms);
+  };
+  useEffect(() => {
+    if (!visible || !lista.length || abierto) {
+      setTarjeta(null);
+      window.clearTimeout(reloj.current);
+      return;
+    }
+    programarTarjeta.current(tarjeta ? 9000 : veces.current ? 40_000 : 5000);
+    return () => window.clearTimeout(reloj.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, lista.length, abierto]);
+  const masTarde = () => {
+    medir("tarde");
+    setTarjeta(null);
+    programarTarjeta.current(90_000);
+  };
+
+  // El número también en la pestaña: "(3) Vidriera Chabás", como las redes.
+  useEffect(() => {
+    const t = document.querySelector("title");
+    const poner = () => {
+      const limpio = document.title.replace(/^\(\d+\) /, "");
+      const nuevo = cuenta && visible ? `(${cuenta}) ${limpio}` : limpio;
+      if (document.title !== nuevo) document.title = nuevo;
+    };
+    poner();
+    if (!t) return;
+    const obs = new MutationObserver(poner);
+    obs.observe(t, { childList: true });
+    return () => {
+      obs.disconnect();
+      document.title = document.title.replace(/^\(\d+\) /, "");
+    };
+  }, [cuenta, visible]);
+
   // Hoja abierta: Escape cierra y el foco vuelve a la burbuja.
   useEffect(() => {
     if (!abierto) return;
@@ -218,6 +275,7 @@ export function Novedades({ ruta }: { ruta: string }) {
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") cerrar();
     };
+    setTarjeta(null);
     document.addEventListener("keydown", esc);
     return () => document.removeEventListener("keydown", esc);
   }, [abierto]);
@@ -243,7 +301,28 @@ export function Novedades({ ruta }: { ruta: string }) {
 
   return (
     <>
-      <div className={`burbuja${globito && msj && !abierto ? " abierta" : ""}`}>
+      {tarjeta && !abierto && (
+        <div className="tarjeta-nov" role="status" aria-live="polite">
+          <div className="tarjeta-cab">
+            <span className="tarjeta-app" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><g fill="#F7EFE2"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" opacity=".55" /></g></svg></span>
+            <span>Vidriera Chabás · ahora</span>
+            {cuenta > 0 && <span className="tarjeta-n">{cuenta}</span>}
+          </div>
+          <a className="tarjeta-cuerpo" href={tarjeta.href} onClick={() => { medir("tarjeta"); setTarjeta(null); }}>
+            <small><IconoNovedad tipo={tarjeta.icono} />{tarjeta.etiqueta}</small>
+            <b>{tarjeta.texto}</b>
+          </a>
+          <div className="tarjeta-acc">
+            <button type="button" className="tarjeta-tarde" onClick={masTarde}>Más tarde</button>
+            <a className="tarjeta-ver" href={tarjeta.href} onClick={() => { medir("tarjeta"); setTarjeta(null); }}>
+              Ver
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+            </a>
+          </div>
+        </div>
+      )}
+
+      <div className={`burbuja${globito && msj && !abierto ? " abierta" : ""}${tarjeta && !abierto ? " con-tarjeta" : ""}`}>
         <div className="burbuja-pill">
           <button
             type="button"

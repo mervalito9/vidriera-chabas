@@ -68,7 +68,7 @@ export function Estadisticas({ pendientes, irPendientes }: { pendientes: number;
             <p className="small">
               Adentro tocaron:{" "}
               {d.novedades.toques
-                .map((t) => `${({ pill: "el mensaje de la pastilla", nuevos: "avisos nuevos", bajo: "bajó de precio", busquedas: "se buscan", publicar: "publicar", wa: "WhatsApp" } as Record<string, string>)[t.que] ?? t.que} (${t.n})`)
+                .map((t) => `${({ pill: "el mensaje de la pastilla", tarjeta: "«Ver» en la tarjeta", tarde: "«Más tarde»", nuevos: "avisos nuevos", bajo: "bajó de precio", busquedas: "se buscan", publicar: "publicar", wa: "WhatsApp" } as Record<string, string>)[t.que] ?? t.que} (${t.n})`)
                 .join(" · ")}
             </p>
           )}
