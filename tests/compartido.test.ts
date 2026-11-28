@@ -132,3 +132,27 @@ test("vacaciones: siempre alquiler, precio por noche/semana y dueños de la zona
   assert.equal(sufijoPrecio({ rubro: "inmuebles", operacion: "alquiler", precio: 1, datos: [] }), "por mes");
   assert.equal(sufijoPrecio({ rubro: "vehiculos", operacion: "venta", precio: 1, datos: [] }), "");
 });
+
+test("calendario de vacaciones: marcar, liberar, días libres y filtro por fechas", async () => {
+  const { marcarRango, estadoDia, libreEntre, limpiarCalendario, periodosLibres, anioTemporada } = await import("../shared/vacaciones.ts");
+  const y = anioTemporada() + 1;
+  let c = marcarRango(null, `${y}-01-03`, `${y}-01-10`, true);
+  c = marcarRango(c, `${y}-01-11`, `${y}-01-12`, true); // se une con el anterior
+  assert.deepEqual(c.ocupado, [[`${y}-01-03`, `${y}-01-12`]]);
+  c = marcarRango(c, `${y}-01-06`, `${y}-01-07`, false); // se cayó una parte
+  assert.deepEqual(c.ocupado, [[`${y}-01-03`, `${y}-01-05`], [`${y}-01-08`, `${y}-01-12`]]);
+  const a = { rubro: "vacaciones" as const, datos: [] as string[], calendario: c };
+  assert.equal(estadoDia(a, `${y}-01-04`), "ocupado");
+  assert.equal(estadoDia(a, `${y}-01-06`), "libre");
+  assert.equal(estadoDia(a, `${y}-01-20`), "libre");
+  assert.equal(libreEntre(a, `${y}-01-06`, `${y}-01-08`), true, "la noche de la salida no cuenta");
+  assert.equal(libreEntre(a, `${y}-01-06`, `${y}-01-09`), false);
+  assert.ok(periodosLibres(a).includes("2ª quincena de enero"));
+  assert.ok(!periodosLibres(a).includes("1ª quincena de enero"));
+  // Sin calendario: se usan las quincenas marcadas.
+  const q = { rubro: "vacaciones" as const, datos: ["Libre: 2ª quincena de enero"], calendario: null };
+  assert.equal(estadoDia(q, `${y}-01-20`), "libre");
+  assert.equal(estadoDia(q, `${y}-01-05`), "ocupado");
+  assert.equal(estadoDia(q, `${y}-06-05`), "", "fuera de la temporada no dice nada");
+  assert.equal(limpiarCalendario({ ocupado: [["mal", "x"], [`${y}-02-01`, `${y}-02-03`]] })?.ocupado.length, 1);
+});

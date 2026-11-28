@@ -84,6 +84,9 @@ export interface CambiosAviso {
   telefono?: string;
   reservado?: boolean;
   estado?: "publicado" | "vendido" | "pendiente";
+  /** Vacaciones: rangos de días a marcar ocupados / libres (AAAA-MM-DD, los dos incluidos). */
+  ocupar?: { desde: string; hasta: string }[];
+  liberar?: { desde: string; hasta: string }[];
 }
 
 export interface AccesoSitio {
@@ -205,7 +208,8 @@ VACACIONES (rubro "vacaciones")
 - Son casas, departamentos o cabañas para alquilar en la temporada, de dueños de la zona pero ubicadas en otro lugar (costa, sierras, Entre Ríos…). operacion siempre "alquiler", moneda casi siempre ARS.
 - "pueblo" es el DESTINO donde queda (ej. "Villa Gesell", "Villa Carlos Paz"), no el pueblo del dueño.
 - En "datos" van, si los dijo: "Dueños de Chabás" (de dónde son los dueños; es lo que da confianza), "Precio por noche" / "Precio por semana" / "Precio por quincena" / "Precio por mes" (siempre que haya precio), "Para 6 personas", "3 dormitorios", "2 baños", "A 3 cuadras del centro o el agua", "Mínimo 5 noches", los que tenga de: Pileta, Cochera, Aire acondicionado, Wi-Fi, Parrilla, Acepta mascotas, Ropa de cama, y las FECHAS LIBRES con este formato exacto: "Libre: diciembre", "Libre: 1ª quincena de enero", "Libre: 2ª quincena de enero", "Libre: 1ª quincena de febrero", "Libre: 2ª quincena de febrero", "Libre: marzo". Hasta 24 datos.
-- Cuando Felipe diga que una casa ya se alquiló para un período ("la de Gesell ya alquiló la primera de enero"), sacá esa etiqueta "Libre: …" con editar_aviso (mandá la lista de datos completa sin ella). Si no queda ninguna fecha libre, preguntale si la marca reservada.
+- CALENDARIO: cada casa de vacaciones puede tener un calendario día por día. Cuando Felipe diga fechas ("la de Gesell está ocupada del 3 al 17 de enero", "se cayó la reserva de febrero"), usá editar_aviso con "ocupar" o "liberar" y fechas AAAA-MM-DD de la temporada que viene (diciembre de este año, enero a marzo del que sigue). Las dos fechas se incluyen.
+- Si la casa no tiene calendario y solo marcó quincenas: cuando Felipe diga que una casa ya se alquiló para un período ("la de Gesell ya alquiló la primera de enero"), sacá esa etiqueta "Libre: …" con editar_aviso (mandá la lista de datos completa sin ella). Si no queda ninguna fecha libre, preguntale si la marca reservada.
 - Si no dijo por cuánto tiempo es el precio, o de dónde son los dueños, anotalo en "faltan".
 
 PUBLICAR
@@ -265,6 +269,8 @@ export const HERRAMIENTAS = [
     operacion: { type: "string", enum: ["venta", "alquiler"] }, pueblo: { type: "string" }, zona: { type: "string" },
     permuta: { type: "boolean" }, financia: { type: "boolean" }, nombre: { type: "string" }, telefono: { type: "string" },
     reservado: { type: "boolean" }, estado: { type: "string", enum: ["publicado", "vendido", "pendiente"] },
+    ocupar: { type: "array", description: "Solo vacaciones: días que pasan a OCUPADOS en el calendario (ej. se alquiló del 3 al 17 de enero).", items: { type: "object", properties: { desde: { type: "string", description: "AAAA-MM-DD" }, hasta: { type: "string", description: "AAAA-MM-DD, incluido" } }, required: ["desde", "hasta"] } },
+    liberar: { type: "array", description: "Solo vacaciones: días que vuelven a estar LIBRES (se cayó una reserva).", items: { type: "object", properties: { desde: { type: "string" }, hasta: { type: "string" } }, required: ["desde", "hasta"] } },
   }, ["id"]),
   fn("agregar_fotos_a_aviso", "Suma las fotos que están en el borrador a un aviso que ya existe (después el borrador queda sin fotos).", { id: { type: "integer" }, alPrincipio: { type: "boolean", description: "true = van primero (la primera pasa a ser la tapa)" } }, ["id"]),
   fn("ver_fotos_de_aviso", "Mira las fotos de un aviso que ya existe (hasta 12) para juzgarlas: cuál es la mejor para la tapa, si hay fotos borrosas, oscuras o repetidas. Después de llamarla, las imágenes te llegan en el mensaje siguiente.", { id: { type: "integer" } }, ["id"]),

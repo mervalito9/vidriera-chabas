@@ -8,7 +8,8 @@ import { fmtFecha, fmtNum } from "../../../shared/texto.ts";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
 import { ErrorApi, avisoConocido, linkContacto, listarAvisos, obtenerAviso } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
-import { ALMANAQUE, datosVisibles, duenosDe, fechasLibres } from "../../../shared/vacaciones.ts";
+import { datosVisibles, duenosDe, tieneCalendario } from "../../../shared/vacaciones.ts";
+import { CalendarioAviso } from "../components/Calendario.tsx";
 import { fotoSegura, precioTexto, sufijo } from "../formato.ts";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
@@ -112,7 +113,7 @@ function FichaAviso({ a }: { a: AvisoPublico }) {
           {bajo && a.precioAnterior !== null && (
             <p className="baja">Bajó de precio: antes {a.moneda === "ARS" ? "$" : "USD"} {fmtNum(a.precioAnterior)}</p>
           )}
-          {a.rubro === "vacaciones" && fechasLibres(a).length > 0 && <Almanaque libres={fechasLibres(a)} />}
+          {tieneCalendario(a) && <CalendarioAviso a={a} />}
           {a.rubro === "vacaciones" && <p className="seguro-linea"><span aria-hidden="true">🔒</span> Transferí solo a nombre del dueño y nunca el total antes de entrar.</p>}
           <Contacto a={a} c={contacto} refBoton={refBoton} />
           {a.publica && (
@@ -315,32 +316,3 @@ function AntesDeSenar() {
   );
 }
 
-/** Almanaque de la temporada por quincena: de un vistazo, qué está libre y qué no. */
-function Almanaque({ libres }: { libres: string[] }) {
-  const libre = (n: string) => libres.some((l) => l.toLowerCase() === n.toLowerCase());
-  const anio = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
-  return (
-    <section className="almanaque" aria-labelledby="alm-t">
-      <div className="almanaque-cab">
-        <h2 id="alm-t">Temporada {anio}–{anio + 1}</h2>
-        <span className="almanaque-ref"><i className="ok" /> Libre <i /> Ocupado</span>
-      </div>
-      <div className="almanaque-meses">
-        {ALMANAQUE.map((m) => (
-          <div key={m.mes} className="almanaque-mes">
-            <b>{m.mes}</b>
-            <div className="almanaque-celdas">
-              {m.periodos.map((p) => (
-                <span key={p.nombre} className={libre(p.nombre) ? "celda ok" : "celda"} title={`${p.nombre}: ${libre(p.nombre) ? "libre" : "ocupado"}`}>
-                  <small>{p.corto}</small>
-                  {libre(p.nombre) ? "Libre" : "Ocupado"}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="small">Lo actualiza el dueño. Confirmá las fechas por WhatsApp antes de señar.</p>
-    </section>
-  );
-}

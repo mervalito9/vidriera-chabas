@@ -11,6 +11,7 @@ import { CondicionesAlquiler } from "./CondicionesAlquiler.tsx";
 import { DatosGuiados } from "./DatosGuiados.tsx";
 import { ElegirFotos } from "./ElegirFotos.tsx";
 import { Encuadre } from "./Encuadre.tsx";
+import { EditorCalendario } from "../Calendario.tsx";
 import { aNuevoAviso, monedaSugerida, type ValoresForm } from "./valores.ts";
 
 /** Tipos de inmueble donde no se pregunta por mascotas ni muebles. */
@@ -162,6 +163,7 @@ export function FormAviso({ valores: v, onCambio, onEnviar, exigirFotos, enviand
         <label className="check"><input type="checkbox" checked={v.financia} onChange={(e) => set("financia", e.target.checked)} /> {avanzado ? "Financia" : "Ofrezco financiación"}</label>
       </div>}
       {v.rubro && <DatosGuiados key={v.rubro} rubro={v.rubro} datos={v.datos} onCambio={(d) => set("datos", d)} />}
+      {v.rubro === "vacaciones" && <EditorCalendario valor={v.calendario} onCambio={(c) => set("calendario", c)} />}
       {MAPA_ACTIVO && v.rubro === "inmuebles" && (
         <MarcarUbicacion lat={v.lat} lng={v.lng} pueblo={v.pueblo} onCambio={(lat, lng) => onCambio({ ...v, lat, lng })} />
       )}

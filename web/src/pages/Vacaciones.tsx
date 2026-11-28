@@ -3,11 +3,13 @@
 // del pueblo. Mientras haya pocos avisos, la página le habla sobre todo a los dueños para que publiquen.
 import { useMemo, useState } from "react";
 import type { AvisoPublico } from "../../../shared/tipos.ts";
-import { ALMANAQUE, duenosDe, fechasLibres, regionDe } from "../../../shared/vacaciones.ts";
+import { ALMANAQUE, duenosDe, libreEntre, periodosLibres, regionDe, tieneCalendario } from "../../../shared/vacaciones.ts";
 import { listarAvisos } from "../api.ts";
 import { Cargando, Tarjeta } from "../components/Tarjeta.tsx";
 import { useCarga, useTitulo } from "../hooks.ts";
 import { ir } from "../router.ts";
+
+declare const __VISTA_PREVIA__: boolean;
 
 /** "Para 6 personas" → 6 (0 si no lo dice). */
 const personas = (a: AvisoPublico): number => {
@@ -38,8 +40,11 @@ export function Vacaciones() {
   const [destino, setDestino] = useState("");
   const [minimo, setMinimo] = useState(0);
   const [cuando, setCuando] = useState("");
+  const [llegada, setLlegada] = useState("");
+  const [salida, setSalida] = useState("");
+  const conFechas = !!llegada && !!salida && salida > llegada;
 
-  const avisos = c.estado === "listo" && !c.datos.soloEjemplos ? c.datos.avisos.filter((a) => a.rubro === "vacaciones") : [];
+  const avisos = c.estado === "listo" && (!c.datos.soloEjemplos || __VISTA_PREVIA__) ? c.datos.avisos.filter((a) => a.rubro === "vacaciones") : [];
   const contar = (claves: string[]) => {
     const cuenta = new Map<string, number>();
     for (const k of claves) cuenta.set(k, (cuenta.get(k) ?? 0) + 1);
@@ -48,9 +53,9 @@ export function Vacaciones() {
   const regiones = useMemo(() => contar(avisos.map((a) => regionDe(a.pueblo))), [avisos]);
   const enRegion = avisos.filter((a) => !region || regionDe(a.pueblo) === region);
   const destinos = contar(enRegion.map((a) => a.pueblo));
-  const libreEn = (a: AvisoPublico, p: string) => fechasLibres(a).some((f) => f.toLowerCase() === p.toLowerCase());
+  const libreEn = (a: AvisoPublico, p: string) => periodosLibres(a).some((f) => f.toLowerCase() === p.toLowerCase());
   const periodos = ALMANAQUE.flatMap((m) => m.periodos.map((p) => ({ ...p, etiqueta: m.periodos.length > 1 ? `${p.corto.startsWith("1 ") ? "1ª" : "2ª"} ${m.mes.slice(0, 3).toLowerCase()}` : m.mes }))).filter((p) => avisos.some((a) => libreEn(a, p.nombre)));
-  const lista = enRegion.filter((a) => (!destino || a.pueblo === destino) && (!minimo || personas(a) >= minimo) && (!cuando || libreEn(a, cuando)));
+  const lista = enRegion.filter((a) => (!destino || a.pueblo === destino) && (!minimo || personas(a) >= minimo) && (!cuando || libreEn(a, cuando)) && (!conFechas || (tieneCalendario(a) && libreEntre(a, llegada, salida))));
   const deLaZona = avisos.filter((a) => duenosDe(a)).length;
 
   return (
@@ -96,6 +101,14 @@ export function Vacaciones() {
                 ))}
               </div>
             )}
+            {avisos.some(tieneCalendario) && (
+              <div className="vac-fechas">
+                <label><span>Llegada</span><input type="date" value={llegada} onChange={(e) => setLlegada(e.target.value)} /></label>
+                <label><span>Salida</span><input type="date" value={salida} min={llegada || undefined} onChange={(e) => setSalida(e.target.value)} /></label>
+                {(llegada || salida) && <button type="button" className="btn-mini" onClick={() => { setLlegada(""); setSalida(""); }}>Borrar fechas</button>}
+                {conFechas && <p className="small">Solo las casas libres todas esas noches (según lo que cargó el dueño).</p>}
+              </div>
+            )}
             {periodos.length > 0 && (
               <div className="chips vac-filtros" role="group" aria-label="¿Cuándo te vas?">
                 <button type="button" className="chip" aria-pressed={!cuando} onClick={() => setCuando("")}>Cualquier fecha</button>
@@ -115,7 +128,7 @@ export function Vacaciones() {
             {lista.length > 0 ? (
               <div className="grid reales">{lista.map((a) => <Tarjeta key={a.id} aviso={a} />)}</div>
             ) : (
-              <p className="sb-baja">No hay alquileres con esos filtros. <button type="button" className="linkbtn" onClick={() => { setRegion(""); setDestino(""); setMinimo(0); setCuando(""); }}>Ver todos</button></p>
+              <p className="sb-baja">No hay alquileres con esos filtros. <button type="button" className="linkbtn" onClick={() => { setRegion(""); setDestino(""); setMinimo(0); setCuando(""); setLlegada(""); setSalida(""); }}>Ver todos</button></p>
             )}
           </>
         )}

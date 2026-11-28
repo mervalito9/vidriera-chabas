@@ -1,5 +1,6 @@
 // Validación compartida: la web la usa para avisar errores al instante
 // y el backend la usa SIEMPRE antes de guardar (nunca se confía en el navegador).
+import { limpiarCalendario } from "./vacaciones.ts";
 import { limpiarCondiciones } from "./alquiler.ts";
 import { RUBROS, LIMITES, PUEBLOS, OTRO_PUEBLO } from "./config.ts";
 import type { BusquedaPublica, ErrorCampo, Foco, NuevaBusqueda, NuevoAviso, RubroId } from "./tipos.ts";
@@ -66,6 +67,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   const condiciones = operacion === "alquiler" && rubro !== "vacaciones" ? limpiarCondiciones(e.condiciones) : null;
   const { lat, lng } = ubicacion(e.lat, e.lng);
   const foco = limpiarFoco(e.foco);
+  const calendario = rubro === "vacaciones" ? limpiarCalendario(e.calendario) : null;
   const quien = e.quien === "dueno" || e.quien === "inmobiliaria" || e.quien === "agencia" ? e.quien : "";
   const fotos = (Array.isArray(e.fotos) ? e.fotos : []).filter((f): f is string => typeof f === "string").slice(0, LIMITES.fotos);
 
@@ -81,7 +83,7 @@ export function validarAviso(entrada: unknown, opciones: { exigirFotos: boolean 
   return {
     ok: errores.length === 0,
     errores,
-    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, quien, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng, ...(foco !== undefined ? { foco } : {}) },
+    valor: { rubro: (rubro || "inmuebles") as RubroId, tipo, operacion, titulo, precio, moneda, pueblo, anunciante, quien, zona, descripcion, datos, permuta: e.permuta === true, financia: e.financia === true, nombre, telefono, fotos, condiciones, lat, lng, ...(foco !== undefined ? { foco } : {}), ...(calendario !== undefined ? { calendario } : {}) },
   };
 }
 

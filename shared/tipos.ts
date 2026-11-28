@@ -1,6 +1,7 @@
 // Tipos compartidos entre el backend (server/) y la web (web/).
 // Solo sintaxis "borrable" de TypeScript: Node 24 los ejecuta sin compilar.
 import type { CondicionesAlquiler } from "./alquiler.ts";
+import type { Calendario } from "./vacaciones.ts";
 
 export type RubroId = "inmuebles" | "vehiculos" | "agro" | "vacaciones";
 export type Operacion = "venta" | "alquiler";
@@ -55,6 +56,8 @@ export interface AvisoPublico {
   lng: number | null;
   /** Encuadre de la foto de tapa al recortarla. null = centrada. */
   foco: Foco | null;
+  /** Vacaciones: días ocupados, día por día. null = el dueño no cargó calendario. */
+  calendario: Calendario | null;
 }
 
 /** Lo que ve el administrador en el panel. */
@@ -143,6 +146,8 @@ export interface NuevoAviso {
   lng: number | null;
   /** Encuadre de la foto de tapa (opcional; sin esto, se deja como estaba o centrada). */
   foco?: Foco | null;
+  /** Vacaciones: días ocupados (opcional; sin esto, se deja como estaba). */
+  calendario?: Calendario | null;
 }
 
 export interface NuevaBusqueda {

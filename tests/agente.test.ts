@@ -341,3 +341,18 @@ test("acceso real: el bot puede pasar un aviso publicado a pendiente y volver a 
   assert.match(sitio.editar(id, { estado: "publicado" }), /^ok/);
   assert.equal(datos.obtenerAdmin(id)?.estado, "publicado");
 });
+
+test("acceso real: el bot marca días ocupados y libres en el calendario de una casa de vacaciones", async () => {
+  const { anioTemporada } = await import("../shared/vacaciones.ts");
+  const y = anioTemporada() + 1;
+  const sitio = crearAccesoSitio("https://vidrierachabas.ar");
+  const f = join(mkdtempSync(join(base, "c-")), "a.jpg");
+  writeFileSync(f, JPG);
+  const id = sitio.publicar({ rubro: "vacaciones", tipo: "Casa", operacion: "alquiler", titulo: "Casa en Villa Gesell", precio: 100000, moneda: "ARS", pueblo: "Villa Gesell", anunciante: "", quien: "dueno", zona: "", descripcion: "", datos: ["Dueños de Chabás", "Precio por noche"], permuta: false, financia: false, nombre: "A", telefono: "3464111222", fotos: [], condiciones: null, lat: null, lng: null }, [f]);
+  assert.match(sitio.editar(id, { ocupar: [{ desde: `${y}-01-03`, hasta: `${y}-01-17` }] }), /^ok/);
+  assert.deepEqual(datos.obtenerAdmin(id)?.calendario?.ocupado, [[`${y}-01-03`, `${y}-01-17`]]);
+  assert.match(sitio.editar(id, { liberar: [{ desde: `${y}-01-10`, hasta: `${y}-01-17` }], precio: 110000 }), /^ok/);
+  assert.deepEqual(datos.obtenerAdmin(id)?.calendario?.ocupado, [[`${y}-01-03`, `${y}-01-09`]]);
+  assert.equal(datos.obtenerAdmin(id)?.precio, 110000);
+  assert.deepEqual(datos.obtenerAdmin(id)?.datos, ["Dueños de Chabás", "Precio por noche"], "no toca los otros datos");
+});

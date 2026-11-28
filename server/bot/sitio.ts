@@ -12,6 +12,7 @@ import { borrarFotos } from "../imagenes.ts";
 import { leerFotos } from "../mejorar.ts";
 import type { AccesoSitio, CambiosAviso } from "./agente.ts";
 import { fotoDelSitio } from "./datosSitio.ts";
+import { marcarRango } from "../../shared/vacaciones.ts";
 
 const sinTildes = (s: string): string => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -35,7 +36,7 @@ function aNuevo(a: AvisoAdmin): NuevoAviso {
   return {
     rubro: a.rubro, tipo: a.tipo, operacion: a.operacion, titulo: a.titulo, precio: a.precio, moneda: a.moneda, pueblo: a.pueblo,
     anunciante: a.anunciante, quien: a.quien, zona: a.zona, descripcion: a.descripcion, datos: a.datos, permuta: a.permuta,
-    financia: a.financia, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, condiciones: a.condiciones, lat: a.lat, lng: a.lng, foco: a.foco,
+    financia: a.financia, nombre: a.nombre, telefono: a.telefono, fotos: a.fotos, condiciones: a.condiciones, lat: a.lat, lng: a.lng, foco: a.foco, calendario: a.calendario,
   };
 }
 
@@ -83,7 +84,12 @@ export function crearAccesoSitio(urlSitio: string): AccesoSitio {
     editar(id, c: CambiosAviso) {
       const a = datos.obtenerAdmin(id);
       if (!a || a.ejemplo) return `error: no existe el aviso n.º ${id}`;
-      const { reservado, estado, ...campos } = c;
+      const { reservado, estado, ocupar, liberar, ...campos } = c;
+      if ((ocupar?.length || liberar?.length) && a.rubro !== "vacaciones") return "error: el calendario es solo para avisos de vacaciones";
+      let calendario = a.calendario;
+      for (const r of ocupar ?? []) calendario = marcarRango(calendario, r.desde, r.hasta, true);
+      for (const r of liberar ?? []) calendario = marcarRango(calendario, r.desde, r.hasta, false);
+      if (ocupar?.length || liberar?.length) (campos as Record<string, unknown>).calendario = calendario;
       const hayCampos = Object.keys(campos).length > 0;
       if (hayCampos) {
         const r = validarAviso({ ...aNuevo(a), ...campos }, { exigirFotos: false });

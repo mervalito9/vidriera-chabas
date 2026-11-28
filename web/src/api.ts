@@ -1,5 +1,7 @@
 // Cliente del backend. Si no hay servidor (por ejemplo, en la vista previa de Claude),
 // pasa solo a "modo vista previa" con los avisos de ejemplo y publica por WhatsApp.
+import { BUSQUEDAS_INICIALES } from "../../shared/busquedasIniciales.ts";
+import { anioTemporada } from "../../shared/vacaciones.ts";
 import { DIAS_VIGENCIA } from "../../shared/config.ts";
 import { EJEMPLOS } from "../../shared/ejemplos.ts";
 import { DOLAR_VISTA_PREVIA, filtrarAvisos } from "../../shared/filtrar.ts";
@@ -60,10 +62,28 @@ function avisosDemo(): AvisoPublico[] {
       pueblo: e.pueblo, zona: e.zona ?? "", descripcion: e.descripcion ?? "", datos: e.datos ?? [], permuta: !!e.permuta, financia: !!e.financia,
       fotos: [`assets/img/${e.foto}`], anunciante: "", quien: "dueno" as const, publica: "", ejemplo: true, reservado: false, destacado: false, publicadoEn: publicado.toISOString(),
       venceEn: new Date(publicado.getTime() + DIAS_VIGENCIA * 864e5).toISOString(), precioAnterior: null,
-      condiciones: e.condiciones ?? null, lat: e.lat ?? null, lng: e.lng ?? null, foco: null,
+      condiciones: e.condiciones ?? null, lat: e.lat ?? null, lng: e.lng ?? null, foco: null, calendario: null,
     };
-  }).sort((a, b) => b.publicadoEn.localeCompare(a.publicadoEn));
-  return demo;
+  });
+  // Casas de vacaciones de muestra (solo en la vista previa), con calendario.
+  const y = anioTemporada() + 1, x = anioTemporada();
+  const vac: [string, string, string, number, string, string[], [string, string][]][] = [
+    ["Casa", "Casa en Villa Gesell a 3 cuadras del mar", "Villa Gesell", 120000, "ejemplo-vacaciones.svg", ["Dueños de Chabás", "Precio por noche", "Para 6 personas", "3 dormitorios", "2 baños", "Mínimo 5 noches", "A 3 cuadras del centro o el agua", "Parrilla", "Wi-Fi", "Cochera"], [[`${x}-12-20`, `${y}-01-02`], [`${y}-01-16`, `${y}-01-31`], [`${y}-02-08`, `${y}-02-14`]]],
+    ["Cabaña", "Cabaña en Carlos Paz con pileta y vista al lago", "Villa Carlos Paz", 650000, "ejemplo-cabana.svg", ["Dueños de Casilda", "Precio por semana", "Para 4 personas", "2 dormitorios", "Mínimo 7 noches", "Pileta", "Aire acondicionado", "Acepta mascotas"], [[`${y}-01-01`, `${y}-01-15`], [`${y}-02-01`, `${y}-02-07`]]],
+    ["Departamento", "Departamento en Mar del Plata frente al mar", "Mar del Plata", 900000, "ejemplo-departamento.svg", ["Dueños de Chabás", "Precio por quincena", "Para 3 personas", "1 dormitorio", "Wi-Fi", "Ropa de cama"], [[`${x}-12-01`, `${x}-12-31`], [`${y}-01-01`, `${y}-01-15`]]],
+    ["Casa", "Casa quinta en Federación cerca de las termas", "Federación", 85000, "ejemplo-casa.svg", ["Dueños de Firmat", "Precio por noche", "Para 8 personas", "4 dormitorios", "Pileta", "Parrilla", "Acepta mascotas"], [[`${y}-01-10`, `${y}-01-25`]]],
+  ];
+  vac.forEach(([tipo, titulo, pueblo, precio, foto, datos, ocupado], i) => {
+    const publicado = new Date(Date.now() - (i + 1) * 864e5);
+    demo!.push({
+      id: 900 + i, rubro: "vacaciones", tipo, operacion: "alquiler", titulo, precio, moneda: "ARS", pueblo, zona: "", descripcion: "Ejemplo de la vista previa: así se vería una casa de vacaciones de alguien de la zona.",
+      datos, permuta: false, financia: false, fotos: [`assets/img/${foto}`], anunciante: "", quien: "dueno", publica: "", ejemplo: true, reservado: false, destacado: false,
+      publicadoEn: publicado.toISOString(), venceEn: new Date(publicado.getTime() + DIAS_VIGENCIA * 864e5).toISOString(), precioAnterior: null,
+      condiciones: null, lat: null, lng: null, foco: null, calendario: { ocupado: ocupado, actualizado: new Date(Date.now() - 2 * 864e5).toISOString() },
+    });
+  });
+  demo!.sort((a, b) => b.publicadoEn.localeCompare(a.publicadoEn));
+  return demo!;
 }
 
 const aQuery = (f: Partial<Filtros>, limite: number, desde: number): string => {
@@ -131,8 +151,12 @@ export async function guardarBusqueda(b: NuevaBusqueda): Promise<{ id: number }>
   return pedir("POST", "busquedas", b);
 }
 
-/** Las búsquedas que Felipe eligió mostrar (sin datos de contacto). */
-export const seBuscan = () => pedir<SeBusca[]>("GET", "se-buscan");
+/** Las búsquedas que Felipe eligió mostrar (sin datos de contacto). Sin servidor: las de Instagram. */
+export async function seBuscan(): Promise<SeBusca[]> {
+  if (await conServidor()) return pedir<SeBusca[]>("GET", "se-buscan");
+  const hace = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
+  return BUSQUEDAS_INICIALES.map((b, i) => ({ ...b, cuantas: 1, desde: hace(i + 1) }));
+}
 
 // ---------- panel ----------
 export const admin = {

@@ -1084,3 +1084,36 @@ footer { padding-bottom: 90px; }
 .celda.ok { background: #2F6E73; color: #fff; }
 .almanaque-mes:first-child .celda, .almanaque-mes:last-child .celda { min-height: 108px; }
 .almanaque .small { margin: 10px 0 0; color: var(--tinta-2); }
+
+/* Calendario mensual de vacaciones */
+.calendario { margin: 8px 0 14px; padding: 14px; border-radius: 20px; background: var(--papel); box-shadow: var(--sombra); }
+.calendario h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.calendario.editor { box-shadow: none; border: 1.5px solid #CFC6B4; }
+.calendario .small { margin: 10px 0 0; color: var(--tinta-2); }
+.cal-saltos { display: flex; gap: 6px; margin-bottom: 8px; }
+.cal-saltos .chip { flex: 1; cursor: pointer; font-family: var(--sans); background: var(--crema); border: 1.5px solid transparent; padding: 6px 0; text-align: center; }
+.cal-saltos .chip[aria-pressed=true] { background: #2F6E73; color: #fff; }
+.cal-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.cal-titulo { text-align: center; display: flex; flex-direction: column; }
+.cal-titulo b { font-size: 1.05rem; }
+.cal-titulo small { color: var(--tinta-2); font-size: .82rem; }
+.cal-flecha { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid #CFC6B4; background: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--tinta); }
+.cal-grilla { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-sem { text-align: center; font-size: .75rem; font-weight: 700; color: var(--tinta-2); padding: 2px 0 4px; }
+.cal-dia { aspect-ratio: 1; display: grid; place-items: center; border-radius: 10px; font: 700 .9rem/1 var(--sans); color: #A39A88; background: var(--crema); border: 0; padding: 0; }
+button.cal-dia { cursor: pointer; }
+.cal-dia.libre { background: #2F6E73; color: #fff; }
+.cal-dia.ocupado { background: repeating-linear-gradient(135deg, #E2DACB 0 5px, #EFE9DE 5px 10px); color: #8A8170; text-decoration: line-through; }
+.cal-dia.pasado { opacity: .35; }
+.cal-dia.hoy { box-shadow: 0 0 0 2px var(--terra) inset; }
+.cal-dia.inicio { box-shadow: 0 0 0 3px var(--terra); transform: scale(1.06); }
+.cal-ref { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; font-size: .8rem; color: var(--tinta-2); }
+.cal-ref i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; background: var(--crema); border: 1px solid #DDD5C6; }
+.cal-ref i.libre { background: #2F6E73; border-color: #2F6E73; }
+.cal-ref i.ocupado { background: repeating-linear-gradient(135deg, #E2DACB 0 3px, #EFE9DE 3px 6px); }
+.cal-ref i:not(:first-child) { margin-left: 8px; }
+.cal-acc { display: flex; gap: 8px; margin-top: 10px; }
+.vac-fechas { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 0 0 12px; }
+.vac-fechas label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .9rem; flex: 1; min-width: 140px; }
+.vac-fechas input { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid #B9B1A0; background: var(--papel); min-height: 48px; }
+.vac-fechas .small { flex-basis: 100%; margin: 0; color: var(--tinta-2); }
