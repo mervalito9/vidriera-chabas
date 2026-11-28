@@ -83,7 +83,7 @@ export interface CambiosAviso {
   nombre?: string;
   telefono?: string;
   reservado?: boolean;
-  estado?: "publicado" | "vendido";
+  estado?: "publicado" | "vendido" | "pendiente";
 }
 
 export interface AccesoSitio {
@@ -209,7 +209,7 @@ AVISOS DEL SITIO
 - buscar_avisos y ver_aviso para encontrar y mirar avisos (publicados, pendientes de vecinos, vendidos).
 - ver_fotos_de_aviso te deja MIRAR las fotos de un aviso (hasta 12). Usala cuando Felipe pida mejorar u ordenar un aviso: juzgá cuál es la mejor tapa (nítida, bien iluminada, que muestre el frente o lo principal), si hay fotos borrosas, oscuras o repetidas, y reordenalas con ordenar_fotos_de_aviso. No borra fotos: las malas van al final. Contale en una línea qué cambiaste y por qué.
 - Para "mejorá este aviso": mirá las fotos, revisá título y descripción, y proponele a Felipe los cambios antes de aplicarlos (el reorden de fotos podés hacerlo directo porque se puede deshacer).
-- editar_aviso cambia datos de un aviso existente (precio, título, descripción, reservado, marcarlo vendido, aprobar un pendiente con estado "publicado"). Antes de cambiar el estado de un aviso de un vecino, confirmalo con Felipe.
+- editar_aviso cambia datos de un aviso existente (precio, título, descripción, reservado, marcarlo vendido, aprobar un pendiente con estado "publicado", o pasarlo a "pendiente" para sacarlo de la vista sin borrarlo: por ejemplo si Felipe dice "ponelo en pendiente", "sacalo un rato" u "ocultalo"). Antes de cambiar el estado de un aviso de un vecino, confirmalo con Felipe.
 - No podés borrar ni rechazar avisos: eso se hace en el panel (vidrierachabas.ar/#admin).
 
 ESTADÍSTICAS
@@ -251,13 +251,13 @@ export const HERRAMIENTAS = [
   fn("descartar_borrador", "Borra el borrador (datos y fotos). Para cuando Felipe cancela o quiere empezar otro aviso de cero.", { tambienFotos: { type: "boolean", description: "false para conservar las fotos (por ejemplo si son de otro aviso). Por defecto true." } }),
   fn("buscar_avisos", "Busca avisos del sitio por texto (título, tipo, pueblo, descripción). Vacío = los más recientes.", { texto: { type: "string" }, estado: { type: "string", enum: ["", "publicado", "pendiente", "vendido", "rechazado"] } }),
   fn("ver_aviso", "Muestra todos los datos de un aviso por su número.", { id: { type: "integer" } }, ["id"]),
-  fn("editar_aviso", "Cambia datos de un aviso que ya existe. Mandá solo lo que cambia. estado 'publicado' aprueba un pendiente; 'vendido' lo marca vendido.", {
+  fn("editar_aviso", "Cambia datos de un aviso que ya existe. Mandá solo lo que cambia. estado 'publicado' aprueba un pendiente o vuelve a mostrar uno; 'vendido' lo marca vendido; 'pendiente' lo saca de la vista del público (queda guardado, se vuelve a publicar cuando Felipe diga).", {
     id: { type: "integer" },
     titulo: { type: "string" }, precio: { type: "integer", description: "0 = sin precio" }, moneda: { type: "string", enum: ["USD", "ARS"] },
     descripcion: { type: "string" }, datos: { type: "array", items: { type: "string" } }, tipo: { type: "string" },
     operacion: { type: "string", enum: ["venta", "alquiler"] }, pueblo: { type: "string" }, zona: { type: "string" },
     permuta: { type: "boolean" }, financia: { type: "boolean" }, nombre: { type: "string" }, telefono: { type: "string" },
-    reservado: { type: "boolean" }, estado: { type: "string", enum: ["publicado", "vendido"] },
+    reservado: { type: "boolean" }, estado: { type: "string", enum: ["publicado", "vendido", "pendiente"] },
   }, ["id"]),
   fn("agregar_fotos_a_aviso", "Suma las fotos que están en el borrador a un aviso que ya existe (después el borrador queda sin fotos).", { id: { type: "integer" }, alPrincipio: { type: "boolean", description: "true = van primero (la primera pasa a ser la tapa)" } }, ["id"]),
   fn("ver_fotos_de_aviso", "Mira las fotos de un aviso que ya existe (hasta 12) para juzgarlas: cuál es la mejor para la tapa, si hay fotos borrosas, oscuras o repetidas. Después de llamarla, las imágenes te llegan en el mensaje siguiente.", { id: { type: "integer" } }, ["id"]),

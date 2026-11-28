@@ -330,3 +330,14 @@ test("las 5 búsquedas iniciales son de inmuebles y tienen título", async () =>
   assert.equal(BUSQUEDAS_INICIALES.length, 5);
   assert.ok(BUSQUEDAS_INICIALES.every((b) => b.rubro === "inmuebles" && b.titulo.length > 3 && b.directo));
 });
+
+test("acceso real: el bot puede pasar un aviso publicado a pendiente y volver a publicarlo", () => {
+  const sitio = crearAccesoSitio("https://vidrierachabas.ar");
+  const f = join(mkdtempSync(join(base, "p-")), "a.jpg");
+  writeFileSync(f, JPG);
+  const id = sitio.publicar({ rubro: "vehiculos", tipo: "Auto", operacion: "venta", titulo: "Clio 2010", precio: 3000, moneda: "USD", pueblo: "Chabás", anunciante: "", quien: "dueno", zona: "", descripcion: "", datos: [], permuta: false, financia: false, nombre: "A", telefono: "3464111222", fotos: [], condiciones: null, lat: null, lng: null }, [f]);
+  assert.match(sitio.editar(id, { estado: "pendiente" }), /^ok/);
+  assert.equal(datos.obtenerAdmin(id)?.estado, "pendiente");
+  assert.match(sitio.editar(id, { estado: "publicado" }), /^ok/);
+  assert.equal(datos.obtenerAdmin(id)?.estado, "publicado");
+});
