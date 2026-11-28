@@ -181,6 +181,13 @@ export function Novedades({ ruta }: { ruta: string }) {
 
   const nuevos = items.filter((i) => i.firma && !vistas.has(i.firma));
   const cuenta = nuevos.length;
+  // El número arranca en 0 y sube hasta lo real, como si recién llegaran las novedades.
+  const [mostrado, setMostrado] = useState(0);
+  useEffect(() => {
+    if (mostrado === cuenta) return;
+    const t = window.setTimeout(() => setMostrado((x) => (x < cuenta ? x + 1 : cuenta)), mostrado === 0 ? 1400 : 350);
+    return () => window.clearTimeout(t);
+  }, [mostrado, cuenta]);
   const visible = !SIN_BURBUJA.has(ruta) && items.length > 0;
 
   // En «Se busca» no repite las búsquedas que ya están en pantalla.
@@ -241,14 +248,14 @@ export function Novedades({ ruta }: { ruta: string }) {
           <button
             type="button"
             ref={boton}
-            className="burbuja-ico"
+            className={cuenta ? "burbuja-ico hay" : "burbuja-ico"}
             aria-label={cuenta ? `Novedades de Vidriera: ${cuenta} sin ver` : "Novedades de Vidriera"}
             aria-expanded={abierto}
             aria-controls="burbuja-hoja"
             onClick={() => (abierto ? cerrar() : abrir())}
           >
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><g fill="#F7EFE2"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" opacity=".55" /></g></svg>
-            {cuenta > 0 && <span className="burbuja-n" aria-hidden="true">{cuenta}</span>}
+            {mostrado > 0 && <span className="burbuja-n" key={`${mostrado}-${n}`} aria-hidden="true">{mostrado}</span>}
           </button>
           {globito && msj && (
             <a
